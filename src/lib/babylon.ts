@@ -73,6 +73,7 @@ export async function loadWearable(canvas: HTMLCanvasElement, url: string, exten
   camera.position = new Vector3(-2, 2, 2)
   camera.useAutoRotationBehavior = true
   camera.setTarget(Vector3.Zero())
+  camera.lowerRadiusLimit = camera.upperRadiusLimit = camera.radius
   camera.attachControl(canvas, true)
 
   // Setup lights
