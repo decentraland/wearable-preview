@@ -15,6 +15,20 @@
   cursor: grab;
 }
 
+.Preview canvas {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  right: 0px;
+  bottom: 0px;
+  opacity: 0;
+  transition: opacity ease 0.3s;
+}
+
+.Preview canvas.is-visible {
+  opacity: 1;
+}
+
 .Preview.is-dragging {
   cursor: grabbing;
 }
@@ -26,10 +40,20 @@
 .Preview .thumbnail {
   max-height: 256px;
   margin: auto;
+  opacity: 0;
+  transition: opacity ease 0.3s;
+}
+
+.Preview .thumbnail.is-visible {
+  opacity: 1;
 }
 
 .Preview .error {
   color: red;
+}
+
+.Preview .ui.loader:before {
+  border-color: transparent !important;
 }
 
 #babylonjsLoadingDiv {

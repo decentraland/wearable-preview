@@ -71,6 +71,7 @@ export async function loadWearable(canvas: HTMLCanvasElement, url: string, exten
   var camera = new ArcRotateCamera('camera', 0, 0, 0, new Vector3(0, 0, 0), scene)
   camera.mode = Camera.PERSPECTIVE_CAMERA
   camera.position = new Vector3(-2, 2, 2)
+  camera.useAutoRotationBehavior = true
   camera.setTarget(Vector3.Zero())
   camera.attachControl(canvas, true)
 

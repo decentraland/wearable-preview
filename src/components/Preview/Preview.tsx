@@ -1,6 +1,7 @@
-import { Rarity } from '@dcl/schemas'
-import classNames from 'classnames'
 import React, { useEffect, useRef, useState } from 'react'
+import { Rarity } from '@dcl/schemas'
+import { Center, Loader } from 'decentraland-ui'
+import classNames from 'classnames'
 import { loadWearable } from '../../lib/babylon'
 import { useWearable } from '../../hooks/useWearable'
 import { useWindowSize } from '../../hooks/useWindowSize'
@@ -11,7 +12,7 @@ const Preview: React.FC = () => {
   const { width, height } = useWindowSize()
   const [style, setStyle] = useState<React.CSSProperties>({})
   const [isDragging, setIsDragging] = useState(false)
-  const [isLoadingModel, setIsLoadingModel] = useState(false)
+  const [isLoadingModel, setIsLoadingModel] = useState(true)
   const [isLoaded, setIsLoaded] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const params = new URLSearchParams(window.location.search)
@@ -22,10 +23,10 @@ const Preview: React.FC = () => {
   const [image, setImage] = useState('')
   const [is3D, setIs3D] = useState(true)
 
-  const isLoading = isLoadingModel || isLoadingWearable
   const error = previewError || wearableError
-  const showImage = !!image && (isLoading || !is3D)
-  const showCanvas = is3D && !error
+  const isLoading = (isLoadingModel || isLoadingWearable) && !error
+  const showImage = !!image && !is3D && !isLoading
+  const showCanvas = is3D && !isLoading
 
   useEffect(() => {
     if (canvasRef.current && wearable) {
@@ -48,8 +49,10 @@ const Preview: React.FC = () => {
         const content = representation.contents.find((content) => content.key === representation.mainFile)
         if (content) {
           loadWearable(canvasRef.current, content.url)
+            .then(() => console.log('done'))
             .catch((error) => setPreviewError(error.message))
             .finally(() => {
+              console.log('finally')
               setIsLoadingModel(false)
               setIsLoaded(true)
             })
@@ -67,21 +70,33 @@ const Preview: React.FC = () => {
         'is-dragging': isDragging,
         'is-loading': isLoading,
         'is-loaded': isLoaded,
+        'is-3d': is3D,
         'has-error': !!error,
       })}
       style={style}
     >
-      {showImage && <img className="thumbnail" src={image} />}
-      {showCanvas && (
-        <canvas
-          id="wearable-preview"
-          width={width}
-          height={height}
-          ref={canvasRef}
-          onMouseDown={() => setIsDragging(true)}
-          onMouseUp={() => setIsDragging(false)}
-        ></canvas>
+      {isLoading && (
+        <Center>
+          <Loader active size="large" />
+        </Center>
       )}
+      <img
+        src={image}
+        className={classNames('thumbnail', {
+          'is-visible': showImage,
+        })}
+      />
+      <canvas
+        id="wearable-preview"
+        className={classNames({
+          'is-visible': showCanvas,
+        })}
+        width={width}
+        height={height}
+        ref={canvasRef}
+        onMouseDown={() => setIsDragging(true)}
+        onMouseUp={() => setIsDragging(false)}
+      ></canvas>
       {error && <div className="error">{error}</div>}
     </div>
   )
