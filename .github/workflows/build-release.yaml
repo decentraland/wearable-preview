@@ -27,7 +27,7 @@ jobs:
         with:
           registry-url: 'https://registry.npmjs.org'
           access: public
-          gitlab-token: ${{ secrets.GITLAB_TOKEN }}
-          gitlab-pipeline-url: ${{ secrets.GITLAB_URL }}
+          gitlab-token: ${{ secrets.GITLAB_CDN_DEPLOYER_TOKEN }}
+          gitlab-pipeline-url: ${{ secrets.GITLAB_CDN_DEPLOYER_URL }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
