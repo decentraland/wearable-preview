@@ -1,0 +1,33 @@
+on:
+  push:
+    branches:
+      - master
+  release:
+    types:
+      - created
+
+name: CI
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Use Node.js 14.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14.x
+      - name: install
+        run: npm install
+      - name: build
+        run: npm run build
+      - name: package
+        run: cp package.json build && cd build
+      - name: publish
+        uses: menduz/oddish-action@master
+        with:
+          registry-url: 'https://registry.npmjs.org'
+          access: public
+          gitlab-token: ${{ secrets.GITLAB_TOKEN }}
+          gitlab-pipeline-url: ${{ secrets.GITLAB_URL }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
