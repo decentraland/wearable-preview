@@ -27,7 +27,8 @@
     "start": "react-scripts start",
     "build": "CI=false && react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "postinstall": "node ./scripts/prebuild.js"
   },
   "eslintConfig": {
     "extends": [
@@ -51,5 +52,6 @@
     "semi": false,
     "singleQuote": true,
     "printWidth": 140
-  }
+  },
+  "homepage": "https://cdn.decentraland.org/@dcl/wearable-preview/0.1.0"
 }

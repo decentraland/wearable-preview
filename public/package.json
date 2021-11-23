@@ -1,6 +1,6 @@
 {
   "name": "@dcl/wearable-preview",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Static website for the wearable preview",
   "main": "index.js",
   "scripts": {
@@ -8,5 +8,6 @@
   },
   "keywords": [],
   "author": "",
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "homepage": "https://cdn.decentraland.org/@dcl/wearable-preview/0.1.0"
 }
