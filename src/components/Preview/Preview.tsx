@@ -94,7 +94,7 @@ const Preview: React.FC = () => {
         width={width}
         height={height}
         ref={canvasRef}
-        onMouseDown={() => setIsDragging(true)}
+        onMouseDown={() => setIsDragging(is3D && !error)}
         onMouseUp={() => setIsDragging(false)}
       ></canvas>
       {error && <div className="error">{error}</div>}

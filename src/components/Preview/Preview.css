@@ -11,7 +11,7 @@
   transition: opacity ease 0.3s;
 }
 
-.Preview.is-loaded {
+.Preview.is-3d.is-loaded {
   cursor: grab;
 }
 
@@ -29,7 +29,7 @@
   opacity: 1;
 }
 
-.Preview.is-dragging {
+.Preview.is-3d.is-dragging {
   cursor: grabbing;
 }
 
@@ -49,6 +49,14 @@
 }
 
 .Preview .error {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  right: 0px;
+  bottom: 0px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: red;
 }
 
