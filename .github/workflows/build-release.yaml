@@ -21,10 +21,12 @@ jobs:
       - name: build
         run: npm run build
       - name: package
-        run: cp package.json build && cd build
+        run: cp package.json build
       - name: publish
         uses: menduz/oddish-action@master
         with:
+          cwd: './build'
+          deterministic-snapshot: true
           registry-url: 'https://registry.npmjs.org'
           access: public
           gitlab-token: ${{ secrets.GITLAB_CDN_DEPLOYER_TOKEN }}
