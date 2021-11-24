@@ -68,6 +68,12 @@ const Preview: React.FC = () => {
     }
   }, [canvasRef.current, wearable])
 
+  useEffect(() => {
+    if (isLoaded) {
+      window.parent && window.parent.postMessage('load', '*')
+    }
+  }, [isLoaded])
+
   return (
     <div
       className={classNames('Preview', {
@@ -79,11 +85,6 @@ const Preview: React.FC = () => {
       })}
       style={style}
     >
-      {isLoading && (
-        <Center>
-          <Loader active size="large" />
-        </Center>
-      )}
       <img
         src={image}
         className={classNames('thumbnail', {
