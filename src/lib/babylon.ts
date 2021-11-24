@@ -14,7 +14,10 @@ import {
   Vector3,
 } from '@babylonjs/core'
 import '@babylonjs/loaders'
+import { GLTFFileLoader } from '@babylonjs/loaders'
 import future from 'fp-future'
+import { Env } from '../types/env'
+import { peerByEnv } from './api/peer'
 
 const hideMaterialList = ['hair_mat', 'avatarskin_mat']
 
@@ -43,7 +46,7 @@ function refreshBoundingInfo(parent: Mesh) {
   }
 }
 
-export async function loadWearable(canvas: HTMLCanvasElement, url: string, extension = '.glb') {
+export async function loadWearable(canvas: HTMLCanvasElement, url: string, mappings: Record<string, string>, env: Env) {
   // Create engine
   const engine = new Engine(canvas, true, {
     preserveDrawingBuffer: true,
@@ -57,7 +60,17 @@ export async function loadWearable(canvas: HTMLCanvasElement, url: string, exten
   root.preventDefaultOnPointerDown = false
   const sceneFuture = future<Scene>()
   const sceneResolver = (scene: Scene) => scene.onReadyObservable.addOnce(() => sceneFuture.resolve(scene))
-  SceneLoader.Append(url, '', root, sceneResolver, null, null, extension)
+  SceneLoader.OnPluginActivatedObservable.addOnce((plugin) => {
+    if (plugin.name === 'gltf') {
+      const gltf = plugin as GLTFFileLoader
+      gltf.preprocessUrlAsync = async (url: string) => {
+        const baseUrl = `${peerByEnv[env]}/content/contents/`
+        const parts = url.split(baseUrl)
+        return parts.length > 0 && !!parts[1] ? mappings[parts[1]] : url
+      }
+    }
+  })
+  SceneLoader.Append(url, '', root, sceneResolver, null, null, '.glb')
   const scene = await sceneFuture
 
   // effects

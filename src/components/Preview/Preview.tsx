@@ -5,6 +5,7 @@ import classNames from 'classnames'
 import { loadWearable } from '../../lib/babylon'
 import { useWearable } from '../../hooks/useWearable'
 import { useWindowSize } from '../../hooks/useWindowSize'
+import { Env } from '../../types/env'
 import './Preview.css'
 
 const Preview: React.FC = () => {
@@ -19,7 +20,8 @@ const Preview: React.FC = () => {
   const contractAddress = params.get('contract')!
   const tokenId = params.get('token')
   const itemId = params.get('item')
-  const [wearable, isLoadingWearable, wearableError] = useWearable({ contractAddress, tokenId, itemId })
+  const env = Object.values(Env).reduce((selected, value) => (value === params.get('env') ? value : selected), Env.PROD)
+  const [wearable, isLoadingWearable, wearableError] = useWearable({ contractAddress, tokenId, itemId, env })
   const [image, setImage] = useState('')
   const [is3D, setIs3D] = useState(true)
 
@@ -47,12 +49,14 @@ const Preview: React.FC = () => {
       } else {
         // load model
         const content = representation.contents.find((content) => content.key === representation.mainFile)
+        const mappings = representation.contents.reduce((obj, file) => {
+          obj[file.key] = file.url
+          return obj
+        }, {} as Record<string, string>)
         if (content) {
-          loadWearable(canvasRef.current, content.url)
-            .then(() => console.log('done'))
+          loadWearable(canvasRef.current, content.url, mappings, env)
             .catch((error) => setPreviewError(error.message))
             .finally(() => {
-              console.log('finally')
               setIsLoadingModel(false)
               setIsLoaded(true)
             })
