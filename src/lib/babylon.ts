@@ -85,6 +85,7 @@ export async function loadWearable(canvas: HTMLCanvasElement, url: string, mappi
   camera.mode = Camera.PERSPECTIVE_CAMERA
   camera.position = new Vector3(-2, 2, 2)
   camera.useAutoRotationBehavior = true
+  camera.autoRotationBehavior!.idleRotationSpeed = 0.2
   camera.setTarget(Vector3.Zero())
   camera.lowerRadiusLimit = camera.upperRadiusLimit = camera.radius
   camera.attachControl(canvas, true)
