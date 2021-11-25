@@ -87,8 +87,7 @@ export async function loadWearable(canvas: HTMLCanvasElement, url: string, mappi
   camera.useAutoRotationBehavior = true
   camera.autoRotationBehavior!.idleRotationSpeed = 0.2
   camera.setTarget(Vector3.Zero())
-  camera.upperRadiusLimit = camera.radius
-  camera.lowerRadiusLimit = camera.radius / 2
+  camera.lowerRadiusLimit = camera.upperRadiusLimit = camera.radius / 1.25
   camera.attachControl(canvas, true)
 
   // Setup lights
