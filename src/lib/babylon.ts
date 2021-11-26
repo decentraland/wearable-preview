@@ -56,7 +56,7 @@ export async function loadWearable(canvas: HTMLCanvasElement, url: string, mappi
   // Load GLTF
   const root = new Scene(engine)
   root.autoClear = true
-  root.clearColor = new Color4(0, 0, 0, 0) //Color3.FromHexString(Rarity.getColor(Rarity.UNIQUE)).toColor4()
+  root.clearColor = new Color4(0, 0, 0, 0)
   root.preventDefaultOnPointerDown = false
   const sceneFuture = future<Scene>()
   const sceneResolver = (scene: Scene) => scene.onReadyObservable.addOnce(() => sceneFuture.resolve(scene))
@@ -64,7 +64,7 @@ export async function loadWearable(canvas: HTMLCanvasElement, url: string, mappi
     if (plugin.name === 'gltf') {
       const gltf = plugin as GLTFFileLoader
       gltf.preprocessUrlAsync = async (url: string) => {
-        const baseUrl = `${peerByEnv[env]}/content/contents/`
+        const baseUrl = `/content/contents/`
         const parts = url.split(baseUrl)
         return parts.length > 0 && !!parts[1] ? mappings[parts[1]] : url
       }
