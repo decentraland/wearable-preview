@@ -53,7 +53,7 @@ export async function loadWearable(canvas: HTMLCanvasElement, url: string, mappi
     stencil: true,
   })
 
-  // Load GLTF
+  // Load GLB/GLTF
   const root = new Scene(engine)
   root.autoClear = true
   root.clearColor = new Color4(0, 0, 0, 0)
@@ -69,7 +69,16 @@ export async function loadWearable(canvas: HTMLCanvasElement, url: string, mappi
     }
   })
   const sceneFuture = future<Scene>()
-  const loader = await SceneLoader.AppendAsync(url, '', root, null, '.glb')
+  const loadScene = async (extension: string) => SceneLoader.AppendAsync(url, '', root, null, extension)
+  const getLoader = async () => {
+    // try with GLB, if it fails try with GLTF
+    try {
+      return await loadScene('.glb')
+    } catch (error) {
+      return await loadScene('.gltf')
+    }
+  }
+  const loader = await getLoader()
   loader.onReadyObservable.addOnce((scene) => sceneFuture.resolve(scene))
   const scene = await sceneFuture
 
