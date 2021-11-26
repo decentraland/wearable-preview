@@ -55,7 +55,7 @@ const Preview: React.FC = () => {
           return obj
         }, {} as Record<string, string>)
         if (content) {
-          loadWearable(canvasRef.current, content.url, mappings, env)
+          loadWearable(canvasRef.current, content.url, mappings, wearable.data.category)
             .catch((error) => setPreviewError(error.message))
             .finally(() => {
               setIsLoadingModel(false)

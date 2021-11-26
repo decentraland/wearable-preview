@@ -15,9 +15,8 @@ import {
 } from '@babylonjs/core'
 import '@babylonjs/loaders'
 import { GLTFFileLoader } from '@babylonjs/loaders'
+import { WearableCategory } from '@dcl/schemas'
 import future from 'fp-future'
-import { Env } from '../types/env'
-import { peerByEnv } from './api/peer'
 
 const hideMaterialList = ['hair_mat', 'avatarskin_mat']
 
@@ -46,7 +45,7 @@ function refreshBoundingInfo(parent: Mesh) {
   }
 }
 
-export async function loadWearable(canvas: HTMLCanvasElement, url: string, mappings: Record<string, string>, env: Env) {
+export async function loadWearable(canvas: HTMLCanvasElement, url: string, mappings: Record<string, string>, category: WearableCategory) {
   // Create engine
   const engine = new Engine(canvas, true, {
     preserveDrawingBuffer: true,
@@ -96,7 +95,7 @@ export async function loadWearable(canvas: HTMLCanvasElement, url: string, mappi
   camera.useAutoRotationBehavior = true
   camera.autoRotationBehavior!.idleRotationSpeed = 0.2
   camera.setTarget(Vector3.Zero())
-  camera.lowerRadiusLimit = camera.upperRadiusLimit = camera.radius / 1.25
+  camera.lowerRadiusLimit = camera.upperRadiusLimit = camera.radius / (category === WearableCategory.UPPER_BODY ? 2 : 1.25) // upper body has extra zoom
   camera.attachControl(canvas, true)
 
   // Setup lights
