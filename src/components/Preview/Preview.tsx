@@ -1,12 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Rarity } from '@dcl/schemas'
-import { Center, Loader } from 'decentraland-ui'
 import classNames from 'classnames'
 import { loadWearable } from '../../lib/babylon'
 import { useWearable } from '../../hooks/useWearable'
 import { useWindowSize } from '../../hooks/useWindowSize'
 import { Env } from '../../types/env'
 import './Preview.css'
+import { MessageType, sendMessage } from '../../lib/message'
 
 const Preview: React.FC = () => {
   const [previewError, setPreviewError] = useState('')
@@ -24,6 +24,7 @@ const Preview: React.FC = () => {
   const [wearable, isLoadingWearable, wearableError] = useWearable({ contractAddress, tokenId, itemId, env })
   const [image, setImage] = useState('')
   const [is3D, setIs3D] = useState(true)
+  const [isMessageSent, setIsMessageSent] = useState(false)
 
   const error = previewError || wearableError
   const isLoading = (isLoadingModel || isLoadingWearable) && !error
@@ -68,11 +69,18 @@ const Preview: React.FC = () => {
     }
   }, [canvasRef.current, wearable])
 
+  // send a mesasge to the parent window when loaded or error occurs
   useEffect(() => {
-    if (isLoaded) {
-      window.parent && window.parent.postMessage('load', '*')
+    if (!isMessageSent) {
+      if (isLoaded) {
+        sendMessage(MessageType.LOAD)
+        setIsMessageSent(true)
+      } else if (error) {
+        sendMessage(MessageType.ERROR, error)
+        setIsMessageSent(true)
+      }
     }
-  }, [isLoaded])
+  }, [isLoaded, error, isMessageSent])
 
   return (
     <div
