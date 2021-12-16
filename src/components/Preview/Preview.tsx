@@ -20,6 +20,8 @@ const Preview: React.FC = () => {
   const contractAddress = params.get('contract')!
   const tokenId = params.get('token')
   const itemId = params.get('item')
+  const skin = params.get('skin')
+  const hair = params.get('hair')
   const env = Object.values(Env).reduce((selected, value) => (value === params.get('env') ? value : selected), Env.PROD)
   const [wearable, isLoadingWearable, wearableError] = useWearable({ contractAddress, tokenId, itemId, env })
   const [image, setImage] = useState('')
@@ -55,7 +57,11 @@ const Preview: React.FC = () => {
           return obj
         }, {} as Record<string, string>)
         if (content) {
-          loadWearable(canvasRef.current, content.url, mappings, wearable.data.category)
+          loadWearable(canvasRef.current, content.url, mappings, {
+            category: wearable.data.category,
+            skin: skin ? '#' + skin : undefined,
+            hair: hair ? '#' + hair : undefined,
+          })
             .catch((error) => setPreviewError(error.message))
             .finally(() => {
               setIsLoadingModel(false)
@@ -98,6 +104,7 @@ const Preview: React.FC = () => {
         className={classNames('thumbnail', {
           'is-visible': showImage,
         })}
+        alt="preview"
       />
       <canvas
         id="wearable-preview"

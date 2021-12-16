@@ -2,12 +2,14 @@ import {
   ArcRotateCamera,
   BoundingInfo,
   Camera,
+  Color3,
   Color4,
   DirectionalLight,
   Engine,
   GlowLayer,
   HemisphericLight,
   Mesh,
+  PBRMaterial,
   Scene,
   SceneLoader,
   SpotLight,
@@ -17,8 +19,6 @@ import '@babylonjs/loaders'
 import { GLTFFileLoader } from '@babylonjs/loaders'
 import { WearableCategory } from '@dcl/schemas'
 import future from 'fp-future'
-
-const hideMaterialList = ['hair_mat', 'avatarskin_mat']
 
 function refreshBoundingInfo(parent: Mesh) {
   const children = parent.getChildren().filter((mesh) => mesh.id !== '__root__')
@@ -45,7 +45,12 @@ function refreshBoundingInfo(parent: Mesh) {
   }
 }
 
-export async function loadWearable(canvas: HTMLCanvasElement, url: string, mappings: Record<string, string>, category: WearableCategory) {
+export async function loadWearable(
+  canvas: HTMLCanvasElement,
+  url: string,
+  mappings: Record<string, string>,
+  options: { category: WearableCategory; skin?: string; hair?: string }
+) {
   // Create engine
   const engine = new Engine(canvas, true, {
     preserveDrawingBuffer: true,
@@ -95,7 +100,7 @@ export async function loadWearable(canvas: HTMLCanvasElement, url: string, mappi
   camera.useAutoRotationBehavior = true
   camera.autoRotationBehavior!.idleRotationSpeed = 0.2
   camera.setTarget(Vector3.Zero())
-  camera.lowerRadiusLimit = camera.upperRadiusLimit = camera.radius / (category === WearableCategory.UPPER_BODY ? 2 : 1.25) // upper body has extra zoom
+  camera.lowerRadiusLimit = camera.upperRadiusLimit = camera.radius / (options.category === WearableCategory.UPPER_BODY ? 2 : 1.25) // upper body has extra zoom
   camera.attachControl(canvas, true)
 
   // Setup lights
@@ -117,17 +122,23 @@ export async function loadWearable(canvas: HTMLCanvasElement, url: string, mappi
   }
 
   // Clean up
-  for (const materialName of hideMaterialList) {
-    for (let material of scene.materials) {
-      if (material.name.toLowerCase().includes(materialName)) {
+  for (let material of scene.materials) {
+    if (material.name.toLowerCase().includes('hair_mat')) {
+      if (options.hair) {
+        const pbr = material as PBRMaterial
+        pbr.albedoColor = Color3.FromHexString(options.hair)
+      } else {
         material.alpha = 0
         scene.removeMaterial(material)
       }
     }
-    for (let texture of scene.textures) {
-      if (texture.name.toLowerCase().includes(materialName)) {
-        texture.dispose()
-        scene.removeTexture(texture)
+    if (material.name.toLowerCase().includes('avatarskin_mat')) {
+      if (options.skin) {
+        const pbr = material as PBRMaterial
+        pbr.albedoColor = Color3.FromHexString(options.skin)
+      } else {
+        material.alpha = 0
+        scene.removeMaterial(material)
       }
     }
   }

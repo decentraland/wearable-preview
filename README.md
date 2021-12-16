@@ -1,6 +1,13 @@
 # Wearable Preview
 
-This webapp receives a `contract` address and either an `item` or a `token` ids via query params and it renders an interactive preview of it with the appropiate rarity gradient as background. You can also choose the environment by using the param `env=prod` or `env=dev`, by default it uses `env=prod`.
+This webapp renders an interactive 3D preview of a wearable. It can be configured via the following query params:
+
+- `contract`: The contract address of the wearable collection.
+- `item`: The id of the item in the collection.
+- `token`: The id of the token (to preview a specific NFT).
+- `skin`: a color to be used by the skin material, it must be in hex.
+- `hair`: a color to be used by the hair material, it must be in hex.
+- `env`: The environment to use, it can be `prod` (uses mainnet wearables and catalysts) or `dev` (uses testnet wearables and catalysts).
 
 Example: https://wearable-preview.decentraland.org?contract=0xee8ae4c668edd43b34b98934d6d2ff82e41e6488&item=5
 
