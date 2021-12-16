@@ -1,4 +1,4 @@
-import { Wearable as WearableBroken, WearableRepresentation } from '@dcl/schemas'
+import { Wearable as WearableBroken, WearableRepresentation as WearableRepresentationBroken } from '@dcl/schemas'
 import { Env } from '../../types/env'
 import { json } from '../json'
 
@@ -7,11 +7,13 @@ export const peerByEnv: Record<Env, string> = {
   [Env.PROD]: 'https://peer-lb.decentraland.org',
 }
 
-type Wearable = Omit<WearableBroken, 'data'> & {
+export type Wearable = Omit<WearableBroken, 'data'> & {
   data: Omit<WearableBroken['data'], 'representations'> & {
-    representations: (Omit<WearableRepresentation, 'contents'> & { contents: { key: string; url: string }[] })[]
+    representations: WearableRepresentation[]
   }
 }
+
+export type WearableRepresentation = Omit<WearableRepresentationBroken, 'contents'> & { contents: { key: string; url: string }[] }
 
 class PeerApi {
   async fetchWearable(urn: string, env: Env) {

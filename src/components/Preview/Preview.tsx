@@ -2,11 +2,12 @@ import React, { useEffect, useRef, useState } from 'react'
 import { Rarity } from '@dcl/schemas'
 import classNames from 'classnames'
 import { loadWearable } from '../../lib/babylon'
+import { isFemale } from '../../lib/representation'
 import { useWearable } from '../../hooks/useWearable'
 import { useWindowSize } from '../../hooks/useWindowSize'
+import { MessageType, sendMessage } from '../../lib/message'
 import { Env } from '../../types/env'
 import './Preview.css'
-import { MessageType, sendMessage } from '../../lib/message'
 
 const Preview: React.FC = () => {
   const [previewError, setPreviewError] = useState('')
@@ -22,6 +23,7 @@ const Preview: React.FC = () => {
   const itemId = params.get('item')
   const skin = params.get('skin')
   const hair = params.get('hair')
+  const shape = params.get('shape')
   const env = Object.values(Env).reduce((selected, value) => (value === params.get('env') ? value : selected), Env.PROD)
   const [wearable, isLoadingWearable, wearableError] = useWearable({ contractAddress, tokenId, itemId, env })
   const [image, setImage] = useState('')
@@ -44,7 +46,10 @@ const Preview: React.FC = () => {
       setImage(wearable.thumbnail)
 
       // load model or image (for texture only wearables)
-      const representation = wearable.data.representations[0]
+      let representation = wearable.data.representations[0]
+      if (shape === 'female' && wearable.data.representations.some(isFemale)) {
+        representation = wearable.data.representations.find(isFemale)!
+      }
       if (representation.mainFile.endsWith('png')) {
         setIs3D(false)
         setIsLoadingModel(false)
