@@ -45,6 +45,17 @@ function refreshBoundingInfo(parent: Mesh) {
   }
 }
 
+function getZoom(category: WearableCategory) {
+  switch (category) {
+    case WearableCategory.UPPER_BODY:
+      return 2
+    case WearableCategory.SKIN:
+      return 1.75
+    default:
+      return 1.25
+  }
+}
+
 export async function loadWearable(
   canvas: HTMLCanvasElement,
   url: string,
@@ -100,7 +111,7 @@ export async function loadWearable(
   camera.useAutoRotationBehavior = true
   camera.autoRotationBehavior!.idleRotationSpeed = 0.2
   camera.setTarget(Vector3.Zero())
-  camera.lowerRadiusLimit = camera.upperRadiusLimit = camera.radius / (options.category === WearableCategory.UPPER_BODY ? 2 : 1.25) // upper body has extra zoom
+  camera.lowerRadiusLimit = camera.upperRadiusLimit = camera.radius / getZoom(options.category)
   camera.attachControl(canvas, true)
 
   // Setup lights
