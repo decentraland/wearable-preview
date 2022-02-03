@@ -45,7 +45,7 @@ function refreshBoundingInfo(parent: Mesh) {
   }
 }
 
-function getZoom(category: WearableCategory) {
+function getZoomForCategory(category: WearableCategory) {
   switch (category) {
     case WearableCategory.UPPER_BODY:
       return 2
@@ -56,12 +56,7 @@ function getZoom(category: WearableCategory) {
   }
 }
 
-export async function loadWearable(
-  canvas: HTMLCanvasElement,
-  url: string,
-  mappings: Record<string, string>,
-  options: { category: WearableCategory; skin?: string; hair?: string }
-) {
+async function createScene(canvas: HTMLCanvasElement, zoom: number) {
   // Create engine
   const engine = new Engine(canvas, true, {
     preserveDrawingBuffer: true,
@@ -73,84 +68,84 @@ export async function loadWearable(
   root.autoClear = true
   root.clearColor = new Color4(0, 0, 0, 0)
   root.preventDefaultOnPointerDown = false
-  SceneLoader.OnPluginActivatedObservable.addOnce((plugin) => {
-    if (plugin.name === 'gltf') {
-      const gltf = plugin as GLTFFileLoader
-      gltf.preprocessUrlAsync = async (url: string) => {
-        const baseUrl = `/content/contents/`
-        const parts = url.split(baseUrl)
-        return parts.length > 0 && !!parts[1] ? mappings[parts[1]] : url
-      }
-    }
-  })
-  const sceneFuture = future<Scene>()
-  const loadScene = async (extension: string) => SceneLoader.AppendAsync(url, '', root, null, extension)
-  const getLoader = async () => {
-    // try with GLB, if it fails try with GLTF
-    try {
-      return await loadScene('.glb')
-    } catch (error) {
-      return await loadScene('.gltf')
-    }
-  }
-  const loader = await getLoader()
-  loader.onReadyObservable.addOnce((scene) => sceneFuture.resolve(scene))
-  const scene = await sceneFuture
 
   // effects
-  var glow = new GlowLayer('glow', scene, {
+  var glow = new GlowLayer('glow', root, {
     mainTextureFixedSize: 1024,
     blurKernelSize: 64,
   })
   glow.intensity = 1
 
   // Setup Camera
-  var camera = new ArcRotateCamera('camera', 0, 0, 0, new Vector3(0, 0, 0), scene)
+  var camera = new ArcRotateCamera('camera', 0, 0, 0, new Vector3(0, 0, 0), root)
   camera.mode = Camera.PERSPECTIVE_CAMERA
   camera.position = new Vector3(-2, 2, 2)
   camera.useAutoRotationBehavior = true
   camera.autoRotationBehavior!.idleRotationSpeed = 0.2
   camera.setTarget(Vector3.Zero())
-  camera.lowerRadiusLimit = camera.upperRadiusLimit = camera.radius / getZoom(options.category)
+  camera.lowerRadiusLimit = camera.upperRadiusLimit = camera.radius / zoom
   camera.attachControl(canvas, true)
 
   // Setup lights
-  var directional = new DirectionalLight('directional', new Vector3(0, 0, 1), scene)
+  var directional = new DirectionalLight('directional', new Vector3(0, 0, 1), root)
   directional.intensity = 1
-  var top = new HemisphericLight('top', new Vector3(0, -1, 0), scene)
+  var top = new HemisphericLight('top', new Vector3(0, -1, 0), root)
   top.intensity = 1
-  var bottom = new HemisphericLight('bottom', new Vector3(0, 1, 0), scene)
+  var bottom = new HemisphericLight('bottom', new Vector3(0, 1, 0), root)
   bottom.intensity = 1
-  var spot = new SpotLight('spot', new Vector3(-2, 2, 2), new Vector3(2, -2, -2), Math.PI / 2, 1000, scene)
+  var spot = new SpotLight('spot', new Vector3(-2, 2, 2), new Vector3(2, -2, -2), Math.PI / 2, 1000, root)
   spot.intensity = 1
 
-  // Setup parent
-  var parent = new Mesh('parent', scene)
-  for (const mesh of scene.meshes) {
-    if (mesh !== parent) {
-      mesh.setParent(parent)
+  // render loop
+  engine.runRenderLoop(() => root.render())
+
+  return root
+}
+
+async function load(scene: Scene, url: string, skin?: string, hair?: string) {
+  const wearableFuture = future<Scene>()
+  const loadScene = async (url: string, extension: string) => SceneLoader.AppendAsync(url, '', scene, null, extension)
+  const getLoader = async (url: string) => {
+    // try with GLB, if it fails try with GLTF
+    try {
+      return await loadScene(url, '.glb')
+    } catch (error) {
+      return await loadScene(url, '.gltf')
     }
   }
+  const loader = await getLoader(url)
+  loader.onReadyObservable.addOnce((scene) => wearableFuture.resolve(scene))
+  const wearable = await wearableFuture
 
   // Clean up
-  for (let material of scene.materials) {
+  for (let material of wearable.materials) {
     if (material.name.toLowerCase().includes('hair_mat')) {
-      if (options.hair) {
+      if (hair) {
         const pbr = material as PBRMaterial
-        pbr.albedoColor = Color3.FromHexString(options.hair)
+        pbr.albedoColor = Color3.FromHexString(hair)
       } else {
         material.alpha = 0
         scene.removeMaterial(material)
       }
     }
     if (material.name.toLowerCase().includes('avatarskin_mat')) {
-      if (options.skin) {
+      if (skin) {
         const pbr = material as PBRMaterial
-        pbr.albedoColor = Color3.FromHexString(options.skin)
+        pbr.albedoColor = Color3.FromHexString(skin)
       } else {
         material.alpha = 0
         scene.removeMaterial(material)
       }
+    }
+  }
+}
+
+function center(scene: Scene) {
+  // Setup parent
+  var parent = new Mesh('parent', scene)
+  for (const mesh of scene.meshes) {
+    if (mesh !== parent) {
+      mesh.setParent(parent)
     }
   }
 
@@ -162,7 +157,29 @@ export async function loadWearable(
   parent.scaling = scale
   const center = parent.getBoundingInfo().boundingBox.center.multiply(scale)
   parent.position.subtractInPlace(center)
+}
 
-  // render loop
-  engine.runRenderLoop(() => scene.render())
+export async function preview(
+  canvas: HTMLCanvasElement,
+  url: string,
+  mappings: Record<string, string>,
+  options: { category: WearableCategory; skin?: string; hair?: string }
+) {
+  const zoom = getZoomForCategory(options.category)
+  const root = await createScene(canvas, zoom)
+
+  SceneLoader.OnPluginActivatedObservable.addOnce((plugin) => {
+    if (plugin.name === 'gltf') {
+      const gltf = plugin as GLTFFileLoader
+      gltf.preprocessUrlAsync = async (url: string) => {
+        const baseUrl = `/content/contents/`
+        const parts = url.split(baseUrl)
+        return parts.length > 0 && !!parts[1] ? mappings[parts[1]] : url
+      }
+    }
+  })
+
+  await load(root, url, options.skin, options.hair)
+
+  center(root)
 }

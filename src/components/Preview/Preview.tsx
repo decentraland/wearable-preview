@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Rarity } from '@dcl/schemas'
 import classNames from 'classnames'
-import { loadWearable } from '../../lib/babylon'
+import { preview } from '../../lib/babylon'
 import { isFemale } from '../../lib/representation'
 import { useWearable } from '../../hooks/useWearable'
 import { useWindowSize } from '../../hooks/useWindowSize'
@@ -62,7 +62,7 @@ const Preview: React.FC = () => {
           return obj
         }, {} as Record<string, string>)
         if (content) {
-          loadWearable(canvasRef.current, content.url, mappings, {
+          preview(canvasRef.current, content.url, mappings, {
             category: wearable.data.category,
             skin: skin ? '#' + skin : undefined,
             hair: hair ? '#' + hair : undefined,
