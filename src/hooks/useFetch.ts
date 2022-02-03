@@ -10,6 +10,6 @@ export function useFetch<T>(fetcher: () => Promise<T>) {
       .then((result) => setResult(result))
       .catch((error) => setError(error.message))
       .finally(() => setIsLoading(false))
-  }, [])
+  }, []) // eslint-disable-line
   return [result, isLoading, error] as const
 }

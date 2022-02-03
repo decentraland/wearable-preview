@@ -1,13 +1,24 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { Rarity } from '@dcl/schemas'
+import { Rarity, WearableBodyShape } from '@dcl/schemas'
 import classNames from 'classnames'
-import { preview } from '../../lib/babylon'
-import { isFemale } from '../../lib/representation'
+import { getZoom, preview } from '../../lib/babylon'
+import { getRepresentation, isTexture } from '../../lib/representation'
 import { useWearable } from '../../hooks/useWearable'
 import { useWindowSize } from '../../hooks/useWindowSize'
 import { MessageType, sendMessage } from '../../lib/message'
 import { Env } from '../../types/env'
 import './Preview.css'
+import { useWearables } from '../../hooks/useWearables'
+
+const urns = [
+  'urn:decentraland:off-chain:base-avatars:sport_blue_shoes',
+  'urn:decentraland:off-chain:base-avatars:f_stripe_long_skirt',
+  'urn:decentraland:off-chain:base-avatars:f_eyebrows_04',
+  'urn:decentraland:off-chain:base-avatars:f_eyes_01',
+  'urn:decentraland:off-chain:base-avatars:f_mouth_00',
+  'urn:decentraland:off-chain:base-avatars:striped_top',
+  'urn:decentraland:off-chain:base-avatars:short_hair',
+]
 
 const Preview: React.FC = () => {
   const [previewError, setPreviewError] = useState('')
@@ -23,20 +34,21 @@ const Preview: React.FC = () => {
   const itemId = params.get('item')
   const skin = params.get('skin')
   const hair = params.get('hair')
-  const shape = params.get('shape')
+  const shape = params.get('shape') === 'female' ? WearableBodyShape.FEMALE : WearableBodyShape.MALE
   const env = Object.values(Env).reduce((selected, value) => (value === params.get('env') ? value : selected), Env.PROD)
   const [wearable, isLoadingWearable, wearableError] = useWearable({ contractAddress, tokenId, itemId, env })
+  const [wearables, isLoadingWearables, wearablesError] = useWearables({ urns, env })
   const [image, setImage] = useState('')
   const [is3D, setIs3D] = useState(true)
   const [isMessageSent, setIsMessageSent] = useState(false)
 
-  const error = previewError || wearableError
-  const isLoading = (isLoadingModel || isLoadingWearable) && !error
+  const error = previewError || wearableError || wearablesError
+  const isLoading = (isLoadingModel || isLoadingWearable || isLoadingWearables) && !error
   const showImage = !!image && !is3D && !isLoading
   const showCanvas = is3D && !isLoading
 
   useEffect(() => {
-    if (canvasRef.current && wearable) {
+    if (canvasRef.current && wearable && wearables) {
       // rarity background
       const [light, dark] = Rarity.getGradient(wearable.rarity)
       const backgroundImage = `radial-gradient(${light}, ${dark})`
@@ -46,39 +58,27 @@ const Preview: React.FC = () => {
       setImage(wearable.thumbnail)
 
       // load model or image (for texture only wearables)
-      let representation = wearable.data.representations[0]
-      if (shape === 'female' && wearable.data.representations.some(isFemale)) {
-        representation = wearable.data.representations.find(isFemale)!
-      }
-      if (representation.mainFile.endsWith('png')) {
+      let representation = getRepresentation(wearable)
+      if (isTexture(representation)) {
         setIs3D(false)
         setIsLoadingModel(false)
         setIsLoaded(true)
       } else {
-        // load model
-        const content = representation.contents.find((content) => content.key === representation.mainFile)
-        const mappings = representation.contents.reduce((obj, file) => {
-          obj[file.key] = file.url
-          return obj
-        }, {} as Record<string, string>)
-        if (content) {
-          preview(canvasRef.current, content.url, mappings, {
-            category: wearable.data.category,
-            skin: skin ? '#' + skin : undefined,
-            hair: hair ? '#' + hair : undefined,
+        // preview models
+        preview(canvasRef.current, [wearables[0], wearables[5]], {
+          zoom: getZoom(wearable.data.category),
+          skin: skin ? '#' + skin : undefined,
+          hair: hair ? '#' + hair : undefined,
+          shape,
+        })
+          .catch((error) => setPreviewError(error.message))
+          .finally(() => {
+            setIsLoadingModel(false)
+            setIsLoaded(true)
           })
-            .catch((error) => setPreviewError(error.message))
-            .finally(() => {
-              setIsLoadingModel(false)
-              setIsLoaded(true)
-            })
-        } else {
-          console.warn('Content not found for wearable', wearable)
-          setPreviewError('Content not found')
-        }
       }
     }
-  }, [canvasRef.current, wearable])
+  }, [canvasRef.current, wearable, wearables]) // eslint-disable-line
 
   // send a mesasge to the parent window when loaded or error occurs
   useEffect(() => {

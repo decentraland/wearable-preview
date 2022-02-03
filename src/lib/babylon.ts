@@ -17,9 +17,15 @@ import {
 } from '@babylonjs/core'
 import '@babylonjs/loaders'
 import { GLTFFileLoader } from '@babylonjs/loaders'
-import { WearableCategory } from '@dcl/schemas'
+import { WearableBodyShape, WearableCategory } from '@dcl/schemas'
 import future from 'fp-future'
+import { Wearable } from './api/peer'
+import { getContentUrl, getRepresentation } from './representation'
 
+/**
+ * It refreshes the bounding info of a mesh, taking into account all of its children
+ * @param parent
+ */
 function refreshBoundingInfo(parent: Mesh) {
   const children = parent.getChildren().filter((mesh) => mesh.id !== '__root__')
   if (children.length > 0) {
@@ -45,7 +51,12 @@ function refreshBoundingInfo(parent: Mesh) {
   }
 }
 
-function getZoomForCategory(category: WearableCategory) {
+/**
+ * Returns the right zoom for a given category
+ * @param category
+ * @returns
+ */
+export function getZoom(category?: WearableCategory) {
   switch (category) {
     case WearableCategory.UPPER_BODY:
       return 2
@@ -56,7 +67,13 @@ function getZoomForCategory(category: WearableCategory) {
   }
 }
 
-async function createScene(canvas: HTMLCanvasElement, zoom: number) {
+/**
+ * Creates a Scene with the right camera, light and effects
+ * @param canvas
+ * @param zoom
+ * @returns
+ */
+async function createScene(canvas: HTMLCanvasElement, zoom: number = getZoom()) {
   // Create engine
   const engine = new Engine(canvas, true, {
     preserveDrawingBuffer: true,
@@ -102,7 +119,18 @@ async function createScene(canvas: HTMLCanvasElement, zoom: number) {
   return root
 }
 
-async function load(scene: Scene, url: string, skin?: string, hair?: string) {
+/**
+ * Loads a list of wearables into the Scene, using a given a body shape, skin and hair color
+ * @param scene
+ * @param wearable
+ * @param shape
+ * @param skin
+ * @param hair
+ */
+
+async function load(scene: Scene, wearable: Wearable, shape = WearableBodyShape.MALE, skin?: string, hair?: string) {
+  const representation = getRepresentation(wearable, shape)
+  const url = getContentUrl(representation)
   const wearableFuture = future<Scene>()
   const loadScene = async (url: string, extension: string) => SceneLoader.AppendAsync(url, '', scene, null, extension)
   const getLoader = async (url: string) => {
@@ -115,10 +143,10 @@ async function load(scene: Scene, url: string, skin?: string, hair?: string) {
   }
   const loader = await getLoader(url)
   loader.onReadyObservable.addOnce((scene) => wearableFuture.resolve(scene))
-  const wearable = await wearableFuture
+  const model = await wearableFuture
 
   // Clean up
-  for (let material of wearable.materials) {
+  for (let material of model.materials) {
     if (material.name.toLowerCase().includes('hair_mat')) {
       if (hair) {
         const pbr = material as PBRMaterial
@@ -140,6 +168,11 @@ async function load(scene: Scene, url: string, skin?: string, hair?: string) {
   }
 }
 
+/**
+ * Center and resizes a Scene to fit in the camera view
+ * @param scene
+ */
+
 function center(scene: Scene) {
   // Setup parent
   var parent = new Mesh('parent', scene)
@@ -159,27 +192,65 @@ function center(scene: Scene) {
   parent.position.subtractInPlace(center)
 }
 
-export async function preview(
-  canvas: HTMLCanvasElement,
-  url: string,
-  mappings: Record<string, string>,
-  options: { category: WearableCategory; skin?: string; hair?: string }
-) {
-  const zoom = getZoomForCategory(options.category)
-  const root = await createScene(canvas, zoom)
+function createMappings(wearables: Wearable[]) {
+  const mappings: Record<string, string> = {}
+  for (const wearable of wearables) {
+    for (const representation of wearable.data.representations) {
+      for (const file of representation.contents) {
+        mappings[file.key] = file.url
+      }
+    }
+  }
+  console.log(mappings)
+  return mappings
+}
 
-  SceneLoader.OnPluginActivatedObservable.addOnce((plugin) => {
+/**
+ * Configures the mappings for all the relative paths within a model to the right IPFS in the catalyst
+ * @param wearables
+ */
+function setupMappings(wearables: Wearable[]) {
+  const mappings = createMappings(wearables)
+  SceneLoader.OnPluginActivatedObservable.add((plugin) => {
     if (plugin.name === 'gltf') {
       const gltf = plugin as GLTFFileLoader
       gltf.preprocessUrlAsync = async (url: string) => {
+        console.log('url', url, mappings)
         const baseUrl = `/content/contents/`
         const parts = url.split(baseUrl)
         return parts.length > 0 && !!parts[1] ? mappings[parts[1]] : url
       }
     }
   })
+}
 
-  await load(root, url, options.skin, options.hair)
+/**
+ * Initializes Babylon, creates the scene and loads a list of wearables in it
+ * @param canvas
+ * @param wearables
+ * @param options
+ */
+export async function preview(
+  canvas: HTMLCanvasElement,
+  wearables: Wearable[],
+  options: { zoom?: number; skin?: string; hair?: string; shape?: WearableBodyShape } = {}
+) {
+  // create the root scene
+  const root = await createScene(canvas, options.zoom)
 
+  // setup the mappings for all the contents
+  setupMappings(wearables)
+
+  // load all the wearables into the root scene
+  for (const wearable of wearables) {
+    try {
+      await load(root, wearable, options.shape, options.skin, options.hair)
+    } catch (error) {
+      console.error(error)
+      continue
+    }
+  }
+
+  // center the root scene into the camera
   center(root)
 }

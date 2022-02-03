@@ -6,7 +6,7 @@ import { useFetch } from './useFetch'
 
 export function useWearable(options: { contractAddress: string; itemId?: string | null; tokenId?: string | null; env: Env }) {
   let { contractAddress, itemId, tokenId, env } = options
-  const [wearable, isWearableLoading, wearableError] = useFetch(async () => {
+  const [wearable, isLoading, error] = useFetch(async () => {
     if (!contractAddress) {
       throw new Error('You must provide a valid contract address')
     }
@@ -24,5 +24,5 @@ export function useWearable(options: { contractAddress: string; itemId?: string 
     return peerApi.fetchWearable(urn, env)
   })
 
-  return [wearable, isWearableLoading, wearableError] as const
+  return [wearable, isLoading, error] as const
 }
