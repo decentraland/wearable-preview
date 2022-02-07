@@ -20,7 +20,7 @@ import { GLTFFileLoader } from '@babylonjs/loaders'
 import { WearableBodyShape, WearableCategory } from '@dcl/schemas'
 import future from 'fp-future'
 import { Wearable } from './api/peer'
-import { getContentUrl, getRepresentation } from './representation'
+import { getContentUrl, getRepresentation, isTexture } from './representation'
 
 /**
  * It refreshes the bounding info of a mesh, taking into account all of its children
@@ -128,8 +128,11 @@ async function createScene(canvas: HTMLCanvasElement, zoom: number = getZoom()) 
  * @param hair
  */
 
-async function load(scene: Scene, wearable: Wearable, shape = WearableBodyShape.MALE, skin?: string, hair?: string) {
+async function loadModel(scene: Scene, wearable: Wearable, shape = WearableBodyShape.MALE, skin?: string, hair?: string) {
   const representation = getRepresentation(wearable, shape)
+  if (isTexture(representation)) {
+    throw new Error(`The wearable="${wearable.id}" is a texture`)
+  }
   const url = getContentUrl(representation)
   const wearableFuture = future<Scene>()
   const loadScene = async (url: string, extension: string) => SceneLoader.AppendAsync(url, '', scene, null, extension)
@@ -166,6 +169,20 @@ async function load(scene: Scene, wearable: Wearable, shape = WearableBodyShape.
       }
     }
   }
+
+  if ((wearable.data.category as string) === 'body_shape') {
+    for (const mesh of model.meshes) {
+      if (mesh.name.endsWith('lBody_BaseMesh')) {
+        mesh.setEnabled(false)
+      }
+      if (mesh.name.endsWith('uBody_BaseMesh')) {
+        mesh.setEnabled(false)
+      }
+      if (mesh.name.endsWith('Feet_BaseMesh')) {
+        mesh.setEnabled(false)
+      }
+    }
+  }
 }
 
 /**
@@ -192,16 +209,19 @@ function center(scene: Scene) {
   parent.position.subtractInPlace(center)
 }
 
-function createMappings(wearables: Wearable[]) {
+function createMappings(wearables: Wearable[], shape = WearableBodyShape.MALE) {
   const mappings: Record<string, string> = {}
   for (const wearable of wearables) {
-    for (const representation of wearable.data.representations) {
+    try {
+      const representation = getRepresentation(wearable, shape)
       for (const file of representation.contents) {
         mappings[file.key] = file.url
       }
+    } catch (error) {
+      console.warn(`Skipping generation of mappings for wearable="${wearable.id}" since it lacks a representation=${shape}`)
+      continue
     }
   }
-  console.log(mappings)
   return mappings
 }
 
@@ -209,13 +229,12 @@ function createMappings(wearables: Wearable[]) {
  * Configures the mappings for all the relative paths within a model to the right IPFS in the catalyst
  * @param wearables
  */
-function setupMappings(wearables: Wearable[]) {
-  const mappings = createMappings(wearables)
+function setupMappings(wearables: Wearable[], shape = WearableBodyShape.MALE) {
+  const mappings = createMappings(wearables, shape)
   SceneLoader.OnPluginActivatedObservable.add((plugin) => {
     if (plugin.name === 'gltf') {
       const gltf = plugin as GLTFFileLoader
       gltf.preprocessUrlAsync = async (url: string) => {
-        console.log('url', url, mappings)
         const baseUrl = `/content/contents/`
         const parts = url.split(baseUrl)
         return parts.length > 0 && !!parts[1] ? mappings[parts[1]] : url
@@ -239,14 +258,15 @@ export async function preview(
   const root = await createScene(canvas, options.zoom)
 
   // setup the mappings for all the contents
-  setupMappings(wearables)
+  setupMappings(wearables, options.shape)
 
   // load all the wearables into the root scene
+
   for (const wearable of wearables) {
     try {
-      await load(root, wearable, options.shape, options.skin, options.hair)
-    } catch (error) {
-      console.error(error)
+      await loadModel(root, wearable, options.shape, options.skin, options.hair)
+    } catch (error: any) {
+      console.warn(error.message)
       continue
     }
   }

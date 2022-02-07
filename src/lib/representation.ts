@@ -14,11 +14,20 @@ export function isFemale(representation: WearableRepresentation) {
 }
 
 export function getRepresentation(wearable: Wearable, shape = WearableBodyShape.MALE) {
-  let representation = wearable.data.representations[0]
-  if (shape === WearableBodyShape.FEMALE && wearable.data.representations.some(isFemale)) {
-    representation = wearable.data.representations.find(isFemale)!
+  switch (shape) {
+    case WearableBodyShape.FEMALE: {
+      if (!wearable.data.representations.some(isFemale)) {
+        throw new Error(`Could not find a BaseFemale representation for wearable="${wearable.id}"`)
+      }
+      return wearable.data.representations.find(isFemale)!
+    }
+    case WearableBodyShape.MALE: {
+      if (!wearable.data.representations.some(isMale)) {
+        throw new Error(`Could not find a BaseMale representation for wearable="${wearable.id}"`)
+      }
+      return wearable.data.representations.find(isMale)!
+    }
   }
-  return representation
 }
 
 export function getContentUrl(representation: WearableRepresentation) {

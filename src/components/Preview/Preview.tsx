@@ -10,14 +10,25 @@ import { Env } from '../../types/env'
 import './Preview.css'
 import { useWearables } from '../../hooks/useWearables'
 
-const urns = [
-  'urn:decentraland:off-chain:base-avatars:sport_blue_shoes',
-  'urn:decentraland:off-chain:base-avatars:f_stripe_long_skirt',
-  'urn:decentraland:off-chain:base-avatars:f_eyebrows_04',
-  'urn:decentraland:off-chain:base-avatars:f_eyes_01',
-  'urn:decentraland:off-chain:base-avatars:f_mouth_00',
-  'urn:decentraland:off-chain:base-avatars:striped_top',
-  'urn:decentraland:off-chain:base-avatars:short_hair',
+// const urns = [
+//   'urn:decentraland:off-chain:base-avatars:sport_blue_shoes',
+//   'urn:decentraland:off-chain:base-avatars:f_stripe_long_skirt',
+//   'urn:decentraland:off-chain:base-avatars:f_eyebrows_04',
+//   'urn:decentraland:off-chain:base-avatars:f_eyes_01',
+//   'urn:decentraland:off-chain:base-avatars:f_mouth_00',
+//   'urn:decentraland:off-chain:base-avatars:striped_top',
+//   'urn:decentraland:off-chain:base-avatars:short_hair',
+// ]
+
+const urns: string[] = [
+  'urn:decentraland:off-chain:base-avatars:eyes_00',
+  'urn:decentraland:off-chain:base-avatars:eyebrows_00',
+  'urn:decentraland:off-chain:base-avatars:mouth_00',
+  'urn:decentraland:off-chain:base-avatars:casual_hair_01',
+  'urn:decentraland:off-chain:base-avatars:beard',
+  'urn:decentraland:off-chain:base-avatars:green_hoodie',
+  'urn:decentraland:off-chain:base-avatars:brown_pants',
+  'urn:decentraland:off-chain:base-avatars:sneakers',
 ]
 
 const Preview: React.FC = () => {
@@ -37,7 +48,7 @@ const Preview: React.FC = () => {
   const shape = params.get('shape') === 'female' ? WearableBodyShape.FEMALE : WearableBodyShape.MALE
   const env = Object.values(Env).reduce((selected, value) => (value === params.get('env') ? value : selected), Env.PROD)
   const [wearable, isLoadingWearable, wearableError] = useWearable({ contractAddress, tokenId, itemId, env })
-  const [wearables, isLoadingWearables, wearablesError] = useWearables({ urns, env })
+  const [wearables, isLoadingWearables, wearablesError] = useWearables({ shape, urns, env })
   const [image, setImage] = useState('')
   const [is3D, setIs3D] = useState(true)
   const [isMessageSent, setIsMessageSent] = useState(false)
@@ -65,7 +76,7 @@ const Preview: React.FC = () => {
         setIsLoaded(true)
       } else {
         // preview models
-        preview(canvasRef.current, [wearables[0], wearables[5]], {
+        preview(canvasRef.current, [wearable, ...wearables], {
           zoom: getZoom(wearable.data.category),
           skin: skin ? '#' + skin : undefined,
           hair: hair ? '#' + hair : undefined,
