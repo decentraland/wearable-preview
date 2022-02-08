@@ -19,7 +19,7 @@ import '@babylonjs/loaders'
 import { GLTFFileLoader } from '@babylonjs/loaders'
 import { WearableBodyShape, WearableCategory } from '@dcl/schemas'
 import future from 'fp-future'
-import { getContentUrl, getRepresentation, isTexture } from './representation'
+import { getContentUrl, getRepresentation, hasRepresentation, isTexture } from './representation'
 import { Wearable } from './wearable'
 
 /**
@@ -264,7 +264,9 @@ export async function preview(
   const avatar = new Map<WearableCategory, Wearable>()
   for (const wearable of wearables) {
     const slot = wearable.data.category
-    avatar.set(slot, wearable)
+    if (hasRepresentation(wearable, options.shape)) {
+      avatar.set(slot, wearable)
+    }
   }
   for (const wearable of avatar.values()) {
     const hidden = wearable.data.hides || []

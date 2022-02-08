@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { Rarity, WearableBodyShape } from '@dcl/schemas'
 import classNames from 'classnames'
 import { getZoom, preview } from '../../lib/babylon'
-import { getRepresentation, isTexture } from '../../lib/representation'
+import { getRepresentationOrDefault, isTexture } from '../../lib/representation'
 import { useWearable } from '../../hooks/useWearable'
 import { useWindowSize } from '../../hooks/useWindowSize'
 import { MessageType, sendMessage } from '../../lib/message'
@@ -69,7 +69,7 @@ const Preview: React.FC = () => {
       setImage(wearable.thumbnail)
 
       // load model or image (for texture only wearables)
-      let representation = getRepresentation(wearable)
+      let representation = getRepresentationOrDefault(wearable, shape)
       if (isTexture(representation)) {
         setIs3D(false)
         setIsLoadingModel(false)

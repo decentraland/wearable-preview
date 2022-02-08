@@ -32,6 +32,16 @@ export function getRepresentation(wearable: Wearable, shape = WearableBodyShape.
   }
 }
 
+export function getRepresentationOrDefault(wearable: Wearable, shape = WearableBodyShape.MALE) {
+  if (hasRepresentation(wearable, shape)) {
+    return getRepresentation(wearable, shape)
+  }
+  if (wearable.data.representations.length > 0) {
+    return wearable.data.representations[0]
+  }
+  throw new Error(`The wearable="${wearable.id}" has no representation`)
+}
+
 export function hasRepresentation(wearable: Wearable, shape = WearableBodyShape.MALE) {
   try {
     getRepresentation(wearable, shape)
