@@ -76,9 +76,8 @@ const Preview: React.FC = () => {
         setIsLoaded(true)
       } else {
         // preview models
-        console.log('avatar', avatar)
         preview(canvasRef.current, avatar ? [...avatar, wearable] : [wearable], {
-          zoom: getZoom(wearable.data.category),
+          zoom: avatar ? 1.75 : getZoom(wearable.data.category),
           skin: skin ? '#' + skin : undefined,
           hair: hair ? '#' + hair : undefined,
           shape,

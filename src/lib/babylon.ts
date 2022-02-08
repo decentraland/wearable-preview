@@ -260,9 +260,22 @@ export async function preview(
   // setup the mappings for all the contents
   setupMappings(wearables, options.shape)
 
-  // load all the wearables into the root scene
-
+  // assemly wearables
+  const avatar = new Map<WearableCategory, Wearable>()
   for (const wearable of wearables) {
+    const slot = wearable.data.category
+    avatar.set(slot, wearable)
+  }
+  for (const wearable of avatar.values()) {
+    const hidden = wearable.data.hides || []
+    for (const slot of hidden) {
+      avatar.delete(slot)
+    }
+  }
+
+  // load all the wearables into the root scene
+  console.log(wearables, avatar)
+  for (const wearable of avatar.values()) {
     try {
       await loadModel(root, wearable, options.shape, options.skin, options.hair)
     } catch (error: any) {
