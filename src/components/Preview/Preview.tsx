@@ -8,7 +8,7 @@ import { useWindowSize } from '../../hooks/useWindowSize'
 import { MessageType, sendMessage } from '../../lib/message'
 import { Env } from '../../types/env'
 import './Preview.css'
-import { useWearables } from '../../hooks/useWearables'
+import { useAvatar } from '../../hooks/useAvatar'
 
 // const urns = [
 //   'urn:decentraland:off-chain:base-avatars:sport_blue_shoes',
@@ -22,13 +22,13 @@ import { useWearables } from '../../hooks/useWearables'
 
 const urns: string[] = [
   'urn:decentraland:off-chain:base-avatars:eyes_00',
-  'urn:decentraland:off-chain:base-avatars:eyebrows_00',
-  'urn:decentraland:off-chain:base-avatars:mouth_00',
-  'urn:decentraland:off-chain:base-avatars:casual_hair_01',
-  'urn:decentraland:off-chain:base-avatars:beard',
-  'urn:decentraland:off-chain:base-avatars:green_hoodie',
-  'urn:decentraland:off-chain:base-avatars:brown_pants',
-  'urn:decentraland:off-chain:base-avatars:sneakers',
+  // 'urn:decentraland:off-chain:base-avatars:eyebrows_00',
+  // 'urn:decentraland:off-chain:base-avatars:mouth_00',
+  // 'urn:decentraland:off-chain:base-avatars:casual_hair_01',
+  // 'urn:decentraland:off-chain:base-avatars:beard',
+  // 'urn:decentraland:off-chain:base-avatars:green_hoodie',
+  // 'urn:decentraland:off-chain:base-avatars:brown_pants',
+  // 'urn:decentraland:off-chain:base-avatars:sneakers',
 ]
 
 const Preview: React.FC = () => {
@@ -48,18 +48,18 @@ const Preview: React.FC = () => {
   const shape = params.get('shape') === 'female' ? WearableBodyShape.FEMALE : WearableBodyShape.MALE
   const env = Object.values(Env).reduce((selected, value) => (value === params.get('env') ? value : selected), Env.PROD)
   const [wearable, isLoadingWearable, wearableError] = useWearable({ contractAddress, tokenId, itemId, env })
-  const [wearables, isLoadingWearables, wearablesError] = useWearables({ shape, urns, env })
+  const [avatar, isLoadingAvatar, avatarError] = useAvatar({ shape, urns, env })
   const [image, setImage] = useState('')
   const [is3D, setIs3D] = useState(true)
   const [isMessageSent, setIsMessageSent] = useState(false)
 
-  const error = previewError || wearableError || wearablesError
-  const isLoading = (isLoadingModel || isLoadingWearable || isLoadingWearables) && !error
+  const error = previewError || wearableError || avatarError
+  const isLoading = (isLoadingModel || isLoadingWearable || isLoadingAvatar) && !error
   const showImage = !!image && !is3D && !isLoading
   const showCanvas = is3D && !isLoading
 
   useEffect(() => {
-    if (canvasRef.current && wearable && wearables) {
+    if (canvasRef.current && wearable) {
       // rarity background
       const [light, dark] = Rarity.getGradient(wearable.rarity)
       const backgroundImage = `radial-gradient(${light}, ${dark})`
@@ -76,7 +76,8 @@ const Preview: React.FC = () => {
         setIsLoaded(true)
       } else {
         // preview models
-        preview(canvasRef.current, [wearable, ...wearables], {
+        console.log('avatar', avatar)
+        preview(canvasRef.current, avatar ? [...avatar, wearable] : [wearable], {
           zoom: getZoom(wearable.data.category),
           skin: skin ? '#' + skin : undefined,
           hair: hair ? '#' + hair : undefined,
@@ -89,7 +90,7 @@ const Preview: React.FC = () => {
           })
       }
     }
-  }, [canvasRef.current, wearable, wearables]) // eslint-disable-line
+  }, [canvasRef.current, wearable, avatar]) // eslint-disable-line
 
   // send a mesasge to the parent window when loaded or error occurs
   useEffect(() => {

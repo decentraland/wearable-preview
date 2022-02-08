@@ -1,5 +1,7 @@
-import { WearableBodyShape } from '@dcl/schemas'
-import { Wearable, WearableRepresentation } from './api/peer'
+import { WearableBodyShape, WearableRepresentation as WearableRepresentationBroken } from '@dcl/schemas'
+import { Wearable } from './wearable'
+
+export type WearableRepresentation = Omit<WearableRepresentationBroken, 'contents'> & { contents: { key: string; url: string }[] }
 
 export function is(representation: WearableRepresentation, bodyShape: WearableBodyShape) {
   return representation.bodyShapes.includes(bodyShape)
@@ -27,6 +29,15 @@ export function getRepresentation(wearable: Wearable, shape = WearableBodyShape.
       }
       return wearable.data.representations.find(isMale)!
     }
+  }
+}
+
+export function hasRepresentation(wearable: Wearable, shape = WearableBodyShape.MALE) {
+  try {
+    getRepresentation(wearable, shape)
+    return true
+  } catch (error) {
+    return false
   }
 }
 

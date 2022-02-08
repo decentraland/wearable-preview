@@ -19,8 +19,8 @@ import '@babylonjs/loaders'
 import { GLTFFileLoader } from '@babylonjs/loaders'
 import { WearableBodyShape, WearableCategory } from '@dcl/schemas'
 import future from 'fp-future'
-import { Wearable } from './api/peer'
 import { getContentUrl, getRepresentation, isTexture } from './representation'
+import { Wearable } from './wearable'
 
 /**
  * It refreshes the bounding info of a mesh, taking into account all of its children
@@ -218,7 +218,7 @@ function createMappings(wearables: Wearable[], shape = WearableBodyShape.MALE) {
         mappings[file.key] = file.url
       }
     } catch (error) {
-      console.warn(`Skipping generation of mappings for wearable="${wearable.id}" since it lacks a representation=${shape}`)
+      console.warn(`Skipping generation of mappings for wearable="${wearable.id}" since it lacks a representation="${shape}"`)
       continue
     }
   }
