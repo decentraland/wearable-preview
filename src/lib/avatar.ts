@@ -35,7 +35,8 @@ export type AvatarBackground = {
 
 export enum AvatarPreviewType {
   TEXTURE = 'texture',
-  MODEL = 'model',
+  WEARABLE = 'wearable',
+  AVATAR = 'avatar',
 }
 
 async function fetchWearable(urn: string, env: Env) {
@@ -135,17 +136,18 @@ export async function createAvatarPreview(options: AvatarPreviewOptions = {}): P
   const urns = [...(profile ? profile.avatar.wearables : []), ...(options.urns || [])]
   let wearables: Wearable[] = []
   let zoom = 1.75
-  let type = AvatarPreviewType.MODEL
+  let type = AvatarPreviewType.WEARABLE
   let background: AvatarBackground | undefined
 
   if (urns.length > 0) {
     wearables = await fetchWearables(urns, bodyShape, env)
+    type = AvatarPreviewType.AVATAR
   }
 
   if (wearable) {
     zoom = wearables.length > 0 ? zoom : getZoom(wearable)
     const representation = getRepresentationOrDefault(wearable)
-    if (isTexture(representation)) {
+    if (isTexture(representation) && type !== AvatarPreviewType.AVATAR) {
       type = AvatarPreviewType.TEXTURE
     }
     const [light, dark] = Rarity.getGradient(wearable.rarity)

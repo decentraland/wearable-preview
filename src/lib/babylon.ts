@@ -19,7 +19,7 @@ import '@babylonjs/loaders'
 import { GLTFFileLoader } from '@babylonjs/loaders'
 import { WearableBodyShape, WearableCategory } from '@dcl/schemas'
 import future from 'fp-future'
-import { AvatarPreview } from './avatar'
+import { AvatarPreview, AvatarPreviewType } from './avatar'
 import { getContentUrl, getRepresentation, hasRepresentation, isTexture } from './representation'
 import { Wearable } from './wearable'
 
@@ -155,21 +155,40 @@ async function loadModel(scene: Scene, wearable: Wearable, bodyShape = WearableB
     }
   }
 
-  if ((wearable.data.category as string) === 'body_shape') {
-    for (const mesh of model.meshes) {
-      if (mesh.name.endsWith('lBody_BaseMesh')) {
-        mesh.setEnabled(false)
-      }
-      if (mesh.name.endsWith('uBody_BaseMesh')) {
-        mesh.setEnabled(false)
-      }
-      if (mesh.name.endsWith('Feet_BaseMesh')) {
-        mesh.setEnabled(false)
-      }
-    }
+  return { model, wearable }
+}
+
+function hideBaseBodyParts(results: { model: Scene; wearable: Wearable }[]) {
+  if (results.length === 1) {
+    return // no need to hide anything when rendering a single wearable, this is only meant for full avatars
   }
 
-  return [model, wearable] as const
+  const bodyShape = results.find((result) => (result.wearable.data.category as string) === 'body_shape')
+
+  if (!bodyShape) {
+    throw new Error(`Could not find a bodyShape when trying to hide base body parts`)
+  }
+
+  const hasSkin = results.some((result) => result.wearable.data.category === WearableCategory.SKIN)
+  const hideUpperBody = hasSkin || results.some((result) => result.wearable.data.category === WearableCategory.UPPER_BODY)
+  const hideLowerBody = hasSkin || results.some((result) => result.wearable.data.category === WearableCategory.LOWER_BODY)
+  const hideFeet = hasSkin || results.some((result) => result.wearable.data.category === WearableCategory.FEET)
+  const hideHead = hasSkin || results.some((result) => (result.wearable.data.hides || []).includes('head' as WearableCategory))
+
+  for (const mesh of bodyShape.model.meshes) {
+    if (mesh.name.endsWith('uBody_BaseMesh') && hideUpperBody) {
+      mesh.setEnabled(false)
+    }
+    if (mesh.name.endsWith('lBody_BaseMesh') && hideLowerBody) {
+      mesh.setEnabled(false)
+    }
+    if (mesh.name.endsWith('Feet_BaseMesh') && hideFeet) {
+      mesh.setEnabled(false)
+    }
+    if (mesh.name.endsWith('Head_BaseMesh') && hideHead) {
+      mesh.setEnabled(false)
+    }
+  }
 }
 
 /**
@@ -232,7 +251,7 @@ function setupMappings(wearables: Wearable[], bodyShape = WearableBodyShape.MALE
   })
 }
 
-function isResult(result: void | readonly [Scene, Wearable]): result is readonly [Scene, Wearable] {
+function isSuccesful(result: void | { model: Scene; wearable: Wearable }): result is { model: Scene; wearable: Wearable } {
   return !!result
 }
 
@@ -265,17 +284,18 @@ export async function render(canvas: HTMLCanvasElement, avatar: AvatarPreview) {
   }
 
   // load all the wearables into the root scene
-  const promises: Promise<void | readonly [Scene, Wearable]>[] = []
+  const promises: Promise<void | { model: Scene; wearable: Wearable }>[] = []
   for (const wearable of catalog.values()) {
     const promise = loadModel(root, wearable, avatar.bodyShape, avatar.skin, avatar.hair).catch((error) => {
       console.warn(error.message)
     })
     promises.push(promise)
   }
-
   const results = await Promise.all(promises)
-  for (const [model, wearable] of results.filter(isResult)) {
-    console.log(model, wearable)
+
+  // hide base body parts
+  if (avatar.type === AvatarPreviewType.AVATAR) {
+    hideBaseBodyParts(results.filter(isSuccesful))
   }
 
   // center the root scene into the camera
