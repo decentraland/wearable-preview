@@ -271,7 +271,7 @@ async function applyFacialFeatures(
     if (mesh.name.toLowerCase().endsWith('mask_eyes')) {
       const [texture, mask] = eyes
       if (texture) {
-        applyTextureAndMask(scene, 'eyes', mesh, texture, avatar.eyes, mask, avatar.eyes)
+        applyTextureAndMask(scene, 'eyes', mesh, texture, avatar.eyes, mask, '#ffffff')
       }
     }
     if (mesh.name.toLowerCase().endsWith('mask_eyebrows')) {
@@ -304,11 +304,11 @@ function applyTextureAndMask(
   texture.hasAlpha = true
   newMaterial.sideOrientation = Orientation.CW
   newMaterial.diffuseTexture = texture
-  newMaterial.diffuseColor = mask ? Color3.Black() : hexToColor(color)
+  newMaterial.diffuseColor = mask ? Color3.Black() : hexToColor(maskColor)
   console.log(name, color, maskColor, mask)
   if (mask) {
     newMaterial.emissiveTexture = mask
-    newMaterial.emissiveColor = hexToColor(maskColor)
+    newMaterial.emissiveColor = hexToColor(color)
   }
   mesh.material = newMaterial
 }
