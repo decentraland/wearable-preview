@@ -19,7 +19,6 @@ export function getDefaultCategories(shape: WearableBodyShape) {
         WearableCategory.MOUTH,
         WearableCategory.EYES,
         WearableCategory.HAIR,
-        WearableCategory.FACIAL_HAIR,
         WearableCategory.UPPER_BODY,
         WearableCategory.LOWER_BODY,
         WearableCategory.FEET,
@@ -55,8 +54,6 @@ export function getDefaultWearableUrn(category: WearableCategory, shape: Wearabl
       return shape === WearableBodyShape.MALE
         ? 'urn:decentraland:off-chain:base-avatars:casual_hair_01'
         : 'urn:decentraland:off-chain:base-avatars:standard_hair'
-    case WearableCategory.FACIAL_HAIR:
-      return shape === WearableBodyShape.MALE ? 'urn:decentraland:off-chain:base-avatars:beard' : null
     case WearableCategory.UPPER_BODY:
       return shape === WearableBodyShape.MALE
         ? 'urn:decentraland:off-chain:base-avatars:green_hoodie'
@@ -70,7 +67,7 @@ export function getDefaultWearableUrn(category: WearableCategory, shape: Wearabl
         ? 'urn:decentraland:off-chain:base-avatars:sneakers'
         : 'urn:decentraland:off-chain:base-avatars:bun_shoes'
     default:
-      return null
+      throw new Error(`There is no default wearable for category="${category}"`)
   }
 }
 

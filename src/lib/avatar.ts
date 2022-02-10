@@ -11,9 +11,10 @@ export type AvatarPreview = {
   bodyShape: WearableBodyShape
   skin: string
   hair: string
+  eyes: string
   zoom: number
   type: AvatarPreviewType
-  background?: AvatarBackground
+  background: AvatarBackground
 }
 
 export type AvatarPreviewOptions = {
@@ -24,12 +25,13 @@ export type AvatarPreviewOptions = {
   bodyShape?: WearableBodyShape | null
   skin?: string | null
   hair?: string | null
+  eyes?: string | null
   urns?: string[] | null
   env?: Env | null
 }
 
 export type AvatarBackground = {
-  image: string
+  image?: string
   gradient: string
 }
 
@@ -130,14 +132,17 @@ export async function createAvatarPreview(options: AvatarPreviewOptions = {}): P
 
   const [wearable, profile] = await Promise.all([wearablePromise, profilePromise] as const)
 
-  const bodyShape = (profile && (profile.avatar.bodyShape as WearableBodyShape)) || options.bodyShape || WearableBodyShape.MALE
+  const bodyShape = options.bodyShape || (profile && (profile.avatar.bodyShape as WearableBodyShape)) || WearableBodyShape.MALE
   const skin = formatHex(options.skin || (profile && colorToHex(profile.avatar.skin.color)) || 'cc9b76')
   const hair = formatHex(options.hair || (profile && colorToHex(profile.avatar.hair.color)) || '000000')
+  const eyes = formatHex(options.eyes || (profile && colorToHex(profile.avatar.eyes.color)) || '000000')
   const urns = [...(profile ? profile.avatar.wearables : []), ...(options.urns || [])]
   let wearables: Wearable[] = []
   let zoom = 1.75
   let type = AvatarPreviewType.WEARABLE
-  let background: AvatarBackground | undefined
+  let background: AvatarBackground = {
+    gradient: `radial-gradient(#676370, #18141b)`,
+  }
 
   if (urns.length > 0) {
     wearables = await fetchWearables(urns, bodyShape, env)
@@ -164,6 +169,7 @@ export async function createAvatarPreview(options: AvatarPreviewOptions = {}): P
     bodyShape,
     skin,
     hair,
+    eyes,
     zoom,
     type,
     background,

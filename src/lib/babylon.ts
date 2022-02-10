@@ -1,4 +1,5 @@
 import {
+  AbstractMesh,
   ArcRotateCamera,
   BoundingInfo,
   Camera,
@@ -9,10 +10,14 @@ import {
   GlowLayer,
   HemisphericLight,
   Mesh,
+  Orientation,
   PBRMaterial,
   Scene,
   SceneLoader,
   SpotLight,
+  StandardMaterial,
+  Texture,
+  TextureAssetTask,
   Vector3,
 } from '@babylonjs/core'
 import '@babylonjs/loaders'
@@ -20,7 +25,8 @@ import { GLTFFileLoader } from '@babylonjs/loaders'
 import { WearableBodyShape, WearableCategory } from '@dcl/schemas'
 import future from 'fp-future'
 import { AvatarPreview, AvatarPreviewType } from './avatar'
-import { getContentUrl, getRepresentation, hasRepresentation, isTexture } from './representation'
+import { hexToColor } from './color'
+import { getContentUrl, getRepresentation, getRepresentationOrDefault, hasRepresentation, isTexture } from './representation'
 import { Wearable } from './wearable'
 
 /**
@@ -104,15 +110,52 @@ async function createScene(canvas: HTMLCanvasElement, zoom: number) {
   return root
 }
 
+async function loadMask(scene: Scene, wearable: Wearable, bodyShape: WearableBodyShape): Promise<Texture | null> {
+  const name = wearable.id
+  const representation = getRepresentation(wearable, bodyShape)
+  const file = representation.contents.find((file) => file.key.toLowerCase().endsWith('_mask.png'))
+  if (file) {
+    return new Promise((resolve, reject) => {
+      console.log('mask', wearable.data.category, file.url)
+      const task = new TextureAssetTask(name, file.url, true, false)
+      task.onError = () => reject(task.errorObject)
+      task.onSuccess = () => {
+        resolve(task.texture)
+      }
+      task.run(scene, () => resolve(task.texture), reject)
+    })
+  }
+  return null
+}
+
+async function loadTexture(scene: Scene, wearable: Wearable, bodyShape: WearableBodyShape): Promise<Texture | null> {
+  const name = wearable.id
+  const representation = getRepresentation(wearable, bodyShape)
+  const file = representation.contents.find(
+    (file) => file.key.toLowerCase().endsWith('.png') && !file.key.toLowerCase().endsWith('_mask.png')
+  )
+  if (file) {
+    return new Promise((resolve, reject) => {
+      console.log('texture', wearable.data.category, file.url)
+      const task = new TextureAssetTask(name, file.url, true, false)
+      task.onError = () => reject(task.errorObject)
+      task.onSuccess = () => {
+        resolve(task.texture)
+      }
+      task.run(scene, () => resolve(task.texture), reject)
+    })
+  }
+  return null
+}
+
 /**
- * Loads a list of wearables into the Scene, using a given a body shape, skin and hair color
+ * Loads a wearable into the Scene, using a given a body shape, skin and hair color
  * @param scene
  * @param wearable
  * @param bodyShape
  * @param skin
  * @param hair
  */
-
 async function loadModel(scene: Scene, wearable: Wearable, bodyShape = WearableBodyShape.MALE, skin?: string, hair?: string) {
   const representation = getRepresentation(wearable, bodyShape)
   if (isTexture(representation)) {
@@ -158,37 +201,116 @@ async function loadModel(scene: Scene, wearable: Wearable, bodyShape = WearableB
   return { model, wearable }
 }
 
-function hideBaseBodyParts(results: { model: Scene; wearable: Wearable }[]) {
-  if (results.length === 1) {
-    return // no need to hide anything when rendering a single wearable, this is only meant for full avatars
-  }
+function isCategory(category: WearableCategory | string) {
+  return (part: { model: Scene; wearable: Wearable } | Wearable) =>
+    ('wearable' in part ? (part.wearable.data.category as string) : (part.data.category as string)) === category
+}
 
-  const bodyShape = results.find((result) => (result.wearable.data.category as string) === 'body_shape')
+function getBodyShape(parts: { model: Scene; wearable: Wearable }[]) {
+  const bodyShape = parts.find(isCategory('body_shape'))
 
   if (!bodyShape) {
     throw new Error(`Could not find a bodyShape when trying to hide base body parts`)
   }
 
-  const hasSkin = results.some((result) => result.wearable.data.category === WearableCategory.SKIN)
-  const hideUpperBody = hasSkin || results.some((result) => result.wearable.data.category === WearableCategory.UPPER_BODY)
-  const hideLowerBody = hasSkin || results.some((result) => result.wearable.data.category === WearableCategory.LOWER_BODY)
-  const hideFeet = hasSkin || results.some((result) => result.wearable.data.category === WearableCategory.FEET)
-  const hideHead = hasSkin || results.some((result) => (result.wearable.data.hides || []).includes('head' as WearableCategory))
-
+  // hide base body parts if necessary
+  const hasSkin = parts.some(isCategory(WearableCategory.SKIN))
+  const hideUpperBody = hasSkin || parts.some(isCategory(WearableCategory.UPPER_BODY))
+  const hideLowerBody = hasSkin || parts.some(isCategory(WearableCategory.LOWER_BODY))
+  const hideFeet = hasSkin || parts.some(isCategory(WearableCategory.FEET))
+  const hideHead = hasSkin || parts.some((part) => (part.wearable.data.hides || []).includes('head' as WearableCategory))
   for (const mesh of bodyShape.model.meshes) {
-    if (mesh.name.endsWith('uBody_BaseMesh') && hideUpperBody) {
+    if (mesh.name.toLowerCase().endsWith('ubody_basemesh') && hideUpperBody) {
       mesh.setEnabled(false)
     }
-    if (mesh.name.endsWith('lBody_BaseMesh') && hideLowerBody) {
+    if (mesh.name.toLowerCase().endsWith('lbody_basemesh') && hideLowerBody) {
       mesh.setEnabled(false)
     }
-    if (mesh.name.endsWith('Feet_BaseMesh') && hideFeet) {
+    if (mesh.name.toLowerCase().endsWith('feet_basemesh') && hideFeet) {
       mesh.setEnabled(false)
     }
-    if (mesh.name.endsWith('Head_BaseMesh') && hideHead) {
+    if (mesh.name.toLowerCase().endsWith('head_basemesh') && hideHead) {
       mesh.setEnabled(false)
     }
   }
+
+  return bodyShape
+}
+
+function getCategoryLoader(scene: Scene, features: Wearable[], bodyShape: WearableBodyShape) {
+  return async (category: WearableCategory) => {
+    const feature = features.find(isCategory(category))
+    if (feature) {
+      return Promise.all([loadTexture(scene, feature, bodyShape), loadMask(scene, feature, bodyShape)]) as Promise<
+        [Texture | null, Texture | null]
+      >
+    }
+    return [null, null] as [null, null]
+  }
+}
+
+async function getFacialFeatures(scene: Scene, features: Wearable[], bodyShape: WearableBodyShape) {
+  const loadCategory = getCategoryLoader(scene, features, bodyShape)
+  const [eyes, eyebrows, mouth] = await Promise.all([
+    loadCategory(WearableCategory.EYES),
+    loadCategory(WearableCategory.EYEBROWS),
+    loadCategory(WearableCategory.MOUTH),
+  ])
+  return { eyes, eyebrows, mouth }
+}
+
+async function applyFacialFeatures(
+  scene: Scene,
+  bodyShapeModel: Scene,
+  eyes: [Texture | null, Texture | null],
+  eyebrows: [Texture | null, Texture | null],
+  mouth: [Texture | null, Texture | null],
+  avatar: AvatarPreview
+) {
+  for (const mesh of bodyShapeModel.meshes) {
+    if (mesh.name.toLowerCase().endsWith('mask_eyes')) {
+      const [texture, mask] = eyes
+      if (texture) {
+        applyTextureAndMask(scene, 'eyes', mesh, texture, avatar.eyes, mask, avatar.eyes)
+      }
+    }
+    if (mesh.name.toLowerCase().endsWith('mask_eyebrows')) {
+      const [texture, mask] = eyebrows
+      if (texture) {
+        applyTextureAndMask(scene, 'eyebrows', mesh, texture, avatar.hair, mask, avatar.hair)
+      }
+    }
+    if (mesh.name.toLowerCase().endsWith('mask_mouth')) {
+      const [texture, mask] = mouth
+      if (texture) {
+        applyTextureAndMask(scene, 'mouth', mesh, texture, avatar.skin, mask, avatar.skin)
+      }
+    }
+  }
+}
+
+function applyTextureAndMask(
+  scene: Scene,
+  name: string,
+  mesh: AbstractMesh,
+  texture: Texture,
+  color: string,
+  mask: Texture | null,
+  maskColor: string
+) {
+  const newMaterial = new StandardMaterial(`${name}_standard_material`, scene)
+  newMaterial.alphaMode = PBRMaterial.PBRMATERIAL_ALPHABLEND
+  newMaterial.backFaceCulling = true
+  texture.hasAlpha = true
+  newMaterial.sideOrientation = Orientation.CW
+  newMaterial.diffuseTexture = texture
+  newMaterial.diffuseColor = mask ? Color3.Black() : hexToColor(color)
+  console.log(name, color, maskColor, mask)
+  if (mask) {
+    newMaterial.emissiveTexture = mask
+    newMaterial.emissiveColor = hexToColor(maskColor)
+  }
+  mesh.material = newMaterial
 }
 
 /**
@@ -255,6 +377,15 @@ function isSuccesful(result: void | { model: Scene; wearable: Wearable }): resul
   return !!result
 }
 
+function isModel(wearable: Wearable): boolean {
+  const representation = getRepresentationOrDefault(wearable)
+  return !isTexture(representation)
+}
+
+function isFacialFeature(wearable: Wearable): boolean {
+  return !isModel(wearable)
+}
+
 /**
  * Initializes Babylon, creates the scene and loads a list of wearables in it
  * @param canvas
@@ -285,17 +416,22 @@ export async function render(canvas: HTMLCanvasElement, avatar: AvatarPreview) {
 
   // load all the wearables into the root scene
   const promises: Promise<void | { model: Scene; wearable: Wearable }>[] = []
-  for (const wearable of catalog.values()) {
+  const wearables = Array.from(catalog.values())
+  for (const wearable of wearables.filter(isModel)) {
     const promise = loadModel(root, wearable, avatar.bodyShape, avatar.skin, avatar.hair).catch((error) => {
       console.warn(error.message)
     })
     promises.push(promise)
   }
-  const results = await Promise.all(promises)
+  const models = await Promise.all(promises)
 
-  // hide base body parts
   if (avatar.type === AvatarPreviewType.AVATAR) {
-    hideBaseBodyParts(results.filter(isSuccesful))
+    // build avatar
+    const parts = models.filter(isSuccesful)
+    const bodyShape = getBodyShape(parts)
+    const features = wearables.filter(isFacialFeature)
+    const { eyes, eyebrows, mouth } = await getFacialFeatures(root, features, avatar.bodyShape)
+    applyFacialFeatures(root, bodyShape.model, eyes, eyebrows, mouth, avatar)
   }
 
   // center the root scene into the camera

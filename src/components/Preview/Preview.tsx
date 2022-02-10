@@ -23,11 +23,24 @@ const Preview: React.FC = () => {
   const itemId = params.get('item')
   const skin = params.get('skin')
   const hair = params.get('hair')
-  const bodyShape = params.get('bodyShape') === 'female' ? WearableBodyShape.FEMALE : WearableBodyShape.MALE
+  const eyes = params.get('eyes')
+  const bodyShape =
+    params.get('bodyShape') === 'female' ? WearableBodyShape.FEMALE : params.get('bodyShape') === 'male' ? WearableBodyShape.MALE : null
   const urns = params.getAll('urn')
   const profile = params.get('profile')
   const env = Object.values(Env).reduce((selected, value) => (value === params.get('env') ? value : selected), Env.PROD)
-  const [avatar, isLoadingAvatar, avatarError] = useAvatar({ contractAddress, tokenId, itemId, bodyShape, urns, env, profile, skin, hair })
+  const [avatar, isLoadingAvatar, avatarError] = useAvatar({
+    contractAddress,
+    tokenId,
+    itemId,
+    bodyShape,
+    urns,
+    env,
+    profile,
+    skin,
+    hair,
+    eyes,
+  })
   const [image, setImage] = useState('')
   const [is3D, setIs3D] = useState(true)
   const [isMessageSent, setIsMessageSent] = useState(false)
@@ -39,13 +52,11 @@ const Preview: React.FC = () => {
 
   useEffect(() => {
     if (canvasRef.current && avatar) {
-      if (avatar.background) {
-        // rarity background
-        setStyle({ backgroundImage: avatar.background.gradient, opacity: 1 })
-        // set background image
+      // rarity background
+      setStyle({ backgroundImage: avatar.background.gradient, opacity: 1 })
+      // set background image
+      if (avatar.background.image) {
         setImage(avatar.background.image)
-      } else {
-        setStyle({ opacity: 1 })
       }
 
       // load model or image (for texture only wearables)
@@ -55,7 +66,6 @@ const Preview: React.FC = () => {
         setIsLoaded(true)
       } else {
         // preview models
-        console.log(avatar)
         render(canvasRef.current, avatar)
           .catch((error) => setPreviewError(error.message))
           .finally(() => {
