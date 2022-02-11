@@ -232,6 +232,15 @@ function getBodyShape(parts: { model: Scene; wearable: Wearable }[]) {
     if (mesh.name.toLowerCase().endsWith('head_basemesh') && hideHead) {
       mesh.setEnabled(false)
     }
+    if (mesh.name.toLowerCase().endsWith('mask_eyes') && hideHead) {
+      mesh.setEnabled(false)
+    }
+    if (mesh.name.toLowerCase().endsWith('mask_eyebrows') && hideHead) {
+      mesh.setEnabled(false)
+    }
+    if (mesh.name.toLowerCase().endsWith('mask_mouth') && hideHead) {
+      mesh.setEnabled(false)
+    }
   }
 
   return bodyShape
