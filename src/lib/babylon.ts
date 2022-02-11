@@ -199,24 +199,29 @@ async function loadModel(scene: Scene, wearable: Wearable, bodyShape = WearableB
   return { model, wearable }
 }
 
-function isCategory(category: WearableCategory | string) {
-  return (part: { model: Scene; wearable: Wearable } | Wearable) =>
-    ('wearable' in part ? (part.wearable.data.category as string) : (part.data.category as string)) === category
+function isCategory(category: WearableCategory) {
+  return (wearable: Wearable) => wearable.data.category === category
+}
+
+function isHidden(category: WearableCategory) {
+  return (part: { model: Scene; wearable: Wearable }) => {
+    return part.wearable.data.category === category || (part.wearable.data.hides || []).includes(category)
+  }
 }
 
 function getBodyShape(parts: { model: Scene; wearable: Wearable }[]) {
-  const bodyShape = parts.find(isCategory('body_shape'))
+  const bodyShape = parts.find((part) => part.wearable.data.category === ('body_shape' as WearableCategory))
 
   if (!bodyShape) {
     throw new Error(`Could not find a bodyShape when trying to hide base body parts`)
   }
 
   // hide base body parts if necessary
-  const hasSkin = parts.some(isCategory(WearableCategory.SKIN))
-  const hideUpperBody = hasSkin || parts.some(isCategory(WearableCategory.UPPER_BODY))
-  const hideLowerBody = hasSkin || parts.some(isCategory(WearableCategory.LOWER_BODY))
-  const hideFeet = hasSkin || parts.some(isCategory(WearableCategory.FEET))
-  const hideHead = hasSkin || parts.some((part) => (part.wearable.data.hides || []).includes('head' as WearableCategory))
+  const hasSkin = parts.some(isHidden(WearableCategory.SKIN))
+  const hideUpperBody = hasSkin || parts.some(isHidden(WearableCategory.UPPER_BODY))
+  const hideLowerBody = hasSkin || parts.some(isHidden(WearableCategory.LOWER_BODY))
+  const hideFeet = hasSkin || parts.some(isHidden(WearableCategory.FEET))
+  const hideHead = hasSkin || parts.some(isHidden('head' as WearableCategory))
 
   for (const mesh of bodyShape.model.meshes) {
     if (mesh.name.toLowerCase().endsWith('ubody_basemesh') && hideUpperBody) {
@@ -418,6 +423,11 @@ export async function render(canvas: HTMLCanvasElement, preview: AvatarPreview) 
     const hidden = wearable.data.hides || []
     for (const slot of hidden) {
       catalog.delete(slot)
+    }
+    if (wearable.data.category === WearableCategory.SKIN) {
+      catalog.delete(WearableCategory.UPPER_BODY)
+      catalog.delete(WearableCategory.LOWER_BODY)
+      catalog.delete(WearableCategory.FEET)
     }
   }
 
