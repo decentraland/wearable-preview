@@ -82,7 +82,7 @@ async function createScene(canvas: HTMLCanvasElement, zoom: number) {
     mainTextureFixedSize: 1024,
     blurKernelSize: 64,
   })
-  glow.intensity = 1
+  glow.intensity = 0.2
 
   // Setup Camera
   var camera = new ArcRotateCamera('camera', 0, 0, 0, new Vector3(0, 0, 0), root)
