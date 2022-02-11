@@ -116,7 +116,6 @@ async function loadMask(scene: Scene, wearable: Wearable, bodyShape: WearableBod
   const file = representation.contents.find((file) => file.key.toLowerCase().endsWith('_mask.png'))
   if (file) {
     return new Promise((resolve, reject) => {
-      console.log('mask', wearable.data.category, file.url)
       const task = new TextureAssetTask(name, file.url, true, false)
       task.onError = () => reject(task.errorObject)
       task.onSuccess = () => {
@@ -136,7 +135,6 @@ async function loadTexture(scene: Scene, wearable: Wearable, bodyShape: Wearable
   )
   if (file) {
     return new Promise((resolve, reject) => {
-      console.log('texture', wearable.data.category, file.url)
       const task = new TextureAssetTask(name, file.url, true, false)
       task.onError = () => reject(task.errorObject)
       task.onSuccess = () => {
@@ -314,7 +312,6 @@ function applyTextureAndMask(
   newMaterial.sideOrientation = Orientation.CW
   newMaterial.diffuseTexture = texture
   newMaterial.diffuseColor = mask ? Color3.Black() : hexToColor(maskColor)
-  console.log(name, color, maskColor, mask)
   if (mask) {
     newMaterial.emissiveTexture = mask
     newMaterial.emissiveColor = hexToColor(color)
