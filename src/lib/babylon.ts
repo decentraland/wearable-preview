@@ -217,32 +217,36 @@ function getBodyShape(parts: { model: Scene; wearable: Wearable }[]) {
   }
 
   // hide base body parts if necessary
-  const hasSkin = parts.some(isHidden(WearableCategory.SKIN))
+  const hasSkin = parts.some((part) => part.wearable.data.category === WearableCategory.SKIN)
   const hideUpperBody = hasSkin || parts.some(isHidden(WearableCategory.UPPER_BODY))
   const hideLowerBody = hasSkin || parts.some(isHidden(WearableCategory.LOWER_BODY))
   const hideFeet = hasSkin || parts.some(isHidden(WearableCategory.FEET))
   const hideHead = hasSkin || parts.some(isHidden('head' as WearableCategory))
 
   for (const mesh of bodyShape.model.meshes) {
-    if (mesh.name.toLowerCase().endsWith('ubody_basemesh') && hideUpperBody) {
+    const name = mesh.name.toLowerCase()
+    if (name.endsWith('ubody_basemesh') && hideUpperBody) {
       mesh.setEnabled(false)
     }
-    if (mesh.name.toLowerCase().endsWith('lbody_basemesh') && hideLowerBody) {
+    if (name.endsWith('lbody_basemesh') && hideLowerBody) {
       mesh.setEnabled(false)
     }
-    if (mesh.name.toLowerCase().endsWith('feet_basemesh') && hideFeet) {
+    if (name.endsWith('feet_basemesh') && hideFeet) {
       mesh.setEnabled(false)
     }
-    if (mesh.name.toLowerCase().endsWith('head_basemesh') && hideHead) {
+    if (name.endsWith('head') && hideHead) {
       mesh.setEnabled(false)
     }
-    if (mesh.name.toLowerCase().endsWith('mask_eyes') && hideHead) {
+    if (name.endsWith('head_basemesh') && hideHead) {
       mesh.setEnabled(false)
     }
-    if (mesh.name.toLowerCase().endsWith('mask_eyebrows') && hideHead) {
+    if (name.endsWith('mask_eyes') && hideHead) {
       mesh.setEnabled(false)
     }
-    if (mesh.name.toLowerCase().endsWith('mask_mouth') && hideHead) {
+    if (name.endsWith('mask_eyebrows') && hideHead) {
+      mesh.setEnabled(false)
+    }
+    if (name.endsWith('mask_mouth') && hideHead) {
       mesh.setEnabled(false)
     }
   }
@@ -419,16 +423,25 @@ export async function render(canvas: HTMLCanvasElement, preview: AvatarPreview) 
       catalog.set(slot, wearable)
     }
   }
+  let hasSkin = false
   for (const wearable of catalog.values()) {
     const hidden = wearable.data.hides || []
     for (const slot of hidden) {
       catalog.delete(slot)
     }
     if (wearable.data.category === WearableCategory.SKIN) {
-      catalog.delete(WearableCategory.UPPER_BODY)
-      catalog.delete(WearableCategory.LOWER_BODY)
-      catalog.delete(WearableCategory.FEET)
+      hasSkin = true
     }
+  }
+  if (hasSkin) {
+    catalog.delete(WearableCategory.HAIR)
+    catalog.delete(WearableCategory.FACIAL_HAIR)
+    catalog.delete(WearableCategory.MOUTH)
+    catalog.delete(WearableCategory.EYEBROWS)
+    catalog.delete(WearableCategory.EYES)
+    catalog.delete(WearableCategory.UPPER_BODY)
+    catalog.delete(WearableCategory.LOWER_BODY)
+    catalog.delete(WearableCategory.FEET)
   }
 
   // load all the wearables into the root scene
