@@ -1,10 +1,11 @@
-import { Network, Rarity, WearableBodyShape, WearableCategory } from '@dcl/schemas'
+import { Network, Rarity, WearableBodyShape } from '@dcl/schemas'
 import { Env } from '../types/env'
 import { nftApi } from './api/nft'
 import { peerApi } from './api/peer'
 import { colorToHex, formatHex } from './color'
 import { getRepresentationOrDefault, hasRepresentation, isTexture } from './representation'
 import { getDefaultCategories, getDefaultWearableUrn, getWearableByCategory, isWearable, Wearable } from './wearable'
+import { getZoom } from './zoom'
 
 export type AvatarPreview = {
   wearables: Wearable[]
@@ -27,6 +28,7 @@ export type AvatarPreviewOptions = {
   hair?: string | null
   eyes?: string | null
   urns?: string[] | null
+  zoom?: number | null
   env?: Env | null
 }
 
@@ -102,23 +104,6 @@ async function fetchWearables(urns: string[], bodyShape: WearableBodyShape, env:
   return wearables
 }
 
-/**
- * Returns the right zoom for a given category
- * @param category
- * @returns
- */
-export function getZoom(wearable?: Wearable | void) {
-  const category = wearable?.data.category
-  switch (category) {
-    case WearableCategory.UPPER_BODY:
-      return 2
-    case WearableCategory.SKIN:
-      return 1.75
-    default:
-      return 1.25
-  }
-}
-
 export async function createAvatarPreview(options: AvatarPreviewOptions = {}): Promise<AvatarPreview> {
   const { contractAddress, tokenId, itemId } = options
   const env = options.env || Env.PROD
@@ -170,8 +155,8 @@ export async function createAvatarPreview(options: AvatarPreviewOptions = {}): P
     skin,
     hair,
     eyes,
-    zoom,
     type,
     background,
+    zoom: options.zoom || zoom,
   }
 }

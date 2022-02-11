@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { WearableBodyShape } from '@dcl/schemas'
 import classNames from 'classnames'
+import { WearableBodyShape } from '@dcl/schemas'
 import { render } from '../../lib/babylon'
 import { useWindowSize } from '../../hooks/useWindowSize'
 import { useAvatar } from '../../hooks/useAvatar'
 import { MessageType, sendMessage } from '../../lib/message'
 import { AvatarPreviewType } from '../../lib/avatar'
+import { parseZoom } from '../../lib/zoom'
 import { Env } from '../../types/env'
 import './Preview.css'
 
@@ -24,6 +25,7 @@ const Preview: React.FC = () => {
   const skin = params.get('skin')
   const hair = params.get('hair')
   const eyes = params.get('eyes')
+  const zoom = parseZoom(params.get('zoom'))
   const bodyShape =
     params.get('bodyShape') === 'female' ? WearableBodyShape.FEMALE : params.get('bodyShape') === 'male' ? WearableBodyShape.MALE : null
   const urns = params.getAll('urn')
@@ -40,6 +42,7 @@ const Preview: React.FC = () => {
     skin,
     hair,
     eyes,
+    zoom,
   })
   const [image, setImage] = useState('')
   const [is3D, setIs3D] = useState(true)
