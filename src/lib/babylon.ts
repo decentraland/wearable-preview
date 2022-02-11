@@ -217,6 +217,7 @@ function getBodyShape(parts: { model: Scene; wearable: Wearable }[]) {
   const hideLowerBody = hasSkin || parts.some(isCategory(WearableCategory.LOWER_BODY))
   const hideFeet = hasSkin || parts.some(isCategory(WearableCategory.FEET))
   const hideHead = hasSkin || parts.some((part) => (part.wearable.data.hides || []).includes('head' as WearableCategory))
+
   for (const mesh of bodyShape.model.meshes) {
     if (mesh.name.toLowerCase().endsWith('ubody_basemesh') && hideUpperBody) {
       mesh.setEnabled(false)
@@ -272,25 +273,25 @@ async function applyFacialFeatures(
   eyes: [Texture | null, Texture | null],
   eyebrows: [Texture | null, Texture | null],
   mouth: [Texture | null, Texture | null],
-  avatar: AvatarPreview
+  preview: AvatarPreview
 ) {
   for (const mesh of bodyShapeModel.meshes) {
     if (mesh.name.toLowerCase().endsWith('mask_eyes')) {
       const [texture, mask] = eyes
       if (texture) {
-        applyTextureAndMask(scene, 'eyes', mesh, texture, avatar.eyes, mask, '#ffffff')
+        applyTextureAndMask(scene, 'eyes', mesh, texture, preview.eyes, mask, '#ffffff')
       }
     }
     if (mesh.name.toLowerCase().endsWith('mask_eyebrows')) {
       const [texture, mask] = eyebrows
       if (texture) {
-        applyTextureAndMask(scene, 'eyebrows', mesh, texture, avatar.hair, mask, avatar.hair)
+        applyTextureAndMask(scene, 'eyebrows', mesh, texture, preview.hair, mask, preview.hair)
       }
     }
     if (mesh.name.toLowerCase().endsWith('mask_mouth')) {
       const [texture, mask] = mouth
       if (texture) {
-        applyTextureAndMask(scene, 'mouth', mesh, texture, avatar.skin, mask, avatar.skin)
+        applyTextureAndMask(scene, 'mouth', mesh, texture, preview.skin, mask, preview.skin)
       }
     }
   }
@@ -398,18 +399,18 @@ function isFacialFeature(wearable: Wearable): boolean {
  * @param wearables
  * @param options
  */
-export async function render(canvas: HTMLCanvasElement, avatar: AvatarPreview) {
+export async function render(canvas: HTMLCanvasElement, preview: AvatarPreview) {
   // create the root scene
-  const root = await createScene(canvas, avatar.zoom)
+  const root = await createScene(canvas, preview.zoom)
 
   // setup the mappings for all the contents
-  setupMappings(avatar.wearables, avatar.bodyShape)
+  setupMappings(preview.wearables, preview.bodyShape)
 
-  // assemly wearables
+  // assembly wearables
   const catalog = new Map<WearableCategory, Wearable>()
-  for (const wearable of avatar.wearables) {
+  for (const wearable of preview.wearables) {
     const slot = wearable.data.category
-    if (hasRepresentation(wearable, avatar.bodyShape)) {
+    if (hasRepresentation(wearable, preview.bodyShape)) {
       catalog.set(slot, wearable)
     }
   }
@@ -424,20 +425,20 @@ export async function render(canvas: HTMLCanvasElement, avatar: AvatarPreview) {
   const promises: Promise<void | { model: Scene; wearable: Wearable }>[] = []
   const wearables = Array.from(catalog.values())
   for (const wearable of wearables.filter(isModel)) {
-    const promise = loadModel(root, wearable, avatar.bodyShape, avatar.skin, avatar.hair).catch((error) => {
+    const promise = loadModel(root, wearable, preview.bodyShape, preview.skin, preview.hair).catch((error) => {
       console.warn(error.message)
     })
     promises.push(promise)
   }
   const models = await Promise.all(promises)
 
-  if (avatar.type === AvatarPreviewType.AVATAR) {
+  if (preview.type === AvatarPreviewType.AVATAR) {
     // build avatar
     const parts = models.filter(isSuccesful)
     const bodyShape = getBodyShape(parts)
     const features = wearables.filter(isFacialFeature)
-    const { eyes, eyebrows, mouth } = await getFacialFeatures(root, features, avatar.bodyShape)
-    applyFacialFeatures(root, bodyShape.model, eyes, eyebrows, mouth, avatar)
+    const { eyes, eyebrows, mouth } = await getFacialFeatures(root, features, preview.bodyShape)
+    applyFacialFeatures(root, bodyShape.model, eyes, eyebrows, mouth, preview)
   }
 
   // center the root scene into the camera
