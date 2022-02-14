@@ -1,6 +1,7 @@
 import {
   AbstractMesh,
   ArcRotateCamera,
+  AssetContainer,
   BoundingInfo,
   Camera,
   Color3,
@@ -23,11 +24,15 @@ import {
 import '@babylonjs/loaders'
 import { GLTFFileLoader } from '@babylonjs/loaders'
 import { WearableBodyShape, WearableCategory } from '@dcl/schemas'
-import future from 'fp-future'
 import { AvatarPreview, AvatarPreviewType } from './avatar'
 import { hexToColor } from './color'
 import { getContentUrl, getRepresentation, getRepresentationOrDefault, hasRepresentation, isTexture } from './representation'
 import { Wearable } from './wearable'
+
+type Asset = {
+  container: AssetContainer
+  wearable: Wearable
+}
 
 /**
  * It refreshes the bounding info of a mesh, taking into account all of its children
@@ -160,22 +165,19 @@ async function loadModel(scene: Scene, wearable: Wearable, bodyShape = WearableB
     throw new Error(`The wearable="${wearable.id}" is a texture`)
   }
   const url = getContentUrl(representation)
-  const modelFuture = future<Scene>()
-  const loadScene = async (url: string, extension: string) => SceneLoader.AppendAsync(url, '', scene, null, extension)
-  const getLoader = async (url: string) => {
+  const loadAssetContainer = async (url: string) => {
+    const load = async (url: string, extension: string) => SceneLoader.LoadAssetContainerAsync(url, '', scene, null, extension)
     // try with GLB, if it fails try with GLTF
     try {
-      return await loadScene(url, '.glb')
+      return await load(url, '.glb')
     } catch (error) {
-      return await loadScene(url, '.gltf')
+      return await load(url, '.gltf')
     }
   }
-  const loader = await getLoader(url)
-  loader.onReadyObservable.addOnce((scene) => modelFuture.resolve(scene))
-  const model = await modelFuture
+  const container = await loadAssetContainer(url)
 
   // Clean up
-  for (let material of model.materials) {
+  for (let material of container.materials) {
     if (material.name.toLowerCase().includes('hair_mat')) {
       if (hair) {
         const pbr = material as PBRMaterial
@@ -196,7 +198,7 @@ async function loadModel(scene: Scene, wearable: Wearable, bodyShape = WearableB
     }
   }
 
-  return { model, wearable }
+  return { container, wearable }
 }
 
 function isCategory(category: WearableCategory) {
@@ -204,28 +206,29 @@ function isCategory(category: WearableCategory) {
 }
 
 function isHidden(category: WearableCategory) {
-  return (part: { model: Scene; wearable: Wearable }) => {
-    return part.wearable.data.category === category || (part.wearable.data.hides || []).includes(category)
+  return (asset: Asset) => {
+    return asset.wearable.data.category === category || (asset.wearable.data.hides || []).includes(category)
   }
 }
 
-function getBodyShape(parts: { model: Scene; wearable: Wearable }[]) {
-  const bodyShape = parts.find((part) => part.wearable.data.category === ('body_shape' as WearableCategory))
+function getBodyShape(assets: Asset[]) {
+  const bodyShape = assets.find((part) => part.wearable.data.category === ('body_shape' as WearableCategory))
 
   if (!bodyShape) {
     throw new Error(`Could not find a bodyShape when trying to hide base body parts`)
   }
 
   // hide base body parts if necessary
-  const hasSkin = parts.some((part) => part.wearable.data.category === WearableCategory.SKIN)
-  const hideUpperBody = hasSkin || parts.some(isHidden(WearableCategory.UPPER_BODY))
-  const hideLowerBody = hasSkin || parts.some(isHidden(WearableCategory.LOWER_BODY))
-  const hideFeet = hasSkin || parts.some(isHidden(WearableCategory.FEET))
-  const hideHead = hasSkin || parts.some(isHidden('head' as WearableCategory))
+  const hasSkin = assets.some((part) => part.wearable.data.category === WearableCategory.SKIN)
+  const hideUpperBody = hasSkin || assets.some(isHidden(WearableCategory.UPPER_BODY))
+  const hideLowerBody = hasSkin || assets.some(isHidden(WearableCategory.LOWER_BODY))
+  const hideFeet = hasSkin || assets.some(isHidden(WearableCategory.FEET))
+  const hideHead = hasSkin || assets.some(isHidden('head' as WearableCategory))
 
-  for (const mesh of bodyShape.model.meshes) {
+  for (const mesh of bodyShape.container.meshes) {
     const name = mesh.name.toLowerCase()
     if (name.endsWith('ubody_basemesh') && hideUpperBody) {
+      console.log('hide upper', mesh, bodyShape.container, mesh.parent)
       mesh.setEnabled(false)
     }
     if (name.endsWith('lbody_basemesh') && hideLowerBody) {
@@ -278,13 +281,13 @@ async function getFacialFeatures(scene: Scene, features: Wearable[], bodyShape: 
 
 async function applyFacialFeatures(
   scene: Scene,
-  bodyShapeModel: Scene,
+  bodyShape: Asset,
   eyes: [Texture | null, Texture | null],
   eyebrows: [Texture | null, Texture | null],
   mouth: [Texture | null, Texture | null],
   preview: AvatarPreview
 ) {
-  for (const mesh of bodyShapeModel.meshes) {
+  for (const mesh of bodyShape.container.meshes) {
     if (mesh.name.toLowerCase().endsWith('mask_eyes')) {
       const [texture, mask] = eyes
       if (texture) {
@@ -389,7 +392,7 @@ function setupMappings(wearables: Wearable[], bodyShape = WearableBodyShape.MALE
   })
 }
 
-function isSuccesful(result: void | { model: Scene; wearable: Wearable }): result is { model: Scene; wearable: Wearable } {
+function isSuccesful(result: void | Asset): result is Asset {
   return !!result
 }
 
@@ -445,7 +448,7 @@ export async function render(canvas: HTMLCanvasElement, preview: AvatarPreview) 
   }
 
   // load all the wearables into the root scene
-  const promises: Promise<void | { model: Scene; wearable: Wearable }>[] = []
+  const promises: Promise<void | Asset>[] = []
   const wearables = Array.from(catalog.values())
   for (const wearable of wearables.filter(isModel)) {
     const promise = loadModel(root, wearable, preview.bodyShape, preview.skin, preview.hair).catch((error) => {
@@ -453,15 +456,19 @@ export async function render(canvas: HTMLCanvasElement, preview: AvatarPreview) 
     })
     promises.push(promise)
   }
-  const models = await Promise.all(promises)
+  const assets = (await Promise.all(promises)).filter(isSuccesful)
 
   if (preview.type === AvatarPreviewType.AVATAR) {
     // build avatar
-    const parts = models.filter(isSuccesful)
-    const bodyShape = getBodyShape(parts)
+    const bodyShape = getBodyShape(assets)
     const features = wearables.filter(isFacialFeature)
     const { eyes, eyebrows, mouth } = await getFacialFeatures(root, features, preview.bodyShape)
-    applyFacialFeatures(root, bodyShape.model, eyes, eyebrows, mouth, preview)
+    applyFacialFeatures(root, bodyShape, eyes, eyebrows, mouth, preview)
+  }
+
+  // add all assets to scene
+  for (const asset of assets) {
+    asset.container.addAllToScene()
   }
 
   // center the root scene into the camera
