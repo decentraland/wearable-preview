@@ -228,7 +228,6 @@ function getBodyShape(assets: Asset[]) {
   for (const mesh of bodyShape.container.meshes) {
     const name = mesh.name.toLowerCase()
     if (name.endsWith('ubody_basemesh') && hideUpperBody) {
-      console.log('hide upper', mesh, bodyShape.container, mesh.parent)
       mesh.setEnabled(false)
     }
     if (name.endsWith('lbody_basemesh') && hideLowerBody) {
