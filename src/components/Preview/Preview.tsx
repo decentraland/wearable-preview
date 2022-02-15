@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import classNames from 'classnames'
 import { WearableBodyShape } from '@dcl/schemas'
-import { render } from '../../lib/babylon'
 import { useWindowSize } from '../../hooks/useWindowSize'
 import { useAvatar } from '../../hooks/useAvatar'
 import { MessageType, sendMessage } from '../../lib/message'
@@ -9,6 +8,7 @@ import { AvatarEmote, AvatarPreviewType } from '../../lib/avatar'
 import { parseZoom } from '../../lib/zoom'
 import { Env } from '../../types/env'
 import './Preview.css'
+import { render } from '../../lib/babylon/render'
 
 const Preview: React.FC = () => {
   const [previewError, setPreviewError] = useState('')
