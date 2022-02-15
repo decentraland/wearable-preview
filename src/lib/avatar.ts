@@ -40,6 +40,7 @@ export type AvatarBackground = {
 }
 
 export enum AvatarEmote {
+  IDLE = 'idle',
   CLAP = 'clap',
   DAB = 'dab',
   DANCE = 'dance',
@@ -160,7 +161,7 @@ export async function createAvatarPreview(options: AvatarPreviewOptions = {}): P
     wearables = [...wearables, wearable]
   }
 
-  let emote = AvatarEmote.FASHION
+  let emote = AvatarEmote.IDLE
   if (options.emote && Object.values(AvatarEmote).includes(options.emote)) {
     emote = options.emote
   }
