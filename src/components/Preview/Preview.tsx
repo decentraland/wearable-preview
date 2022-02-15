@@ -5,7 +5,7 @@ import { render } from '../../lib/babylon'
 import { useWindowSize } from '../../hooks/useWindowSize'
 import { useAvatar } from '../../hooks/useAvatar'
 import { MessageType, sendMessage } from '../../lib/message'
-import { AvatarPreviewType } from '../../lib/avatar'
+import { AvatarEmote, AvatarPreviewType } from '../../lib/avatar'
 import { parseZoom } from '../../lib/zoom'
 import { Env } from '../../types/env'
 import './Preview.css'
@@ -25,6 +25,7 @@ const Preview: React.FC = () => {
   const skin = params.get('skin')
   const hair = params.get('hair')
   const eyes = params.get('eyes')
+  const emote = params.get('emote') as AvatarEmote
   const zoom = parseZoom(params.get('zoom'))
   const bodyShape =
     params.get('bodyShape') === 'female' ? WearableBodyShape.FEMALE : params.get('bodyShape') === 'male' ? WearableBodyShape.MALE : null
@@ -43,6 +44,7 @@ const Preview: React.FC = () => {
     hair,
     eyes,
     zoom,
+    emote,
   })
   const [image, setImage] = useState('')
   const [is3D, setIs3D] = useState(true)

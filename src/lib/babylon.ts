@@ -1,5 +1,6 @@
 import {
   AbstractMesh,
+  AnimationGroup,
   ArcRotateCamera,
   AssetContainer,
   BoundingInfo,
@@ -19,6 +20,7 @@ import {
   StandardMaterial,
   Texture,
   TextureAssetTask,
+  TransformNode,
   Vector3,
 } from '@babylonjs/core'
 import '@babylonjs/loaders'
@@ -151,6 +153,16 @@ async function loadTexture(scene: Scene, wearable: Wearable, bodyShape: Wearable
   return null
 }
 
+async function loadAssetContainer(scene: Scene, url: string) {
+  const load = async (url: string, extension: string) => SceneLoader.LoadAssetContainerAsync(url, '', scene, null, extension)
+  // try with GLB, if it fails try with GLTF
+  try {
+    return await load(url, '.glb')
+  } catch (error) {
+    return await load(url, '.gltf')
+  }
+}
+
 /**
  * Loads a wearable into the Scene, using a given a body shape, skin and hair color
  * @param scene
@@ -159,22 +171,13 @@ async function loadTexture(scene: Scene, wearable: Wearable, bodyShape: Wearable
  * @param skin
  * @param hair
  */
-async function loadModel(scene: Scene, wearable: Wearable, bodyShape = WearableBodyShape.MALE, skin?: string, hair?: string) {
+async function loadWearable(scene: Scene, wearable: Wearable, bodyShape = WearableBodyShape.MALE, skin?: string, hair?: string) {
   const representation = getRepresentation(wearable, bodyShape)
   if (isTexture(representation)) {
     throw new Error(`The wearable="${wearable.id}" is a texture`)
   }
   const url = getContentUrl(representation)
-  const loadAssetContainer = async (url: string) => {
-    const load = async (url: string, extension: string) => SceneLoader.LoadAssetContainerAsync(url, '', scene, null, extension)
-    // try with GLB, if it fails try with GLTF
-    try {
-      return await load(url, '.glb')
-    } catch (error) {
-      return await load(url, '.gltf')
-    }
-  }
-  const container = await loadAssetContainer(url)
+  const container = await loadAssetContainer(scene, url)
 
   // Clean up
   for (let material of container.materials) {
@@ -450,12 +453,19 @@ export async function render(canvas: HTMLCanvasElement, preview: AvatarPreview) 
   const promises: Promise<void | Asset>[] = []
   const wearables = Array.from(catalog.values())
   for (const wearable of wearables.filter(isModel)) {
-    const promise = loadModel(root, wearable, preview.bodyShape, preview.skin, preview.hair).catch((error) => {
+    const promise = loadWearable(root, wearable, preview.bodyShape, preview.skin, preview.hair).catch((error) => {
       console.warn(error.message)
     })
     promises.push(promise)
   }
   const assets = (await Promise.all(promises)).filter(isSuccesful)
+
+  console.log(assets)
+
+  // add all assets to scene
+  for (const asset of assets) {
+    asset.container.addAllToScene()
+  }
 
   if (preview.type === AvatarPreviewType.AVATAR) {
     // build avatar
@@ -463,11 +473,33 @@ export async function render(canvas: HTMLCanvasElement, preview: AvatarPreview) 
     const features = wearables.filter(isFacialFeature)
     const { eyes, eyebrows, mouth } = await getFacialFeatures(root, features, preview.bodyShape)
     applyFacialFeatures(root, bodyShape, eyes, eyebrows, mouth, preview)
-  }
 
-  // add all assets to scene
-  for (const asset of assets) {
-    asset.container.addAllToScene()
+    console.log(bodyShape)
+    if (preview.emote) {
+      const emote = await loadAssetContainer(root, `./emotes/${preview.emote}.glb`)
+      console.log(emote)
+      const avatarAnimation = new AnimationGroup('emote', root)
+      for (const asset of assets) {
+        console.log(asset.wearable.name)
+        const nodes = asset.container.transformNodes.reduce((map, node) => map.set(node.id, node), new Map<string, TransformNode>())
+        console.log(nodes)
+        for (const targetedAnimation of emote.animationGroups[0].targetedAnimations) {
+          const animation = targetedAnimation.animation
+          const target = targetedAnimation.target as TransformNode
+          const newTarget = nodes.get(target.id)
+          if (!newTarget) {
+            console.log('target not found', target.id, target, animation)
+          } else {
+            avatarAnimation.addTargetedAnimation(animation, newTarget)
+          }
+          // nodes.delete(target.id)
+        }
+        console.log(nodes)
+      }
+      avatarAnimation.loopAnimation = true
+      avatarAnimation.normalize(1, 100)
+      avatarAnimation.play()
+    }
   }
 
   // center the root scene into the camera

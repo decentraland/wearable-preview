@@ -1,7 +1,8 @@
 import { Wearable as WearableBroken, WearableBodyShape, WearableCategory } from '@dcl/schemas'
 import { WearableRepresentation } from './representation'
 
-export type Wearable = Omit<WearableBroken, 'data'> & {
+export type Wearable = Omit<WearableBroken, 'data' | 'names'> & {
+  name: string
   data: Omit<WearableBroken['data'], 'representations'> & {
     representations: WearableRepresentation[]
   }

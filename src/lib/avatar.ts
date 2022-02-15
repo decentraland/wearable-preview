@@ -16,6 +16,7 @@ export type AvatarPreview = {
   zoom: number
   type: AvatarPreviewType
   background: AvatarBackground
+  emote: AvatarEmote
 }
 
 export type AvatarPreviewOptions = {
@@ -29,12 +30,22 @@ export type AvatarPreviewOptions = {
   eyes?: string | null
   urns?: string[] | null
   zoom?: number | null
+  emote?: AvatarEmote | null
   env?: Env | null
 }
 
 export type AvatarBackground = {
   image?: string
   gradient: string
+}
+
+export enum AvatarEmote {
+  CLAP = 'clap',
+  DAB = 'dab',
+  DANCE = 'dance',
+  FASHION = 'fashion',
+  LOVE = 'love',
+  MONEY = 'money',
 }
 
 export enum AvatarPreviewType {
@@ -149,6 +160,11 @@ export async function createAvatarPreview(options: AvatarPreviewOptions = {}): P
     wearables = [...wearables, wearable]
   }
 
+  let emote = AvatarEmote.FASHION
+  if (options.emote && Object.values(AvatarEmote).includes(options.emote)) {
+    emote = options.emote
+  }
+
   return {
     wearables,
     bodyShape,
@@ -157,6 +173,7 @@ export async function createAvatarPreview(options: AvatarPreviewOptions = {}): P
     eyes,
     type,
     background,
+    emote,
     zoom: options.zoom || zoom,
   }
 }
