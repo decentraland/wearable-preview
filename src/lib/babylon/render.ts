@@ -1,12 +1,12 @@
-import { AnimationGroup, TransformNode } from '@babylonjs/core'
 import { WearableCategory } from '@dcl/schemas'
 import { AvatarPreview, AvatarPreviewType } from '../avatar'
 import { hasRepresentation } from '../representation'
 import { Wearable } from '../wearable'
 import { getBodyShape } from './body'
+import { playEmote } from './emotes'
 import { applyFacialFeatures, getFacialFeatures } from './face'
 import { setupMappings } from './mappings'
-import { Asset, center, createScene, loadAssetContainer, loadWearable } from './scene'
+import { Asset, center, createScene, loadWearable } from './scene'
 import { isFacialFeature, isModel, isSuccesful } from './utils'
 
 /**
@@ -62,8 +62,6 @@ export async function render(canvas: HTMLCanvasElement, preview: AvatarPreview) 
   }
   const assets = (await Promise.all(promises)).filter(isSuccesful)
 
-  console.log(assets)
-
   // add all assets to scene
   for (const asset of assets) {
     asset.container.addAllToScene()
@@ -72,35 +70,13 @@ export async function render(canvas: HTMLCanvasElement, preview: AvatarPreview) 
   if (preview.type === AvatarPreviewType.AVATAR) {
     // build avatar
     const bodyShape = getBodyShape(assets)
+    // apply facial features
     const features = wearables.filter(isFacialFeature)
     const { eyes, eyebrows, mouth } = await getFacialFeatures(root, features, preview.bodyShape)
     applyFacialFeatures(root, bodyShape, eyes, eyebrows, mouth, preview)
-
-    console.log(bodyShape)
+    // play emote
     if (preview.emote) {
-      const emote = await loadAssetContainer(root, `./emotes/${preview.emote}.glb`)
-      console.log(emote)
-      const avatarAnimation = new AnimationGroup('emote', root)
-      for (const asset of assets) {
-        console.log(asset.wearable.name)
-        const nodes = asset.container.transformNodes.reduce((map, node) => map.set(node.id, node), new Map<string, TransformNode>())
-        console.log(nodes)
-        for (const targetedAnimation of emote.animationGroups[0].targetedAnimations) {
-          const animation = targetedAnimation.animation
-          const target = targetedAnimation.target as TransformNode
-          const newTarget = nodes.get(target.id)
-          if (!newTarget) {
-            console.log('target not found', target.id, target, animation)
-          } else {
-            avatarAnimation.addTargetedAnimation(animation, newTarget)
-          }
-          // nodes.delete(target.id)
-        }
-        console.log(nodes)
-      }
-      avatarAnimation.loopAnimation = true
-      avatarAnimation.normalize(1, 100)
-      avatarAnimation.play()
+      await playEmote(root, assets, preview.emote)
     }
   }
 
