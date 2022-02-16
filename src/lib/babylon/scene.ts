@@ -20,6 +20,7 @@ import {
 } from '@babylonjs/core'
 import '@babylonjs/loaders'
 import { WearableBodyShape } from '@dcl/schemas'
+import { AvatarCamera, AvatarPreview } from '../avatar'
 import { getContentUrl, getRepresentation, isTexture } from '../representation'
 import { Wearable } from '../wearable'
 
@@ -63,7 +64,7 @@ function refreshBoundingInfo(parent: Mesh) {
  * @param zoom
  * @returns
  */
-export async function createScene(canvas: HTMLCanvasElement, zoom: number) {
+export async function createScene(canvas: HTMLCanvasElement, preview: AvatarPreview) {
   // Create engine
   const engine = new Engine(canvas, true, {
     preserveDrawingBuffer: true,
@@ -86,12 +87,21 @@ export async function createScene(canvas: HTMLCanvasElement, zoom: number) {
   // Setup Camera
   var camera = new ArcRotateCamera('camera', 0, 0, 0, new Vector3(0, 0, 0), root)
   camera.mode = Camera.PERSPECTIVE_CAMERA
-  camera.position = new Vector3(-2, 2, 2)
-  camera.useAutoRotationBehavior = true
-  camera.autoRotationBehavior!.idleRotationSpeed = 0.2
+  switch (preview.camera) {
+    case AvatarCamera.INTERACTIVE: {
+      camera.position = new Vector3(-2, 2, 2)
+      camera.useAutoRotationBehavior = true
+      camera.autoRotationBehavior!.idleRotationSpeed = 0.2
+      camera.attachControl(canvas, true)
+      break
+    }
+    case AvatarCamera.STATIC: {
+      camera.position = new Vector3(0, 1, 3.5)
+      break
+    }
+  }
   camera.setTarget(Vector3.Zero())
-  camera.lowerRadiusLimit = camera.upperRadiusLimit = camera.radius / zoom
-  camera.attachControl(canvas, true)
+  camera.lowerRadiusLimit = camera.upperRadiusLimit = camera.radius / preview.zoom
 
   // Setup lights
   var directional = new DirectionalLight('directional', new Vector3(0, 0, 1), root)

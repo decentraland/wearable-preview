@@ -4,7 +4,7 @@ import { WearableBodyShape } from '@dcl/schemas'
 import { useWindowSize } from '../../hooks/useWindowSize'
 import { useAvatar } from '../../hooks/useAvatar'
 import { MessageType, sendMessage } from '../../lib/message'
-import { AvatarEmote, AvatarPreviewType } from '../../lib/avatar'
+import { AvatarCamera, AvatarEmote, AvatarPreviewType } from '../../lib/avatar'
 import { parseZoom } from '../../lib/zoom'
 import { Env } from '../../types/env'
 import './Preview.css'
@@ -25,7 +25,8 @@ const Preview: React.FC = () => {
   const skin = params.get('skin')
   const hair = params.get('hair')
   const eyes = params.get('eyes')
-  const emote = params.get('emote') as AvatarEmote
+  const emote = params.get('emote') as AvatarEmote | null
+  const camera = params.get('camera') as AvatarCamera | null
   const zoom = parseZoom(params.get('zoom'))
   const bodyShape =
     params.get('bodyShape') === 'female' ? WearableBodyShape.FEMALE : params.get('bodyShape') === 'male' ? WearableBodyShape.MALE : null
@@ -45,6 +46,7 @@ const Preview: React.FC = () => {
     eyes,
     zoom,
     emote,
+    camera,
   })
   const [image, setImage] = useState('')
   const [is3D, setIs3D] = useState(true)
@@ -100,7 +102,7 @@ const Preview: React.FC = () => {
         'is-dragging': isDragging,
         'is-loading': isLoading,
         'is-loaded': isLoaded,
-        'is-3d': is3D,
+        'is-3d': is3D && avatar?.camera === AvatarCamera.INTERACTIVE,
         'has-error': !!error,
       })}
       style={style}

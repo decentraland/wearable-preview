@@ -17,7 +17,7 @@ import { isFacialFeature, isModel, isSuccesful } from './utils'
  */
 export async function render(canvas: HTMLCanvasElement, preview: AvatarPreview) {
   // create the root scene
-  const root = await createScene(canvas, preview.zoom)
+  const root = await createScene(canvas, preview)
 
   // setup the mappings for all the contents
   setupMappings(preview.wearables, preview.bodyShape)
