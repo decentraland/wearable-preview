@@ -4,7 +4,7 @@ import { WearableBodyShape } from '@dcl/schemas'
 import { useWindowSize } from '../../hooks/useWindowSize'
 import { useAvatar } from '../../hooks/useAvatar'
 import { MessageType, sendMessage } from '../../lib/message'
-import { AvatarCamera, AvatarEmote, AvatarPreviewType } from '../../lib/avatar'
+import { AvatarCamera, AvatarEmote, AvatarPreview, AvatarPreviewType } from '../../lib/avatar'
 import { parseZoom } from '../../lib/zoom'
 import { Env } from '../../types/env'
 import './Preview.css'
@@ -33,21 +33,25 @@ const Preview: React.FC = () => {
   const urns = params.getAll('urn')
   const profile = params.get('profile')
   const env = Object.values(Env).reduce((selected, value) => (value === params.get('env') ? value : selected), Env.PROD)
-  const [avatar, isLoadingAvatar, avatarError] = useAvatar({
-    contractAddress,
-    tokenId,
-    itemId,
-    bodyShape,
-    urns,
-    env,
-    profile,
-    skin,
-    hair,
-    eyes,
-    zoom,
-    emote,
-    camera,
-  })
+  const [overrides, setOverrides] = useState<Partial<AvatarPreview>>({})
+  const [avatar, isLoadingAvatar, avatarError] = useAvatar(
+    {
+      contractAddress,
+      tokenId,
+      itemId,
+      bodyShape,
+      urns,
+      env,
+      profile,
+      skin,
+      hair,
+      eyes,
+      zoom,
+      emote,
+      camera,
+    },
+    overrides
+  )
   const [image, setImage] = useState('')
   const [is3D, setIs3D] = useState(true)
   const [isMessageSent, setIsMessageSent] = useState(false)
@@ -95,6 +99,22 @@ const Preview: React.FC = () => {
       }
     }
   }, [isLoaded, error, isMessageSent])
+
+  // receive message from parent window to update options
+  useEffect(() => {
+    const previous = window.onmessage
+    window.onmessage = function (event: MessageEvent) {
+      if (event.data && event.data.type === MessageType.UPDATE) {
+        const message = event.data as { type: MessageType.UPDATE; options: Partial<AvatarPreview> }
+        if (message.options && typeof message.options === 'object') {
+          setOverrides(message.options)
+        }
+      }
+    }
+    return () => {
+      window.onmessage = previous
+    }
+  }, [])
 
   return (
     <div
