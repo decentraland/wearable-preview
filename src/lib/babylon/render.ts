@@ -1,8 +1,6 @@
-import { WearableCategory } from '@dcl/schemas'
 import { AvatarPreview, AvatarPreviewType } from '../avatar'
-import { hasRepresentation } from '../representation'
-import { Wearable } from '../wearable'
 import { getBodyShape } from './body'
+import { getSlots } from './slots'
 import { playEmote } from './emotes'
 import { applyFacialFeatures, getFacialFeatures } from './face'
 import { setupMappings } from './mappings'
@@ -22,38 +20,12 @@ export async function render(canvas: HTMLCanvasElement, preview: AvatarPreview) 
   // setup the mappings for all the contents
   setupMappings(preview.wearables, preview.bodyShape)
 
-  // assembly wearables
-  const catalog = new Map<WearableCategory, Wearable>()
-  for (const wearable of preview.wearables) {
-    const slot = wearable.data.category
-    if (hasRepresentation(wearable, preview.bodyShape)) {
-      catalog.set(slot, wearable)
-    }
-  }
-  let hasSkin = false
-  for (const wearable of catalog.values()) {
-    const hidden = wearable.data.hides || []
-    for (const slot of hidden) {
-      catalog.delete(slot)
-    }
-    if (wearable.data.category === WearableCategory.SKIN) {
-      hasSkin = true
-    }
-  }
-  if (hasSkin) {
-    catalog.delete(WearableCategory.HAIR)
-    catalog.delete(WearableCategory.FACIAL_HAIR)
-    catalog.delete(WearableCategory.MOUTH)
-    catalog.delete(WearableCategory.EYEBROWS)
-    catalog.delete(WearableCategory.EYES)
-    catalog.delete(WearableCategory.UPPER_BODY)
-    catalog.delete(WearableCategory.LOWER_BODY)
-    catalog.delete(WearableCategory.FEET)
-  }
+  // get slots
+  const slots = getSlots(preview)
 
   // load all the wearables into the root scene
   const promises: Promise<void | Asset>[] = []
-  const wearables = Array.from(catalog.values())
+  const wearables = Array.from(slots.values())
   for (const wearable of wearables.filter(isModel)) {
     const promise = loadWearable(root, wearable, preview.bodyShape, preview.skin, preview.hair).catch((error) => {
       console.warn(error.message)

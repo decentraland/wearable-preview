@@ -9,7 +9,11 @@ export function isCategory(category: WearableCategory) {
 
 export function isHidden(category: WearableCategory) {
   return (asset: Asset) => {
-    return asset.wearable.data.category === category || (asset.wearable.data.hides || []).includes(category)
+    return (
+      asset.wearable.data.category === category ||
+      (asset.wearable.data.hides || []).includes(category) ||
+      (asset.wearable.data.replaces || []).includes(category)
+    )
   }
 }
 
