@@ -173,6 +173,9 @@ export async function loadAssetContainer(scene: Scene, url: string) {
  * @param skin
  * @param hair
  */
+
+const hairMaterials = ['hair_mat']
+const skinMaterials = ['avatarskin_mat', 'skin-f']
 export async function loadWearable(scene: Scene, wearable: Wearable, bodyShape = WearableBodyShape.MALE, skin?: string, hair?: string) {
   const representation = getRepresentation(wearable, bodyShape)
   if (isTexture(representation)) {
@@ -183,7 +186,7 @@ export async function loadWearable(scene: Scene, wearable: Wearable, bodyShape =
 
   // Clean up
   for (let material of container.materials) {
-    if (material.name.toLowerCase().includes('hair_mat')) {
+    if (hairMaterials.some((mat) => material.name.toLowerCase().includes(mat))) {
       if (hair) {
         const pbr = material as PBRMaterial
         pbr.albedoColor = Color3.FromHexString(hair)
@@ -192,7 +195,7 @@ export async function loadWearable(scene: Scene, wearable: Wearable, bodyShape =
         scene.removeMaterial(material)
       }
     }
-    if (material.name.toLowerCase().includes('avatarskin_mat')) {
+    if (skinMaterials.some((mat) => material.name.toLowerCase().includes(mat))) {
       if (skin) {
         const pbr = material as PBRMaterial
         pbr.albedoColor = Color3.FromHexString(skin)
