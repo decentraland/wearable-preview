@@ -28,8 +28,8 @@ const Preview: React.FC = () => {
   const emote = params.get('emote') as AvatarEmote | null
   const camera = params.get('camera') as AvatarCamera | null
   const zoom = parseZoom(params.get('zoom'))
-  const bodyShape =
-    params.get('bodyShape') === 'female' ? WearableBodyShape.FEMALE : params.get('bodyShape') === 'male' ? WearableBodyShape.MALE : null
+  const bodyShapeParam = params.get('bodyShape') || params.get('shape') // keep supporting deprecated "shape" param to avoid breaking changes
+  const bodyShape = bodyShapeParam === 'female' ? WearableBodyShape.FEMALE : bodyShapeParam === 'male' ? WearableBodyShape.MALE : null
   const urns = params.getAll('urn')
   const profile = params.get('profile')
   const env = Object.values(Env).reduce((selected, value) => (value === params.get('env') ? value : selected), Env.PROD)

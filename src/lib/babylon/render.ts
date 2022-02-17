@@ -20,6 +20,8 @@ export async function render(canvas: HTMLCanvasElement, preview: AvatarPreview) 
   // setup the mappings for all the contents
   setupMappings(preview.wearables, preview.bodyShape)
 
+  console.log('preview', preview)
+
   // get slots
   const slots = getSlots(preview)
 
