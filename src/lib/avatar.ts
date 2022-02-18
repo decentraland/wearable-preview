@@ -62,11 +62,16 @@ export enum AvatarPreviewType {
   AVATAR = 'avatar',
 }
 
+const DEFAULT_PROFILE = 'default'
+
 async function fetchWearable(urn: string, env: Env) {
   return peerApi.fetchWearable(urn, env).catch((error: Error) => console.log(`Failed to load wearable="${urn}"`, error))
 }
 
 async function fetchProfile(profile: string, env: Env) {
+  if (profile === DEFAULT_PROFILE) {
+    return null
+  }
   return peerApi
     .fetchProfile(profile, env)
     .then((profile) => (profile && profile.avatars.length > 0 ? profile.avatars[0] : null))
@@ -140,7 +145,11 @@ export async function createAvatarPreview(options: AvatarPreviewOptions = {}): P
   const skin = formatHex(options.skin || (profile && colorToHex(profile.avatar.skin.color)) || 'cc9b76')
   const hair = formatHex(options.hair || (profile && colorToHex(profile.avatar.hair.color)) || '000000')
   const eyes = formatHex(options.eyes || (profile && colorToHex(profile.avatar.eyes.color)) || '000000')
-  const urns = [...(profile ? profile.avatar.wearables : []), ...(options.urns || [])]
+  const urns = [
+    ...(options.profile === DEFAULT_PROFILE ? [bodyShape] : []),
+    ...(profile ? profile.avatar.wearables : []),
+    ...(options.urns || []),
+  ]
   let wearables: Wearable[] = []
   let zoom = 1.75
   let type = AvatarPreviewType.WEARABLE

@@ -5,7 +5,7 @@ This webapp renders an interactive 3D preview of a wearable. It can be configure
 - `contract`: The contract address of the wearable collection.
 - `item`: The id of the item in the collection.
 - `token`: The id of the token (to preview a specific NFT).
-- `profile`: an ethereum address of a profile to load as the base avatar.
+- `profile`: an ethereum address of a profile to load as the base avatar. It can be set to `default` to use a default profile.
 - `urn`: a URN of a wearable to load. It will override anything loaded from a profile. It can be used many times.
 - `skin`: a color to be used by the skin material, it must be in hex.
 - `hair`: a color to be used by the hair material, it must be in hex.
