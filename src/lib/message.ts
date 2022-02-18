@@ -1,6 +1,7 @@
 export enum MessageType {
   LOAD = 'load',
   ERROR = 'error',
+  UPDATE = 'update',
 }
 
 export function sendMessage(type: MessageType, message?: string) {
