@@ -15,13 +15,19 @@ export async function playEmote(scene: Scene, assets: Asset[], emote: AvatarEmot
   }
   const emoteAnimationGroup = new AnimationGroup('emote', scene)
   for (const asset of assets) {
-    const nodes = asset.container.transformNodes.reduce((map, node) => map.set(node.id, node), new Map<string, TransformNode>())
+    const nodes = asset.container.transformNodes.reduce((map, node) => {
+      const list = map.get(node.id) || []
+      list.push(node)
+      return map.set(node.id, list)
+    }, new Map<string, TransformNode[]>())
     for (const targetedAnimation of container.animationGroups[0].targetedAnimations) {
       const animation = targetedAnimation.animation
       const target = targetedAnimation.target as TransformNode
-      const newTarget = nodes.get(target.id)
-      if (newTarget) {
-        emoteAnimationGroup.addTargetedAnimation(animation, newTarget)
+      const newTargets = nodes.get(target.id)
+      if (newTargets && newTargets.length > 0) {
+        for (const newTarget of newTargets) {
+          emoteAnimationGroup.addTargetedAnimation(animation, newTarget)
+        }
       }
     }
   }
