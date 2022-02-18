@@ -52,7 +52,11 @@ export async function render(canvas: HTMLCanvasElement, preview: AvatarPreview) 
     applyFacialFeatures(root, bodyShape, eyes, eyebrows, mouth, preview)
     // play emote
     if (preview.emote) {
-      await playEmote(root, assets, preview.emote)
+      try {
+        await playEmote(root, assets, preview.emote)
+      } catch (error) {
+        console.warn(`Could not play emote=${preview.emote}`, error)
+      }
     }
   } else {
     if (preview.wearables.length === 0) {
