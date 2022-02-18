@@ -1,10 +1,14 @@
-import path from 'path'
 import { AnimationGroup, Scene, TransformNode } from '@babylonjs/core'
 import { AvatarEmote } from '../avatar'
 import { Asset, loadAssetContainer } from './scene'
 
 export async function playEmote(scene: Scene, assets: Asset[], emote: AvatarEmote) {
-  const url = path.resolve(process.env.PUBLIC_URL, `./emotes/${emote}.glb`)
+  let baseUrl = process.env.PUBLIC_URL || ''
+  if (!baseUrl.endsWith('/')) {
+    baseUrl += '/'
+  }
+  const path = `./emotes/${emote}.glb`
+  const url = baseUrl.startsWith('http') ? new URL(path, baseUrl).href : path
   const container = await loadAssetContainer(scene, url)
   if (container.animationGroups.length === 0) {
     throw new Error(`No animation groups found for emote=${emote}`)
