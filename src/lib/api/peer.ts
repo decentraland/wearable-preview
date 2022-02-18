@@ -4,7 +4,7 @@ import { json } from '../json'
 
 export const peerByEnv: Record<Env, string> = {
   [Env.DEV]: 'https://peer.decentraland.zone',
-  [Env.PROD]: 'https://peer-lb.decentraland.org',
+  [Env.PROD]: 'https://peer.decentraland.org',
 }
 
 export type Wearable = Omit<WearableBroken, 'data'> & {
