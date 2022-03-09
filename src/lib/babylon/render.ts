@@ -59,10 +59,10 @@ export async function render(canvas: HTMLCanvasElement, preview: AvatarPreview) 
       }
     }
   } else {
-    if (preview.wearables.length === 0) {
+    if (!preview.wearable) {
       throw new Error('No wearable to render')
     }
-    const wearable = preview.wearables[0]
+    const wearable = preview.wearable
     try {
       // try loading with the required body shape
       const asset = await loadWearable(root, wearable, preview.bodyShape, preview.skin, preview.hair)

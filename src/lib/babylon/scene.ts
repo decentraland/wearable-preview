@@ -20,7 +20,7 @@ import {
 } from '@babylonjs/core'
 import '@babylonjs/loaders'
 import { WearableBodyShape } from '@dcl/schemas'
-import { AvatarCamera, AvatarPreview } from '../avatar'
+import { AvatarCamera, AvatarPreview, AvatarPreviewType } from '../avatar'
 import { getContentUrl, getRepresentation, isTexture } from '../representation'
 import { Wearable } from '../wearable'
 
@@ -89,7 +89,20 @@ export async function createScene(canvas: HTMLCanvasElement, preview: AvatarPrev
   camera.mode = Camera.PERSPECTIVE_CAMERA
   switch (preview.camera) {
     case AvatarCamera.INTERACTIVE: {
-      camera.position = new Vector3(-2, 2, 2)
+      switch (preview.type) {
+        case AvatarPreviewType.WEARABLE: {
+          camera.position = new Vector3(-2, 2, 2)
+          break
+        }
+        case AvatarPreviewType.AVATAR: {
+          camera.position = new Vector3(-2, 1, 3)
+          break
+        }
+        default: {
+          console.warn(`Unexpected preview.type="${preview.type}"`)
+          // do nothing
+        }
+      }
       camera.useAutoRotationBehavior = true
       camera.autoRotationBehavior!.idleRotationSpeed = 0.2
       camera.attachControl(canvas, true)

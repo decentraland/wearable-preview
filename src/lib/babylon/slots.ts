@@ -3,10 +3,53 @@ import { AvatarPreview } from '../avatar'
 import { hasRepresentation } from '../representation'
 import { Wearable } from '../wearable'
 
+const categoriesHiddenBySkin = [
+  WearableCategory.HAIR,
+  WearableCategory.FACIAL_HAIR,
+  WearableCategory.MOUTH,
+  WearableCategory.EYEBROWS,
+  WearableCategory.EYES,
+  WearableCategory.UPPER_BODY,
+  WearableCategory.LOWER_BODY,
+  WearableCategory.FEET,
+]
+
 export function getSlots(preview: AvatarPreview) {
   const slots = new Map<WearableCategory, Wearable>()
 
-  for (const wearable of preview.wearables) {
+  let wearables: Wearable[] = [...preview.wearables]
+
+  // remove other wearables that hide the equipped wearable
+  if (preview.wearable) {
+    wearables = preview.wearables.filter((wearable) => {
+      if (preview.wearable) {
+        const { category, hides, replaces } = preview.wearable.data
+        if (wearable.data.category === 'skin') {
+          if (categoriesHiddenBySkin.includes(category)) {
+            return false
+          }
+          if (hides && hides.includes('head' as WearableCategory)) {
+            return false
+          }
+          if (replaces && replaces.includes('head' as WearableCategory)) {
+            return false
+          }
+        }
+        if (wearable.data.hides && wearable.data.hides.includes(category)) {
+          return false
+        }
+        if (wearable.data.replaces && wearable.data.replaces.includes(category)) {
+          return false
+        }
+      }
+      return true
+    })
+    // add the equipped wearable at the end
+    wearables.push(preview.wearable)
+  }
+
+  // arrange wearbles in slots
+  for (const wearable of wearables) {
     const slot = wearable.data.category
     if (hasRepresentation(wearable, preview.bodyShape)) {
       slots.set(slot, wearable)
@@ -14,7 +57,7 @@ export function getSlots(preview: AvatarPreview) {
   }
   let hasSkin = false
   // grab only the wearables that ended up in the map, and process in reverse order (last wearables can hide/replace the first ones)
-  const wearables = preview.wearables.filter((wearable) => slots.get(wearable.data.category) === wearable).reverse()
+  wearables = wearables.filter((wearable) => slots.get(wearable.data.category) === wearable).reverse()
   const alreadyRemoved = new Set<string>()
   for (const wearable of wearables) {
     const category = wearable.data.category
@@ -34,15 +77,11 @@ export function getSlots(preview: AvatarPreview) {
       hasSkin = true
     }
   }
+  // skins hide all the following slots
   if (hasSkin) {
-    slots.delete(WearableCategory.HAIR)
-    slots.delete(WearableCategory.FACIAL_HAIR)
-    slots.delete(WearableCategory.MOUTH)
-    slots.delete(WearableCategory.EYEBROWS)
-    slots.delete(WearableCategory.EYES)
-    slots.delete(WearableCategory.UPPER_BODY)
-    slots.delete(WearableCategory.LOWER_BODY)
-    slots.delete(WearableCategory.FEET)
+    for (const category of categoriesHiddenBySkin) {
+      slots.delete(category)
+    }
   }
 
   return slots

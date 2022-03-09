@@ -8,6 +8,7 @@ import { getDefaultCategories, getDefaultWearableUrn, getWearableByCategory, isW
 import { getZoom } from './zoom'
 
 export type AvatarPreview = {
+  wearable?: Wearable
   wearables: Wearable[]
   bodyShape: WearableBodyShape
   skin: string
@@ -54,7 +55,7 @@ export enum AvatarEmote {
 
 export enum AvatarCamera {
   STATIC = 'static',
-  INTERACTIVE = 'interactive',
+  INTERACTIVE = 'wearable',
 }
 
 export enum AvatarPreviewType {
@@ -175,7 +176,6 @@ export async function createAvatarPreview(options: AvatarPreviewOptions = {}): P
       image: wearable.thumbnail,
       gradient,
     }
-    wearables = [...wearables, wearable]
   }
 
   let emote = AvatarEmote.IDLE
@@ -189,6 +189,7 @@ export async function createAvatarPreview(options: AvatarPreviewOptions = {}): P
   }
 
   return {
+    wearable: wearable ?? undefined,
     wearables,
     bodyShape,
     skin,
