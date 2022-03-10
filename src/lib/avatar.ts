@@ -49,6 +49,7 @@ export enum AvatarEmote {
   DANCE = 'dance',
   FASHION = 'fashion',
   FASHION_2 = 'fashion-2',
+  FASHION_3 = 'fashion-3',
   LOVE = 'love',
   MONEY = 'money',
 }
