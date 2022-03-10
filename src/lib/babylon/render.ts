@@ -53,7 +53,7 @@ export async function render(canvas: HTMLCanvasElement, preview: AvatarPreview) 
     // play emote
     if (preview.emote) {
       try {
-        await playEmote(root, assets, preview.emote)
+        await playEmote(root, assets, preview)
       } catch (error) {
         console.warn(`Could not play emote=${preview.emote}`, error)
       }

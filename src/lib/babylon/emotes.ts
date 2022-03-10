@@ -1,17 +1,18 @@
-import { AnimationGroup, Scene, TransformNode } from '@babylonjs/core'
-import { AvatarEmote } from '../avatar'
+import { AnimationGroup, ArcRotateCamera, Scene, TransformNode } from '@babylonjs/core'
+import { AvatarCamera, AvatarPreview } from '../avatar'
+import { startAutoRotateBehavior } from './camera'
 import { Asset, loadAssetContainer } from './scene'
 
-export async function playEmote(scene: Scene, assets: Asset[], emote: AvatarEmote) {
+export async function playEmote(scene: Scene, assets: Asset[], preview: AvatarPreview) {
   let baseUrl = process.env.PUBLIC_URL || ''
   if (!baseUrl.endsWith('/')) {
     baseUrl += '/'
   }
-  const path = `./emotes/${emote}.glb`
+  const path = `./emotes/${preview.emote}.glb`
   const url = baseUrl.startsWith('http') ? new URL(path, baseUrl).href : path
   const container = await loadAssetContainer(scene, url)
   if (container.animationGroups.length === 0) {
-    throw new Error(`No animation groups found for emote=${emote}`)
+    throw new Error(`No animation groups found for emote=${preview.emote}`)
   }
   const emoteAnimationGroup = new AnimationGroup('emote', scene)
   for (const asset of assets) {
@@ -32,4 +33,13 @@ export async function playEmote(scene: Scene, assets: Asset[], emote: AvatarEmot
     }
   }
   emoteAnimationGroup.play()
+
+  // start camera rotation after animation ends
+  function onAnimationEnd() {
+    if (preview.camera !== AvatarCamera.STATIC) {
+      const camera = scene.cameras[0] as ArcRotateCamera
+      startAutoRotateBehavior(camera, preview)
+    }
+  }
+  emoteAnimationGroup.onAnimationEndObservable.addOnce(onAnimationEnd)
 }

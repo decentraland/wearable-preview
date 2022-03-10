@@ -23,6 +23,7 @@ import { WearableBodyShape } from '@dcl/schemas'
 import { AvatarCamera, AvatarPreview, AvatarPreviewType } from '../avatar'
 import { getContentUrl, getRepresentation, isTexture } from '../representation'
 import { Wearable } from '../wearable'
+import { startAutoRotateBehavior } from './camera'
 
 export type Asset = {
   container: AssetContainer
@@ -91,11 +92,12 @@ export async function createScene(canvas: HTMLCanvasElement, preview: AvatarPrev
     case AvatarCamera.INTERACTIVE: {
       switch (preview.type) {
         case AvatarPreviewType.WEARABLE: {
+          startAutoRotateBehavior(camera, preview)
           camera.position = new Vector3(-2, 2, 2)
           break
         }
         case AvatarPreviewType.AVATAR: {
-          camera.position = new Vector3(-2, 1, 3)
+          camera.position = new Vector3(0, 1, 3)
           break
         }
         default: {
@@ -103,8 +105,6 @@ export async function createScene(canvas: HTMLCanvasElement, preview: AvatarPrev
           // do nothing
         }
       }
-      camera.useAutoRotationBehavior = true
-      camera.autoRotationBehavior!.idleRotationSpeed = 0.2
       camera.attachControl(canvas, true)
       break
     }

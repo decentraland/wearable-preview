@@ -14,6 +14,7 @@ This webapp renders an interactive 3D preview of a wearable. It can be configure
 - `emote`: the emote that the avatar will play. Default value is `idle`, other possible values are: `clap`, `dab`, `dance`, `fashion`, `fashion-2`, `fashion-3`, `love` and `money`.
 - `zoom`: the level of zoom, it must be a number between 1 and 100.
 - `camera`: which camera type to use, either `interactive` or `static`. By default it uses the `interactive` one.
+- `autoRotateSpeed`: the speed of the auto-rotate behavior of the camera. By default it is `0.2`, and it only works when the camera is not `static`.
 - `env`: The environment to use, it can be `prod` (uses mainnet wearables and catalysts) or `dev` (uses testnet wearables and catalysts).
 
 Example: https://wearable-preview.decentraland.org?contract=0xee8ae4c668edd43b34b98934d6d2ff82e41e6488&item=5

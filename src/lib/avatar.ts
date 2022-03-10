@@ -19,6 +19,7 @@ export type AvatarPreview = {
   background: AvatarBackground
   emote: AvatarEmote
   camera: AvatarCamera
+  autoRotateSpeed: number
 }
 
 export type AvatarPreviewOptions = {
@@ -34,6 +35,7 @@ export type AvatarPreviewOptions = {
   zoom?: number | null
   emote?: AvatarEmote | null
   camera?: AvatarCamera | null
+  autoRotateSpeed?: number | null
   env?: Env | null
 }
 
@@ -188,6 +190,7 @@ export async function createAvatarPreview(options: AvatarPreviewOptions = {}): P
   if (options.camera && Object.values(AvatarCamera).includes(options.camera)) {
     camera = options.camera
   }
+  const autoRotateSpeed = typeof options.autoRotateSpeed === 'number' && !isNaN(options.autoRotateSpeed) ? options.autoRotateSpeed : 0.2
 
   return {
     wearable: wearable ?? undefined,
@@ -200,6 +203,7 @@ export async function createAvatarPreview(options: AvatarPreviewOptions = {}): P
     background,
     emote,
     camera,
+    autoRotateSpeed,
     zoom: options.zoom || zoom,
   }
 }
