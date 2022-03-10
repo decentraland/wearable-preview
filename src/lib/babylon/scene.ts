@@ -97,7 +97,7 @@ export async function createScene(canvas: HTMLCanvasElement, preview: AvatarPrev
           break
         }
         case AvatarPreviewType.AVATAR: {
-          camera.position = new Vector3(0, 1, 3)
+          camera.position = new Vector3(0, 1, 3.5)
           break
         }
         default: {
