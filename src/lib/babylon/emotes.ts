@@ -1,7 +1,10 @@
-import { AnimationGroup, ArcRotateCamera, Scene, TransformNode } from '@babylonjs/core'
-import { AvatarCamera, AvatarPreview } from '../avatar'
+import { AnimationGroup, ArcRotateCamera, AssetContainer, Scene, TransformNode } from '@babylonjs/core'
+import { AvatarCamera, AvatarEmote, AvatarPreview } from '../avatar'
 import { startAutoRotateBehavior } from './camera'
 import { Asset, loadAssetContainer } from './scene'
+
+// cache emotes, this is so wecan play on loop without downloading the GLB again
+const cache: Record<string, AssetContainer> = {}
 
 export async function playEmote(scene: Scene, assets: Asset[], preview: AvatarPreview) {
   let baseUrl = process.env.PUBLIC_URL || ''
@@ -10,9 +13,13 @@ export async function playEmote(scene: Scene, assets: Asset[], preview: AvatarPr
   }
   const path = `./emotes/${preview.emote}.glb`
   const url = baseUrl.startsWith('http') ? new URL(path, baseUrl).href : path
-  const container = await loadAssetContainer(scene, url)
-  if (container.animationGroups.length === 0) {
-    throw new Error(`No animation groups found for emote=${preview.emote}`)
+  let container = cache[url]
+  if (!container) {
+    container = await loadAssetContainer(scene, url)
+    if (container.animationGroups.length === 0) {
+      throw new Error(`No animation groups found for emote=${preview.emote}`)
+    }
+    cache[url] = container
   }
   const emoteAnimationGroup = new AnimationGroup('emote', scene)
   for (const asset of assets) {
@@ -40,6 +47,8 @@ export async function playEmote(scene: Scene, assets: Asset[], preview: AvatarPr
       const camera = scene.cameras[0] as ArcRotateCamera
       startAutoRotateBehavior(camera, preview)
     }
+    // keep playing idle animation on loop
+    playEmote(scene, assets, { ...preview, emote: AvatarEmote.IDLE })
   }
   emoteAnimationGroup.onAnimationEndObservable.addOnce(onAnimationEnd)
 }
