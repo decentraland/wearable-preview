@@ -113,7 +113,9 @@ export async function createScene(canvas: HTMLCanvasElement, preview: AvatarPrev
       break
     }
   }
-  camera.setTarget(Vector3.Zero())
+  const offset = new Vector3(preview.offsetX, preview.offsetY, preview.offsetZ)
+  camera.position.addInPlace(offset)
+  camera.setTarget(offset)
   camera.lowerRadiusLimit = camera.upperRadiusLimit = camera.radius / preview.zoom
 
   // Setup lights

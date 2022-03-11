@@ -29,6 +29,12 @@ const Preview: React.FC = () => {
   const camera = params.get('camera') as AvatarCamera | null
   const autoRotateSpeedParam = params.get('autoRotateSpeed') as string | null
   const autoRotateSpeed = autoRotateSpeedParam ? parseFloat(autoRotateSpeedParam) : null
+  const offsetXParam = params.get('offsetX') as string | null
+  const offsetX = offsetXParam ? parseFloat(offsetXParam) : null
+  const offsetYParam = params.get('offsetY') as string | null
+  const offsetY = offsetYParam ? parseFloat(offsetYParam) : null
+  const offsetZParam = params.get('offsetZ') as string | null
+  const offsetZ = offsetZParam ? parseFloat(offsetZParam) : null
   const zoom = parseZoom(params.get('zoom'))
   const bodyShapeParam = params.get('bodyShape') || params.get('shape') // keep supporting deprecated "shape" param to avoid breaking changes
   const bodyShape = bodyShapeParam === 'female' ? WearableBodyShape.FEMALE : bodyShapeParam === 'male' ? WearableBodyShape.MALE : null
@@ -52,6 +58,9 @@ const Preview: React.FC = () => {
       emote,
       camera,
       autoRotateSpeed,
+      offsetX,
+      offsetY,
+      offsetZ,
     },
     overrides
   )

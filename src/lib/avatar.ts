@@ -20,6 +20,9 @@ export type AvatarPreview = {
   emote: AvatarEmote
   camera: AvatarCamera
   autoRotateSpeed: number
+  offsetX: number
+  offsetY: number
+  offsetZ: number
 }
 
 export type AvatarPreviewOptions = {
@@ -36,6 +39,9 @@ export type AvatarPreviewOptions = {
   emote?: AvatarEmote | null
   camera?: AvatarCamera | null
   autoRotateSpeed?: number | null
+  offsetX?: number | null
+  offsetY?: number | null
+  offsetZ?: number | null
   env?: Env | null
 }
 
@@ -205,6 +211,9 @@ export async function createAvatarPreview(options: AvatarPreviewOptions = {}): P
     emote,
     camera,
     autoRotateSpeed,
+    offsetX: options.offsetX || 0,
+    offsetY: options.offsetY || 0,
+    offsetZ: options.offsetZ || 0,
     zoom: options.zoom || zoom,
   }
 }
