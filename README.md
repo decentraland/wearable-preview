@@ -18,6 +18,7 @@ This webapp renders an interactive 3D preview of a wearable. It can be configure
 - `offsetX`: apply an offset in the X position of the camera. By default is `0`.
 - `offsetY`: apply an offset in the Y position of the camera. By default is `0`.
 - `offsetZ`: apply an offset in the Z position of the camera. By default is `0`.
+- `transparentBackground`: if set it will make the background transparent.
 - `env`: The environment to use, it can be `prod` (uses mainnet wearables and catalysts) or `dev` (uses testnet wearables and catalysts).
 
 Example: https://wearable-preview.decentraland.org?contract=0xee8ae4c668edd43b34b98934d6d2ff82e41e6488&item=5

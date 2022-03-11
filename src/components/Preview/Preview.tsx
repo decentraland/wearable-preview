@@ -27,6 +27,7 @@ const Preview: React.FC = () => {
   const eyes = params.get('eyes')
   const emote = params.get('emote') as AvatarEmote | null
   const camera = params.get('camera') as AvatarCamera | null
+  const transparentBackground = params.has('transparentBackground')
   const autoRotateSpeedParam = params.get('autoRotateSpeed') as string | null
   const autoRotateSpeed = autoRotateSpeedParam ? parseFloat(autoRotateSpeedParam) : null
   const offsetXParam = params.get('offsetX') as string | null
@@ -76,7 +77,8 @@ const Preview: React.FC = () => {
   useEffect(() => {
     if (canvasRef.current && avatar) {
       // rarity background
-      setStyle({ backgroundImage: avatar.background.gradient, opacity: 1 })
+      setStyle({ backgroundImage: transparentBackground ? undefined : avatar.background.gradient, opacity: 1 })
+
       // set background image
       if (avatar.background.image) {
         setImage(avatar.background.image)
