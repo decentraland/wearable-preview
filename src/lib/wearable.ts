@@ -75,3 +75,9 @@ export function getDefaultWearableUrn(category: WearableCategory, shape: Wearabl
 export function isWearable(value: Wearable | void): value is Wearable {
   return !!value
 }
+
+export function getWearableBodyShape(wearabe: Wearable): WearableBodyShape {
+  return wearabe.data.representations.some((representation) => representation.bodyShapes.includes(WearableBodyShape.FEMALE))
+    ? WearableBodyShape.FEMALE
+    : WearableBodyShape.MALE
+}

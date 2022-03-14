@@ -4,7 +4,7 @@ import { nftApi } from './api/nft'
 import { peerApi } from './api/peer'
 import { colorToHex, formatHex } from './color'
 import { getRepresentationOrDefault, hasRepresentation, isTexture } from './representation'
-import { getDefaultCategories, getDefaultWearableUrn, getWearableByCategory, isWearable, Wearable } from './wearable'
+import { getDefaultCategories, getDefaultWearableUrn, getWearableBodyShape, getWearableByCategory, isWearable, Wearable } from './wearable'
 import { getZoom } from './zoom'
 
 export type AvatarPreview = {
@@ -153,7 +153,10 @@ export async function createAvatarPreview(options: AvatarPreviewOptions = {}): P
 
   const [wearable, profile] = await Promise.all([wearablePromise, profilePromise] as const)
 
-  const bodyShape = options.bodyShape || (profile && (profile.avatar.bodyShape as WearableBodyShape)) || WearableBodyShape.MALE
+  const bodyShape =
+    options.bodyShape || (profile && (profile.avatar.bodyShape as WearableBodyShape)) || wearable
+      ? getWearableBodyShape(wearable!)
+      : WearableBodyShape.MALE
   const skin = formatHex(options.skin || (profile && colorToHex(profile.avatar.skin.color)) || 'cc9b76')
   const hair = formatHex(options.hair || (profile && colorToHex(profile.avatar.hair.color)) || '000000')
   const eyes = formatHex(options.eyes || (profile && colorToHex(profile.avatar.eyes.color)) || '000000')
