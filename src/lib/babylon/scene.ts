@@ -221,6 +221,13 @@ export async function loadWearable(scene: Scene, wearable: Wearable, bodyShape =
     }
   }
 
+  // Stop any animations
+  for (const animationGroup of container.animationGroups) {
+    animationGroup.stop()
+    animationGroup.reset()
+    animationGroup.dispose()
+  }
+
   return { container, wearable }
 }
 
