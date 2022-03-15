@@ -1,6 +1,7 @@
 import { SceneLoader } from '@babylonjs/core'
 import { GLTFFileLoader } from '@babylonjs/loaders'
 import { WearableBodyShape } from '@dcl/schemas'
+import { AvatarPreview } from '../avatar'
 import { getRepresentation } from '../representation'
 import { Wearable } from '../wearable'
 
@@ -26,8 +27,9 @@ export function createMappings(wearables: Wearable[], bodyShape = WearableBodySh
  * Configures the mappings for all the relative paths within a model to the right IPFS in the catalyst
  * @param wearables
  */
-export function setupMappings(wearables: Wearable[], bodyShape = WearableBodyShape.MALE) {
-  const mappings = createMappings(wearables, bodyShape)
+export function setupMappings(preview: AvatarPreview) {
+  const wearables = preview.wearable ? [preview.wearable, ...preview.wearables] : preview.wearables
+  const mappings = createMappings(wearables, preview.bodyShape)
   SceneLoader.OnPluginActivatedObservable.add((plugin) => {
     if (plugin.name === 'gltf') {
       const gltf = plugin as GLTFFileLoader

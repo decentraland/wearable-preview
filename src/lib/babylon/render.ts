@@ -19,7 +19,7 @@ export async function render(canvas: HTMLCanvasElement, preview: AvatarPreview) 
   const root = await createScene(canvas, preview)
 
   // setup the mappings for all the contents
-  setupMappings(preview.wearables, preview.bodyShape)
+  setupMappings(preview)
 
   // load all the wearables into the root scene
   const promises: Promise<void | Asset>[] = []
