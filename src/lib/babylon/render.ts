@@ -50,14 +50,9 @@ export async function render(canvas: HTMLCanvasElement, preview: AvatarPreview) 
     const features = wearables.filter(isFacialFeature)
     const { eyes, eyebrows, mouth } = await getFacialFeatures(root, features, preview.bodyShape)
     applyFacialFeatures(root, bodyShape, eyes, eyebrows, mouth, preview)
+
     // play emote
-    if (preview.emote) {
-      try {
-        await playEmote(root, assets, preview)
-      } catch (error) {
-        console.warn(`Could not play emote=${preview.emote}`, error)
-      }
-    }
+    await playEmote(root, assets, preview)
   } else {
     if (!preview.wearable) {
       throw new Error('No wearable to render')

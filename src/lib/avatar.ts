@@ -4,7 +4,15 @@ import { nftApi } from './api/nft'
 import { peerApi } from './api/peer'
 import { colorToHex, formatHex } from './color'
 import { getRepresentationOrDefault, hasRepresentation, isTexture } from './representation'
-import { getDefaultCategories, getDefaultWearableUrn, getWearableBodyShape, getWearableByCategory, isWearable, Wearable } from './wearable'
+import {
+  getDefaultCategories,
+  getDefaultWearableUrn,
+  getWearableBodyShape,
+  getWearableByCategory,
+  isEmote,
+  isWearable,
+  Wearable,
+} from './wearable'
 import { getZoom } from './zoom'
 
 export type AvatarPreview = {
@@ -110,7 +118,7 @@ async function fetchWearableFromContract(options: { contractAddress: string; ite
   return fetchWearable(urn, env)
 }
 
-async function fetchWearables(urns: string[], bodyShape: WearableBodyShape, env: Env) {
+async function fetchAvatar(urns: string[], bodyShape: WearableBodyShape, env: Env) {
   let wearables = (await Promise.all([bodyShape, ...urns].map((urn) => fetchWearable(urn, env))))
     .filter(isWearable) // filter out wearables that failed to load
     .filter((wearable) => hasRepresentation(wearable, bodyShape)) // filter out wearables that don't have a representation for the body shape
@@ -144,27 +152,32 @@ export async function createAvatarPreview(options: AvatarPreviewOptions = {}): P
   const { contractAddress, tokenId, itemId } = options
   const env = options.env || Env.PROD
 
+  // load wearable to preview
   let wearablePromise: Promise<Wearable | void> = Promise.resolve()
   if (contractAddress) {
     wearablePromise = fetchWearableFromContract({ contractAddress, tokenId, itemId, env })
   }
 
+  // load profile
   const profilePromise = options.profile ? fetchProfile(options.profile, env) : Promise.resolve()
 
+  // await promises
   const [wearable, profile] = await Promise.all([wearablePromise, profilePromise] as const)
 
+  // use body shape from options, default to the profile one, if no profile default to the wearable bodyShape, if none, default to male
   const bodyShape =
     options.bodyShape ||
     (profile && (profile.avatar.bodyShape as WearableBodyShape)) ||
     (wearable ? getWearableBodyShape(wearable!) : WearableBodyShape.MALE)
+
+  // use colors from options, default to profile, if none, use default values
   const skin = formatHex(options.skin || (profile && colorToHex(profile.avatar.skin.color)) || 'cc9b76')
   const hair = formatHex(options.hair || (profile && colorToHex(profile.avatar.hair.color)) || '000000')
   const eyes = formatHex(options.eyes || (profile && colorToHex(profile.avatar.eyes.color)) || '000000')
-  const urns = [
-    ...(options.profile === DEFAULT_PROFILE ? [bodyShape] : []),
-    ...(profile ? profile.avatar.wearables : []),
-    ...(options.urns || []),
-  ]
+
+  // merge urns from profile (if any) and extra urns
+  const urns = [...(profile ? profile.avatar.wearables : []), ...(options.urns || [])]
+
   let wearables: Wearable[] = []
   let zoom = 1.75
   let type = AvatarPreviewType.WEARABLE
@@ -172,9 +185,10 @@ export async function createAvatarPreview(options: AvatarPreviewOptions = {}): P
     gradient: `radial-gradient(#676370, #18141b)`,
   }
 
-  if (urns.length > 0) {
-    wearables = await fetchWearables(urns, bodyShape, env)
+  // if loading multiple wearables, or if wearable is emote, render full avatar
+  if (urns.length > 0 || (wearable && isEmote(wearable)) || options.profile === DEFAULT_PROFILE) {
     type = AvatarPreviewType.AVATAR
+    wearables = await fetchAvatar(urns, bodyShape, env)
   }
 
   if (wearable) {

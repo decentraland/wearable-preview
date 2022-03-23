@@ -6,6 +6,9 @@ export type Wearable = Omit<WearableBroken, 'data' | 'names'> & {
   data: Omit<WearableBroken['data'], 'representations'> & {
     representations: WearableRepresentation[]
   }
+  emoteDataV0?: {
+    loop: boolean
+  }
 }
 
 export function getWearableByCategory(wearables: Wearable[], category: WearableCategory) {
@@ -82,4 +85,8 @@ export function getWearableBodyShape(wearabe: Wearable): WearableBodyShape {
     bodyShapes.find((bodyShape) => wearabe.data.representations.some((representation) => representation.bodyShapes.includes(bodyShape))) ||
     bodyShapes[0]
   )
+}
+
+export function isEmote(wearable: Wearable) {
+  return !!wearable && `emoteDataV0` in wearable
 }
