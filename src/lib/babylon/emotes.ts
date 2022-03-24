@@ -1,9 +1,15 @@
 import { AnimationGroup, ArcRotateCamera, AssetContainer, Scene, TransformNode } from '@babylonjs/core'
-import { AvatarCamera, AvatarEmote, AvatarPreview, loopedEmotes } from '../avatar'
+import { AvatarCamera, AvatarEmote, AvatarPreview } from '../avatar'
 import { getRepresentation } from '../representation'
 import { isEmote, Wearable } from '../wearable'
 import { startAutoRotateBehavior } from './camera'
 import { Asset, loadAssetContainer } from './scene'
+
+const loopedEmotes = [AvatarEmote.IDLE, AvatarEmote.MONEY, AvatarEmote.CLAP]
+
+function isLooped(emote: AvatarEmote) {
+  return loopedEmotes.includes(emote)
+}
 
 // cache emotes, this is so wecan play on loop without downloading the GLB again
 const cache: Record<string, AssetContainer> = {}
@@ -42,7 +48,7 @@ export async function loadEmoteFromWearable(scene: Scene, wearable: Wearable, pr
 export async function playEmote(scene: Scene, assets: Asset[], preview: AvatarPreview) {
   // load asset container for emote
   let container: AssetContainer | undefined
-  let loop = loopedEmotes.includes(preview.emote)
+  let loop = isLooped(preview.emote)
   if (preview.wearable && isEmote(preview.wearable)) {
     try {
       container = await loadEmoteFromWearable(scene, preview.wearable, preview)
