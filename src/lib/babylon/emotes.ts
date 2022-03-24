@@ -1,5 +1,5 @@
 import { AnimationGroup, ArcRotateCamera, AssetContainer, Scene, TransformNode } from '@babylonjs/core'
-import { AvatarCamera, AvatarEmote, AvatarPreview } from '../avatar'
+import { AvatarCamera, AvatarEmote, AvatarPreview, loopedEmotes } from '../avatar'
 import { getRepresentation } from '../representation'
 import { isEmote, Wearable } from '../wearable'
 import { startAutoRotateBehavior } from './camera'
@@ -42,7 +42,7 @@ export async function loadEmoteFromWearable(scene: Scene, wearable: Wearable, pr
 export async function playEmote(scene: Scene, assets: Asset[], preview: AvatarPreview) {
   // load asset container for emote
   let container: AssetContainer | undefined
-  let loop = preview.emote === AvatarEmote.IDLE
+  let loop = loopedEmotes.includes(preview.emote)
   if (preview.wearable && isEmote(preview.wearable)) {
     try {
       container = await loadEmoteFromWearable(scene, preview.wearable, preview)

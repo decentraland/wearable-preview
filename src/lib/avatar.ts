@@ -71,6 +71,12 @@ export enum AvatarEmote {
   MONEY = 'money',
 }
 
+export const loopedEmotes = [
+  AvatarEmote.IDLE,
+  AvatarEmote.MONEY,
+  AvatarEmote.CLAP
+]
+
 export enum AvatarCamera {
   STATIC = 'static',
   INTERACTIVE = 'wearable',
