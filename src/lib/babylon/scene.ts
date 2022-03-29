@@ -190,7 +190,8 @@ export async function loadAssetContainer(scene: Scene, url: string) {
  */
 
 const hairMaterials = ['hair_mat']
-const skinMaterials = ['avatarskin_mat', 'skin-f']
+// there are some representations that use a modified material name like "skin-f" or "skin_f", i added them to the list support those wearables
+const skinMaterials = ['avatarskin_mat', 'skin-f', 'skin_f']
 export async function loadWearable(scene: Scene, wearable: Wearable, bodyShape = WearableBodyShape.MALE, skin?: string, hair?: string) {
   const representation = getRepresentation(wearable, bodyShape)
   if (isTexture(representation)) {
