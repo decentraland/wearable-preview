@@ -52,9 +52,7 @@ export async function playEmote(scene: Scene, assets: Asset[], preview: AvatarPr
   if (preview.wearable && isEmote(preview.wearable)) {
     try {
       container = await loadEmoteFromWearable(scene, preview.wearable, preview)
-      if (preview.wearable.emoteDataV0?.loop) {
-        loop = true
-      }
+      loop = !!preview.wearable.emoteDataV0?.loop
     } catch (error) {
       console.warn(`Could not load emote=${preview.wearable.id}`)
     }
