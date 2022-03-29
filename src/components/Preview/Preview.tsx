@@ -1,14 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react'
 import classNames from 'classnames'
-import { WearableBodyShape } from '@dcl/schemas'
 import { useWindowSize } from '../../hooks/useWindowSize'
 import { useAvatar } from '../../hooks/useAvatar'
 import { MessageType, sendMessage } from '../../lib/message'
-import { AvatarCamera, AvatarEmote, AvatarPreview, AvatarPreviewType } from '../../lib/avatar'
-import { parseZoom } from '../../lib/zoom'
-import { Env } from '../../types/env'
-import './Preview.css'
+import { AvatarCamera, AvatarPreviewType } from '../../lib/avatar'
 import { render } from '../../lib/babylon/render'
+import './Preview.css'
 
 const Preview: React.FC = () => {
   const [previewError, setPreviewError] = useState('')
@@ -18,53 +15,7 @@ const Preview: React.FC = () => {
   const [isLoadingModel, setIsLoadingModel] = useState(true)
   const [isLoaded, setIsLoaded] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const params = new URLSearchParams(window.location.search)
-  const contractAddress = params.get('contract')!
-  const tokenId = params.get('token')
-  const itemId = params.get('item')
-  const skin = params.get('skin')
-  const hair = params.get('hair')
-  const eyes = params.get('eyes')
-  const emote = params.get('emote') as AvatarEmote | null
-  const camera = params.get('camera') as AvatarCamera | null
-  const transparentBackground = params.has('transparentBackground')
-  const autoRotateSpeedParam = params.get('autoRotateSpeed') as string | null
-  const autoRotateSpeed = autoRotateSpeedParam ? parseFloat(autoRotateSpeedParam) : null
-  const offsetXParam = params.get('offsetX') as string | null
-  const offsetX = offsetXParam ? parseFloat(offsetXParam) : null
-  const offsetYParam = params.get('offsetY') as string | null
-  const offsetY = offsetYParam ? parseFloat(offsetYParam) : null
-  const offsetZParam = params.get('offsetZ') as string | null
-  const offsetZ = offsetZParam ? parseFloat(offsetZParam) : null
-  const zoom = parseZoom(params.get('zoom'))
-  const bodyShapeParam = params.get('bodyShape') || params.get('shape') // keep supporting deprecated "shape" param to avoid breaking changes
-  const bodyShape = bodyShapeParam === 'female' ? WearableBodyShape.FEMALE : bodyShapeParam === 'male' ? WearableBodyShape.MALE : null
-  const urns = params.getAll('urn')
-  const profile = params.get('profile')
-  const env = Object.values(Env).reduce((selected, value) => (value === params.get('env') ? value : selected), Env.PROD)
-  const [overrides, setOverrides] = useState<Partial<AvatarPreview>>({})
-  const [avatar, isLoadingAvatar, avatarError] = useAvatar(
-    {
-      contractAddress,
-      tokenId,
-      itemId,
-      bodyShape,
-      urns,
-      env,
-      profile,
-      skin,
-      hair,
-      eyes,
-      zoom,
-      emote,
-      camera,
-      autoRotateSpeed,
-      offsetX,
-      offsetY,
-      offsetZ,
-    },
-    overrides
-  )
+  const [avatar, isLoadingAvatar, avatarError] = useAvatar()
   const [image, setImage] = useState('')
   const [is3D, setIs3D] = useState(true)
   const [isMessageSent, setIsMessageSent] = useState(false)
@@ -77,7 +28,7 @@ const Preview: React.FC = () => {
   useEffect(() => {
     if (canvasRef.current && avatar) {
       // rarity background
-      setStyle({ backgroundImage: transparentBackground ? undefined : avatar.background.gradient, opacity: 1 })
+      setStyle({ backgroundImage: avatar.background.gradient ? avatar.background.gradient : undefined, opacity: 1 })
 
       // set background image
       if (avatar.background.image) {
@@ -113,22 +64,6 @@ const Preview: React.FC = () => {
       }
     }
   }, [isLoaded, error, isMessageSent])
-
-  // receive message from parent window to update options
-  useEffect(() => {
-    const previous = window.onmessage
-    window.onmessage = function (event: MessageEvent) {
-      if (event.data && event.data.type === MessageType.UPDATE) {
-        const message = event.data as { type: MessageType.UPDATE; options: Partial<AvatarPreview> }
-        if (message.options && typeof message.options === 'object') {
-          setOverrides(message.options)
-        }
-      }
-    }
-    return () => {
-      window.onmessage = previous
-    }
-  }, [])
 
   return (
     <div

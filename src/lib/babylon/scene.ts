@@ -21,9 +21,11 @@ import {
 import '@babylonjs/loaders'
 import { WearableBodyShape } from '@dcl/schemas'
 import { AvatarCamera, AvatarPreview, AvatarPreviewType } from '../avatar'
+import { createMemo } from '../cache'
 import { getContentUrl, getRepresentation, isTexture } from '../representation'
 import { Wearable } from '../wearable'
 import { startAutoRotateBehavior } from './camera'
+import { emoteMemo } from './emotes'
 
 export type Asset = {
   container: AssetContainer
@@ -65,11 +67,20 @@ function refreshBoundingInfo(parent: Mesh) {
  * @param zoom
  * @returns
  */
+let engine: Engine
 export async function createScene(canvas: HTMLCanvasElement, preview: AvatarPreview) {
   // Create engine
-  const engine = new Engine(canvas, true, {
+  if (engine) {
+    console.log('dispose')
+    engine.dispose()
+    // reset memoizers that contain babylon containers, since they are not useful after the engine dispose
+    assetMemo.reset()
+    emoteMemo.reset()
+  }
+  engine = new Engine(canvas, true, {
     preserveDrawingBuffer: true,
     stencil: true,
+    antialias: true,
   })
 
   // Load GLB/GLTF
@@ -192,46 +203,49 @@ export async function loadAssetContainer(scene: Scene, url: string) {
 const hairMaterials = ['hair_mat']
 // there are some representations that use a modified material name like "skin-f" or "skin_f", i added them to the list support those wearables
 const skinMaterials = ['avatarskin_mat', 'skin-f', 'skin_f']
-export async function loadWearable(scene: Scene, wearable: Wearable, bodyShape = WearableBodyShape.MALE, skin?: string, hair?: string) {
-  const representation = getRepresentation(wearable, bodyShape)
-  if (isTexture(representation)) {
-    throw new Error(`The wearable="${wearable.id}" is a texture`)
-  }
-  const url = getContentUrl(representation)
-  const container = await loadAssetContainer(scene, url)
+export const assetMemo = createMemo<Asset>()
+export async function loadAsset(scene: Scene, wearable: Wearable, bodyShape = WearableBodyShape.MALE, skin?: string, hair?: string) {
+  return assetMemo.memo(wearable.id, async () => {
+    const representation = getRepresentation(wearable, bodyShape)
+    if (isTexture(representation)) {
+      throw new Error(`The wearable="${wearable.id}" is a texture`)
+    }
+    const url = getContentUrl(representation)
+    const container = await loadAssetContainer(scene, url)
 
-  // Clean up
-  for (let material of container.materials) {
-    if (hairMaterials.some((mat) => material.name.toLowerCase().includes(mat))) {
-      if (hair) {
-        const pbr = material as PBRMaterial
-        pbr.albedoColor = Color3.FromHexString(hair)
-        pbr.alpha = 1
-      } else {
-        material.alpha = 0
-        scene.removeMaterial(material)
+    // Clean up
+    for (let material of container.materials) {
+      if (hairMaterials.some((mat) => material.name.toLowerCase().includes(mat))) {
+        if (hair) {
+          const pbr = material as PBRMaterial
+          pbr.albedoColor = Color3.FromHexString(hair)
+          pbr.alpha = 1
+        } else {
+          material.alpha = 0
+          scene.removeMaterial(material)
+        }
+      }
+      if (skinMaterials.some((mat) => material.name.toLowerCase().includes(mat))) {
+        if (skin) {
+          const pbr = material as PBRMaterial
+          pbr.albedoColor = Color3.FromHexString(skin)
+          pbr.alpha = 1
+        } else {
+          material.alpha = 0
+          scene.removeMaterial(material)
+        }
       }
     }
-    if (skinMaterials.some((mat) => material.name.toLowerCase().includes(mat))) {
-      if (skin) {
-        const pbr = material as PBRMaterial
-        pbr.albedoColor = Color3.FromHexString(skin)
-        pbr.alpha = 1
-      } else {
-        material.alpha = 0
-        scene.removeMaterial(material)
-      }
+
+    // Stop any animations
+    for (const animationGroup of container.animationGroups) {
+      animationGroup.stop()
+      animationGroup.reset()
+      animationGroup.dispose()
     }
-  }
 
-  // Stop any animations
-  for (const animationGroup of container.animationGroups) {
-    animationGroup.stop()
-    animationGroup.reset()
-    animationGroup.dispose()
-  }
-
-  return { container, wearable }
+    return { container, wearable }
+  })
 }
 
 /**

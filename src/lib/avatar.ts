@@ -1,7 +1,8 @@
-import { Network, Rarity, WearableBodyShape } from '@dcl/schemas'
+import { Avatar, Network, Rarity, WearableBodyShape } from '@dcl/schemas'
 import { Env } from '../types/env'
 import { nftApi } from './api/nft'
 import { peerApi } from './api/peer'
+import { createMemo } from './cache'
 import { colorToHex, formatHex } from './color'
 import { getRepresentationOrDefault, hasRepresentation, isTexture } from './representation'
 import {
@@ -51,11 +52,12 @@ export type AvatarPreviewOptions = {
   offsetY?: number | null
   offsetZ?: number | null
   env?: Env | null
+  transparentBackground?: boolean
 }
 
 export type AvatarBackground = {
   image?: string
-  gradient: string
+  gradient?: string
 }
 
 export enum AvatarEmote {
@@ -84,18 +86,25 @@ export enum AvatarPreviewType {
 
 const DEFAULT_PROFILE = 'default'
 
+export const wearableMemo = createMemo<void | Wearable>()
 async function fetchWearable(urn: string, env: Env) {
-  return peerApi.fetchWearable(urn, env).catch((error: Error) => console.log(`Failed to load wearable="${urn}"`, error))
+  return wearableMemo.memo(urn, () =>
+    peerApi.fetchWearable(urn, env).catch((error: Error) => console.log(`Failed to load wearable="${urn}"`, error))
+  )
 }
 
+export const profileMemo = createMemo<Avatar | null>()
 async function fetchProfile(profile: string, env: Env) {
-  if (profile === DEFAULT_PROFILE) {
-    return null
-  }
-  return peerApi
-    .fetchProfile(profile, env)
-    .then((profile) => (profile && profile.avatars.length > 0 ? profile.avatars[0] : null))
-    .catch((error: Error) => console.log(`Failed to load profile="${profile}"`, error))
+  return profileMemo.memo(profile, async () => {
+    if (profile === DEFAULT_PROFILE) {
+      return null
+    }
+    const resp = await peerApi
+      .fetchProfile(profile, env)
+      .then((profile) => (profile && profile.avatars.length > 0 ? profile.avatars[0] : null))
+      .catch((error: Error) => console.log(`Failed to load profile="${profile}"`, error))
+    return resp || null
+  })
 }
 
 async function fetchWearableFromContract(options: { contractAddress: string; itemId?: string | null; tokenId?: string | null; env: Env }) {
@@ -159,7 +168,7 @@ export async function createAvatarPreview(options: AvatarPreviewOptions = {}): P
   }
 
   // load profile
-  const profilePromise = options.profile ? fetchProfile(options.profile, env) : Promise.resolve()
+  const profilePromise = options.profile ? fetchProfile(options.profile, env) : Promise.resolve(null)
 
   // await promises
   const [wearable, profile] = await Promise.all([wearablePromise, profilePromise] as const)
@@ -182,7 +191,7 @@ export async function createAvatarPreview(options: AvatarPreviewOptions = {}): P
   let zoom = 1.75
   let type = AvatarPreviewType.WEARABLE
   let background: AvatarBackground = {
-    gradient: `radial-gradient(#676370, #18141b)`,
+    gradient: options.transparentBackground ? undefined : `radial-gradient(#676370, #18141b)`,
   }
 
   // if loading multiple wearables, or if wearable is emote, render full avatar
