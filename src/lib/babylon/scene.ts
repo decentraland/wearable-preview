@@ -71,7 +71,6 @@ let engine: Engine
 export async function createScene(canvas: HTMLCanvasElement, preview: AvatarPreview) {
   // Create engine
   if (engine) {
-    console.log('dispose')
     engine.dispose()
     // reset memoizers that contain babylon containers, since they are not useful after the engine dispose
     assetMemo.reset()
