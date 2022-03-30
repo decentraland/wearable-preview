@@ -206,6 +206,7 @@ export async function loadWearable(scene: Scene, wearable: Wearable, bodyShape =
       if (hair) {
         const pbr = material as PBRMaterial
         pbr.albedoColor = Color3.FromHexString(hair)
+        pbr.alpha = 1
       } else {
         material.alpha = 0
         scene.removeMaterial(material)
@@ -215,6 +216,7 @@ export async function loadWearable(scene: Scene, wearable: Wearable, bodyShape =
       if (skin) {
         const pbr = material as PBRMaterial
         pbr.albedoColor = Color3.FromHexString(skin)
+        pbr.alpha = 1
       } else {
         material.alpha = 0
         scene.removeMaterial(material)
