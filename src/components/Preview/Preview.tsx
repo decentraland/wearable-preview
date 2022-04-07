@@ -65,6 +65,24 @@ const Preview: React.FC = () => {
     }
   }, [isLoaded, error, isMessageSent])
 
+  // when the config is being loaded again (because the was an update to some of the options) reset all the other loading flags
+  useEffect(() => {
+    if (isLoadingConfig) {
+      let shouldResetIsLoaded = false
+      if (!isLoadingModel) {
+        setIsLoadingModel(true)
+        shouldResetIsLoaded = true
+      }
+      if (isMessageSent) {
+        setIsMessageSent(false)
+        shouldResetIsLoaded = true
+      }
+      if (shouldResetIsLoaded && isLoaded) {
+        setIsLoaded(false)
+      }
+    }
+  }, [isLoadingConfig, isLoadingModel, isMessageSent, isLoaded])
+
   return (
     <div
       className={classNames('Preview', {
