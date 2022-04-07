@@ -30,7 +30,6 @@ async function fetchWearable(urn: string, env: PreviewEnv) {
 }
 export const wearableMemo = createMemo<WearableDefinition[]>()
 async function fetchWearables(urns: string[], env: PreviewEnv) {
-  console.log('fetch urns', urns)
   return peerApi.fetchWearables(urns, env)
 }
 
