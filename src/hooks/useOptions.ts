@@ -1,15 +1,13 @@
 import { useMemo, useState } from 'react'
 import { useOverrides } from './useOverrides'
 
-import { WearableBodyShape } from '@dcl/schemas'
-import { Env } from '../types/env'
-import { AvatarEmote, AvatarCamera, AvatarPreviewOptions } from '../lib/avatar'
+import { PreviewCamera, PreviewEmote, PreviewEnv, PreviewOptions, WearableBodyShape } from '@dcl/schemas'
 import { parseZoom } from '../lib/zoom'
 
 export const useOptions = () => {
   // get options from url params
   const [search] = useState(window.location.search.toString())
-  const options = useMemo<AvatarPreviewOptions>(() => {
+  const options = useMemo<PreviewOptions>(() => {
     const params = new URLSearchParams(search)
     const autoRotateSpeedParam = params.get('autoRotateSpeed') as string | null
     const offsetXParam = params.get('offsetX') as string | null
@@ -23,8 +21,8 @@ export const useOptions = () => {
       skin: params.get('skin'),
       hair: params.get('hair'),
       eyes: params.get('eyes'),
-      emote: params.get('emote') as AvatarEmote | null,
-      camera: params.get('camera') as AvatarCamera | null,
+      emote: params.get('emote') as PreviewEmote | null,
+      camera: params.get('camera') as PreviewCamera | null,
       transparentBackground: params.has('transparentBackground'),
       autoRotateSpeed: autoRotateSpeedParam ? parseFloat(autoRotateSpeedParam) : null,
       offsetX: offsetXParam ? parseFloat(offsetXParam) : null,
@@ -34,7 +32,9 @@ export const useOptions = () => {
       bodyShape: bodyShapeParam === 'female' ? WearableBodyShape.FEMALE : bodyShapeParam === 'male' ? WearableBodyShape.MALE : null,
       urns: params.getAll('urn'),
       profile: params.get('profile'),
-      env: Object.values(Env).reduce((selected, value) => (value === params.get('env') ? value : selected), Env.PROD),
+      env: Object.values(PreviewEnv)
+        .filter((value): value is PreviewEnv => typeof value === 'string')
+        .reduce((selected, value) => (value === params.get('env') ? value : selected), PreviewEnv.PROD),
     }
     return options
   }, [search])
@@ -42,11 +42,11 @@ export const useOptions = () => {
   // apply overrides
   const overrides = useOverrides()
   const optionsWithOverrides = useMemo(() => {
-    const keysToOverride = (Object.keys(overrides) as (keyof AvatarPreviewOptions)[]).filter(
+    const keysToOverride = (Object.keys(overrides) as (keyof PreviewOptions)[]).filter(
       (key) => typeof overrides[key] !== 'undefined' && overrides[key] !== null
     )
     if (options && keysToOverride.length > 0) {
-      const newOptions: AvatarPreviewOptions = { ...options }
+      const newOptions: PreviewOptions = { ...options }
       for (const key of keysToOverride) {
         const value = overrides[key]
         if (value) {

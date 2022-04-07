@@ -1,18 +1,17 @@
 import { AnimationGroup, ArcRotateCamera, AssetContainer, Scene, TransformNode } from '@babylonjs/core'
-import { AvatarCamera, AvatarEmote, AvatarPreview } from '../avatar'
-import { createMemo } from '../cache'
+import { PreviewCamera, PreviewConfig, PreviewEmote, WearableDefinition } from '@dcl/schemas'
 import { getRepresentation } from '../representation'
-import { isEmote, Wearable } from '../wearable'
+import { isEmote } from '../wearable'
 import { startAutoRotateBehavior } from './camera'
 import { Asset, loadAssetContainer } from './scene'
 
-const loopedEmotes = [AvatarEmote.IDLE, AvatarEmote.MONEY, AvatarEmote.CLAP]
+const loopedEmotes = [PreviewEmote.IDLE, PreviewEmote.MONEY, PreviewEmote.CLAP]
 
-function isLooped(emote: AvatarEmote) {
+function isLooped(emote: PreviewEmote) {
   return loopedEmotes.includes(emote)
 }
 
-export function buildEmoteUrl(emote: AvatarEmote) {
+export function buildEmoteUrl(emote: PreviewEmote) {
   let baseUrl = process.env.PUBLIC_URL || ''
   if (!baseUrl.endsWith('/')) {
     baseUrl += '/'
@@ -22,18 +21,15 @@ export function buildEmoteUrl(emote: AvatarEmote) {
   return url
 }
 
-export const emoteMemo = createMemo<AssetContainer>()
 export async function loadEmoteFromUrl(scene: Scene, url: string) {
-  return emoteMemo.memo(url, async () => {
-    const container = await loadAssetContainer(scene, url)
-    if (container.animationGroups.length === 0) {
-      throw new Error(`No animation groups found for emote with url=${url}`)
-    }
-    return container
-  })
+  const container = await loadAssetContainer(scene, url)
+  if (container.animationGroups.length === 0) {
+    throw new Error(`No animation groups found for emote with url=${url}`)
+  }
+  return container
 }
 
-export async function loadEmoteFromWearable(scene: Scene, wearable: Wearable, preview: AvatarPreview) {
+export async function loadEmoteFromWearable(scene: Scene, wearable: WearableDefinition, preview: PreviewConfig) {
   const representation = getRepresentation(wearable, preview.bodyShape)
   const content = representation.contents.find((content) => content.key === representation.mainFile)
   if (!content) {
@@ -42,7 +38,7 @@ export async function loadEmoteFromWearable(scene: Scene, wearable: Wearable, pr
   return loadEmoteFromUrl(scene, content.url)
 }
 
-export async function playEmote(scene: Scene, assets: Asset[], preview: AvatarPreview) {
+export async function playEmote(scene: Scene, assets: Asset[], preview: PreviewConfig) {
   // load asset container for emote
   let container: AssetContainer | undefined
   let loop = isLooped(preview.emote)
@@ -61,7 +57,7 @@ export async function playEmote(scene: Scene, assets: Asset[], preview: AvatarPr
 
   // start camera rotation after animation ends
   async function onAnimationEnd() {
-    if (preview.camera !== AvatarCamera.STATIC) {
+    if (preview.camera !== PreviewCamera.STATIC) {
       const camera = scene.cameras[0] as ArcRotateCamera
       startAutoRotateBehavior(camera, preview)
     }
@@ -106,6 +102,6 @@ export async function playEmote(scene: Scene, assets: Asset[], preview: AvatarPr
   }
 }
 
-export function shouldPlayEmote(preview: AvatarPreview) {
+export function shouldPlayEmote(preview: PreviewConfig) {
   return preview.emote
 }

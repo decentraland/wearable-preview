@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react'
 import classNames from 'classnames'
+import { PreviewCamera, PreviewType } from '@dcl/schemas'
 import { useWindowSize } from '../../hooks/useWindowSize'
-import { useAvatar } from '../../hooks/useAvatar'
+import { useConfig } from '../../hooks/useConfig'
 import { MessageType, sendMessage } from '../../lib/message'
-import { AvatarCamera, AvatarPreviewType } from '../../lib/avatar'
 import { render } from '../../lib/babylon/render'
 import './Preview.css'
 
@@ -15,34 +15,34 @@ const Preview: React.FC = () => {
   const [isLoadingModel, setIsLoadingModel] = useState(true)
   const [isLoaded, setIsLoaded] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [avatar, isLoadingAvatar, avatarError] = useAvatar()
+  const [config, isLoadingConfig, configError] = useConfig()
   const [image, setImage] = useState('')
   const [is3D, setIs3D] = useState(true)
   const [isMessageSent, setIsMessageSent] = useState(false)
 
-  const error = previewError || avatarError
-  const isLoading = (isLoadingModel || isLoadingAvatar) && !error
+  const error = previewError || configError
+  const isLoading = (isLoadingModel || isLoadingConfig) && !error
   const showImage = !!image && !is3D && !isLoading
   const showCanvas = is3D && !isLoading
 
   useEffect(() => {
-    if (canvasRef.current && avatar) {
+    if (canvasRef.current && config) {
       // rarity background
-      setStyle({ backgroundImage: avatar.background.gradient ? avatar.background.gradient : undefined, opacity: 1 })
+      setStyle({ backgroundImage: config.background.gradient ? config.background.gradient : undefined, opacity: 1 })
 
       // set background image
-      if (avatar.background.image) {
-        setImage(avatar.background.image)
+      if (config.background.image) {
+        setImage(config.background.image)
       }
 
       // load model or image (for texture only wearables)
-      if (avatar.type === AvatarPreviewType.TEXTURE) {
+      if (config.type === PreviewType.TEXTURE) {
         setIs3D(false)
         setIsLoadingModel(false)
         setIsLoaded(true)
       } else {
         // preview models
-        render(canvasRef.current, avatar)
+        render(canvasRef.current, config)
           .catch((error) => setPreviewError(error.message))
           .finally(() => {
             setIsLoadingModel(false)
@@ -50,7 +50,7 @@ const Preview: React.FC = () => {
           })
       }
     }
-  }, [canvasRef.current, avatar]) // eslint-disable-line
+  }, [canvasRef.current, config]) // eslint-disable-line
 
   // send a mesasge to the parent window when loaded or error occurs
   useEffect(() => {
@@ -71,7 +71,7 @@ const Preview: React.FC = () => {
         'is-dragging': isDragging,
         'is-loading': isLoading,
         'is-loaded': isLoaded,
-        'is-3d': is3D && avatar?.camera === AvatarCamera.INTERACTIVE,
+        'is-3d': is3D && config?.camera === PreviewCamera.INTERACTIVE,
         'has-error': !!error,
       })}
       style={style}

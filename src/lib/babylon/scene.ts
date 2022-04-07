@@ -19,17 +19,13 @@ import {
   Vector3,
 } from '@babylonjs/core'
 import '@babylonjs/loaders'
-import { WearableBodyShape } from '@dcl/schemas'
-import { AvatarCamera, AvatarPreview, AvatarPreviewType } from '../avatar'
-import { createMemo } from '../cache'
+import { PreviewCamera, PreviewConfig, PreviewType, WearableBodyShape, WearableDefinition } from '@dcl/schemas'
 import { getContentUrl, getRepresentation, isTexture } from '../representation'
-import { Wearable } from '../wearable'
 import { startAutoRotateBehavior } from './camera'
-import { emoteMemo } from './emotes'
 
 export type Asset = {
   container: AssetContainer
-  wearable: Wearable
+  wearable: WearableDefinition
 }
 
 /**
@@ -68,13 +64,10 @@ function refreshBoundingInfo(parent: Mesh) {
  * @returns
  */
 let engine: Engine
-export async function createScene(canvas: HTMLCanvasElement, preview: AvatarPreview) {
+export async function createScene(canvas: HTMLCanvasElement, preview: PreviewConfig) {
   // Create engine
   if (engine) {
     engine.dispose()
-    // reset memoizers that contain babylon containers, since they are not useful after the engine dispose
-    assetMemo.reset()
-    emoteMemo.reset()
   }
   engine = new Engine(canvas, true, {
     preserveDrawingBuffer: true,
@@ -99,14 +92,14 @@ export async function createScene(canvas: HTMLCanvasElement, preview: AvatarPrev
   var camera = new ArcRotateCamera('camera', 0, 0, 0, new Vector3(0, 0, 0), root)
   camera.mode = Camera.PERSPECTIVE_CAMERA
   switch (preview.camera) {
-    case AvatarCamera.INTERACTIVE: {
+    case PreviewCamera.INTERACTIVE: {
       switch (preview.type) {
-        case AvatarPreviewType.WEARABLE: {
+        case PreviewType.WEARABLE: {
           startAutoRotateBehavior(camera, preview)
           camera.position = new Vector3(-2, 2, 2)
           break
         }
-        case AvatarPreviewType.AVATAR: {
+        case PreviewType.AVATAR: {
           camera.position = new Vector3(0, 1, 3.5)
           break
         }
@@ -118,7 +111,7 @@ export async function createScene(canvas: HTMLCanvasElement, preview: AvatarPrev
       camera.attachControl(canvas, true)
       break
     }
-    case AvatarCamera.STATIC: {
+    case PreviewCamera.STATIC: {
       camera.position = new Vector3(0, 1, 3.5)
       break
     }
@@ -144,7 +137,7 @@ export async function createScene(canvas: HTMLCanvasElement, preview: AvatarPrev
   return root
 }
 
-export async function loadMask(scene: Scene, wearable: Wearable, bodyShape: WearableBodyShape): Promise<Texture | null> {
+export async function loadMask(scene: Scene, wearable: WearableDefinition, bodyShape: WearableBodyShape): Promise<Texture | null> {
   const name = wearable.id
   const representation = getRepresentation(wearable, bodyShape)
   const file = representation.contents.find((file) => file.key.toLowerCase().endsWith('_mask.png'))
@@ -161,7 +154,7 @@ export async function loadMask(scene: Scene, wearable: Wearable, bodyShape: Wear
   return null
 }
 
-export async function loadTexture(scene: Scene, wearable: Wearable, bodyShape: WearableBodyShape): Promise<Texture | null> {
+export async function loadTexture(scene: Scene, wearable: WearableDefinition, bodyShape: WearableBodyShape): Promise<Texture | null> {
   const name = wearable.id
   const representation = getRepresentation(wearable, bodyShape)
   const file = representation.contents.find(
@@ -202,49 +195,52 @@ export async function loadAssetContainer(scene: Scene, url: string) {
 const hairMaterials = ['hair_mat']
 // there are some representations that use a modified material name like "skin-f" or "skin_f", i added them to the list support those wearables
 const skinMaterials = ['avatarskin_mat', 'skin-f', 'skin_f']
-export const assetMemo = createMemo<Asset>()
-export async function loadAsset(scene: Scene, wearable: Wearable, bodyShape = WearableBodyShape.MALE, skin?: string, hair?: string) {
-  return assetMemo.memo(wearable.id, async () => {
-    const representation = getRepresentation(wearable, bodyShape)
-    if (isTexture(representation)) {
-      throw new Error(`The wearable="${wearable.id}" is a texture`)
-    }
-    const url = getContentUrl(representation)
-    const container = await loadAssetContainer(scene, url)
+export async function loadAsset(
+  scene: Scene,
+  wearable: WearableDefinition,
+  bodyShape = WearableBodyShape.MALE,
+  skin?: string,
+  hair?: string
+) {
+  const representation = getRepresentation(wearable, bodyShape)
+  if (isTexture(representation)) {
+    throw new Error(`The wearable="${wearable.id}" is a texture`)
+  }
+  const url = getContentUrl(representation)
+  const container = await loadAssetContainer(scene, url)
 
-    // Clean up
-    for (let material of container.materials) {
-      if (hairMaterials.some((mat) => material.name.toLowerCase().includes(mat))) {
-        if (hair) {
-          const pbr = material as PBRMaterial
-          pbr.albedoColor = Color3.FromHexString(hair)
-          pbr.alpha = 1
-        } else {
-          material.alpha = 0
-          scene.removeMaterial(material)
-        }
-      }
-      if (skinMaterials.some((mat) => material.name.toLowerCase().includes(mat))) {
-        if (skin) {
-          const pbr = material as PBRMaterial
-          pbr.albedoColor = Color3.FromHexString(skin)
-          pbr.alpha = 1
-        } else {
-          material.alpha = 0
-          scene.removeMaterial(material)
-        }
+  // Clean up
+  for (let material of container.materials) {
+    if (hairMaterials.some((mat) => material.name.toLowerCase().includes(mat))) {
+      if (hair) {
+        const pbr = material as PBRMaterial
+        pbr.albedoColor = Color3.FromHexString(hair)
+        pbr.alpha = 1
+      } else {
+        material.alpha = 0
+        scene.removeMaterial(material)
       }
     }
-
-    // Stop any animations
-    for (const animationGroup of container.animationGroups) {
-      animationGroup.stop()
-      animationGroup.reset()
-      animationGroup.dispose()
+    if (skinMaterials.some((mat) => material.name.toLowerCase().includes(mat))) {
+      if (skin) {
+        const pbr = material as PBRMaterial
+        pbr.albedoColor = Color3.FromHexString(skin)
+        pbr.alpha = 1
+      } else {
+        material.alpha = 0
+        scene.removeMaterial(material)
+      }
     }
+  }
 
-    return { container, wearable }
-  })
+  // Stop any animations
+  for (const animationGroup of container.animationGroups) {
+    animationGroup.stop()
+    animationGroup.reset()
+    animationGroup.dispose()
+  }
+
+  return { container, wearable }
 }
 
 /**
