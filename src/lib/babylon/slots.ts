@@ -3,6 +3,7 @@ import { hasRepresentation } from '../representation'
 import { isEmote } from '../wearable'
 
 const categoriesHiddenBySkin = [
+  WearableCategory.HELMET,
   WearableCategory.HAIR,
   WearableCategory.FACIAL_HAIR,
   WearableCategory.MOUTH,
