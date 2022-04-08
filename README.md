@@ -1,6 +1,6 @@
 # Wearable Preview
 
-This webapp renders an interactive 3D preview of a wearable. It can be configured via the following query params:
+This webapp renders an interactive 3D preview of a wearable or an avatar. It can be configured via query params or via `postMessage`:
 
 - `contract`: The contract address of the wearable collection.
 - `item`: The id of the item in the collection.
@@ -22,6 +22,45 @@ This webapp renders an interactive 3D preview of a wearable. It can be configure
 - `env`: The environment to use, it can be `prod` (uses mainnet wearables and catalysts) or `dev` (uses testnet wearables and catalysts).
 
 Example: https://wearable-preview.decentraland.org?contract=0xee8ae4c668edd43b34b98934d6d2ff82e41e6488&item=5
+
+### `iframe` API:
+
+It's possible to load the `wearable-preview` in an iframe and communicate with it via `postMessage`:
+
+#### Update/override options
+
+If you want to update some options without having to reload the iframe, you can send an `update` message with the options and their new values:
+
+```ts
+window.postMessage({ type: 'update', options: { emote: 'dab' } })
+```
+
+### `iframe` events:
+
+You can listen to events sent by the iframe via `postMessage`.
+
+```ts
+function handleMessage(msgEvent) {
+  const event = JSON.parse(msgEvent.data || msgEvent.message)
+  switch (event.type) {
+    case 'load': {
+      console.log('Preview loaded successfully')
+      break
+    }
+    case 'error': {
+      console.error('Something went wrong:', event.message)
+    }
+  }
+}
+
+window.addEventListener('message', handleMessage)
+```
+
+### Setup
+
+```
+npm ci
+```
 
 ### Development
 

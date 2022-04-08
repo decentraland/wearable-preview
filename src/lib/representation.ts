@@ -1,21 +1,18 @@
-import { WearableBodyShape, WearableRepresentation as WearableRepresentationBroken } from '@dcl/schemas'
-import { Wearable } from './wearable'
+import { RepresentationDefinition, WearableBodyShape, WearableDefinition } from '@dcl/schemas'
 
-export type WearableRepresentation = Omit<WearableRepresentationBroken, 'contents'> & { contents: { key: string; url: string }[] }
-
-export function is(representation: WearableRepresentation, bodyShape: WearableBodyShape) {
+export function is(representation: RepresentationDefinition, bodyShape: WearableBodyShape) {
   return representation.bodyShapes.includes(bodyShape)
 }
 
-export function isMale(representation: WearableRepresentation) {
+export function isMale(representation: RepresentationDefinition) {
   return is(representation, WearableBodyShape.MALE)
 }
 
-export function isFemale(representation: WearableRepresentation) {
+export function isFemale(representation: RepresentationDefinition) {
   return is(representation, WearableBodyShape.FEMALE)
 }
 
-export function getRepresentation(wearable: Wearable, shape = WearableBodyShape.MALE) {
+export function getRepresentation(wearable: WearableDefinition, shape = WearableBodyShape.MALE) {
   switch (shape) {
     case WearableBodyShape.FEMALE: {
       if (!wearable.data.representations.some(isFemale)) {
@@ -32,7 +29,7 @@ export function getRepresentation(wearable: Wearable, shape = WearableBodyShape.
   }
 }
 
-export function getRepresentationOrDefault(wearable: Wearable, shape = WearableBodyShape.MALE) {
+export function getRepresentationOrDefault(wearable: WearableDefinition, shape = WearableBodyShape.MALE) {
   if (hasRepresentation(wearable, shape)) {
     return getRepresentation(wearable, shape)
   }
@@ -42,7 +39,7 @@ export function getRepresentationOrDefault(wearable: Wearable, shape = WearableB
   throw new Error(`The wearable="${wearable.id}" has no representation`)
 }
 
-export function hasRepresentation(wearable: Wearable, shape = WearableBodyShape.MALE) {
+export function hasRepresentation(wearable: WearableDefinition, shape = WearableBodyShape.MALE) {
   try {
     getRepresentation(wearable, shape)
     return true
@@ -51,7 +48,7 @@ export function hasRepresentation(wearable: Wearable, shape = WearableBodyShape.
   }
 }
 
-export function getContentUrl(representation: WearableRepresentation) {
+export function getContentUrl(representation: RepresentationDefinition) {
   const content = representation.contents.find((content) => content.key === representation.mainFile)
   if (!content) {
     throw new Error(`Could not find main file`)
@@ -59,6 +56,6 @@ export function getContentUrl(representation: WearableRepresentation) {
   return content.url
 }
 
-export function isTexture(representation: WearableRepresentation) {
+export function isTexture(representation: RepresentationDefinition) {
   return representation.mainFile.endsWith('png')
 }

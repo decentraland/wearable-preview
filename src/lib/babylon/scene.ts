@@ -19,15 +19,13 @@ import {
   Vector3,
 } from '@babylonjs/core'
 import '@babylonjs/loaders'
-import { WearableBodyShape } from '@dcl/schemas'
-import { AvatarCamera, AvatarPreview, AvatarPreviewType } from '../avatar'
+import { PreviewCamera, PreviewConfig, PreviewType, WearableBodyShape, WearableDefinition } from '@dcl/schemas'
 import { getContentUrl, getRepresentation, isTexture } from '../representation'
-import { Wearable } from '../wearable'
 import { startAutoRotateBehavior } from './camera'
 
 export type Asset = {
   container: AssetContainer
-  wearable: Wearable
+  wearable: WearableDefinition
 }
 
 /**
@@ -65,11 +63,16 @@ function refreshBoundingInfo(parent: Mesh) {
  * @param zoom
  * @returns
  */
-export async function createScene(canvas: HTMLCanvasElement, preview: AvatarPreview) {
+let engine: Engine
+export async function createScene(canvas: HTMLCanvasElement, preview: PreviewConfig) {
   // Create engine
-  const engine = new Engine(canvas, true, {
+  if (engine) {
+    engine.dispose()
+  }
+  engine = new Engine(canvas, true, {
     preserveDrawingBuffer: true,
     stencil: true,
+    antialias: true,
   })
 
   // Load GLB/GLTF
@@ -89,14 +92,14 @@ export async function createScene(canvas: HTMLCanvasElement, preview: AvatarPrev
   var camera = new ArcRotateCamera('camera', 0, 0, 0, new Vector3(0, 0, 0), root)
   camera.mode = Camera.PERSPECTIVE_CAMERA
   switch (preview.camera) {
-    case AvatarCamera.INTERACTIVE: {
+    case PreviewCamera.INTERACTIVE: {
       switch (preview.type) {
-        case AvatarPreviewType.WEARABLE: {
+        case PreviewType.WEARABLE: {
           startAutoRotateBehavior(camera, preview)
           camera.position = new Vector3(-2, 2, 2)
           break
         }
-        case AvatarPreviewType.AVATAR: {
+        case PreviewType.AVATAR: {
           camera.position = new Vector3(0, 1, 3.5)
           break
         }
@@ -108,7 +111,7 @@ export async function createScene(canvas: HTMLCanvasElement, preview: AvatarPrev
       camera.attachControl(canvas, true)
       break
     }
-    case AvatarCamera.STATIC: {
+    case PreviewCamera.STATIC: {
       camera.position = new Vector3(0, 1, 3.5)
       break
     }
@@ -134,7 +137,7 @@ export async function createScene(canvas: HTMLCanvasElement, preview: AvatarPrev
   return root
 }
 
-export async function loadMask(scene: Scene, wearable: Wearable, bodyShape: WearableBodyShape): Promise<Texture | null> {
+export async function loadMask(scene: Scene, wearable: WearableDefinition, bodyShape: WearableBodyShape): Promise<Texture | null> {
   const name = wearable.id
   const representation = getRepresentation(wearable, bodyShape)
   const file = representation.contents.find((file) => file.key.toLowerCase().endsWith('_mask.png'))
@@ -151,7 +154,7 @@ export async function loadMask(scene: Scene, wearable: Wearable, bodyShape: Wear
   return null
 }
 
-export async function loadTexture(scene: Scene, wearable: Wearable, bodyShape: WearableBodyShape): Promise<Texture | null> {
+export async function loadTexture(scene: Scene, wearable: WearableDefinition, bodyShape: WearableBodyShape): Promise<Texture | null> {
   const name = wearable.id
   const representation = getRepresentation(wearable, bodyShape)
   const file = representation.contents.find(
@@ -192,7 +195,13 @@ export async function loadAssetContainer(scene: Scene, url: string) {
 const hairMaterials = ['hair_mat']
 // there are some representations that use a modified material name like "skin-f" or "skin_f", i added them to the list support those wearables
 const skinMaterials = ['avatarskin_mat', 'skin-f', 'skin_f']
-export async function loadWearable(scene: Scene, wearable: Wearable, bodyShape = WearableBodyShape.MALE, skin?: string, hair?: string) {
+export async function loadAsset(
+  scene: Scene,
+  wearable: WearableDefinition,
+  bodyShape = WearableBodyShape.MALE,
+  skin?: string,
+  hair?: string
+) {
   const representation = getRepresentation(wearable, bodyShape)
   if (isTexture(representation)) {
     throw new Error(`The wearable="${wearable.id}" is a texture`)

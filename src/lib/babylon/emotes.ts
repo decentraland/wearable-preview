@@ -1,20 +1,17 @@
 import { AnimationGroup, ArcRotateCamera, AssetContainer, Scene, TransformNode } from '@babylonjs/core'
-import { AvatarCamera, AvatarEmote, AvatarPreview } from '../avatar'
+import { PreviewCamera, PreviewConfig, PreviewEmote, WearableDefinition } from '@dcl/schemas'
 import { getRepresentation } from '../representation'
-import { isEmote, Wearable } from '../wearable'
+import { isEmote } from '../wearable'
 import { startAutoRotateBehavior } from './camera'
 import { Asset, loadAssetContainer } from './scene'
 
-const loopedEmotes = [AvatarEmote.IDLE, AvatarEmote.MONEY, AvatarEmote.CLAP]
+const loopedEmotes = [PreviewEmote.IDLE, PreviewEmote.MONEY, PreviewEmote.CLAP]
 
-function isLooped(emote: AvatarEmote) {
+function isLooped(emote: PreviewEmote) {
   return loopedEmotes.includes(emote)
 }
 
-// cache emotes, this is so wecan play on loop without downloading the GLB again
-const cache: Record<string, AssetContainer> = {}
-
-export function buildEmoteUrl(emote: AvatarEmote) {
+export function buildEmoteUrl(emote: PreviewEmote) {
   let baseUrl = process.env.PUBLIC_URL || ''
   if (!baseUrl.endsWith('/')) {
     baseUrl += '/'
@@ -25,18 +22,14 @@ export function buildEmoteUrl(emote: AvatarEmote) {
 }
 
 export async function loadEmoteFromUrl(scene: Scene, url: string) {
-  let container = cache[url]
-  if (!container) {
-    container = await loadAssetContainer(scene, url)
-    if (container.animationGroups.length === 0) {
-      throw new Error(`No animation groups found for emote with url=${url}`)
-    }
-    cache[url] = container
+  const container = await loadAssetContainer(scene, url)
+  if (container.animationGroups.length === 0) {
+    throw new Error(`No animation groups found for emote with url=${url}`)
   }
   return container
 }
 
-export async function loadEmoteFromWearable(scene: Scene, wearable: Wearable, preview: AvatarPreview) {
+export async function loadEmoteFromWearable(scene: Scene, wearable: WearableDefinition, preview: PreviewConfig) {
   const representation = getRepresentation(wearable, preview.bodyShape)
   const content = representation.contents.find((content) => content.key === representation.mainFile)
   if (!content) {
@@ -45,7 +38,7 @@ export async function loadEmoteFromWearable(scene: Scene, wearable: Wearable, pr
   return loadEmoteFromUrl(scene, content.url)
 }
 
-export async function playEmote(scene: Scene, assets: Asset[], preview: AvatarPreview) {
+export async function playEmote(scene: Scene, assets: Asset[], preview: PreviewConfig) {
   // load asset container for emote
   let container: AssetContainer | undefined
   let loop = isLooped(preview.emote)
@@ -64,7 +57,7 @@ export async function playEmote(scene: Scene, assets: Asset[], preview: AvatarPr
 
   // start camera rotation after animation ends
   async function onAnimationEnd() {
-    if (preview.camera !== AvatarCamera.STATIC) {
+    if (preview.camera !== PreviewCamera.STATIC) {
       const camera = scene.cameras[0] as ArcRotateCamera
       startAutoRotateBehavior(camera, preview)
     }
@@ -86,15 +79,19 @@ export async function playEmote(scene: Scene, assets: Asset[], preview: AvatarPr
         return map.set(node.id, list)
       }, new Map<string, TransformNode[]>())
       // apply each targeted animation from the emote asset container to the transform nodes of all the wearables
-      for (const targetedAnimation of container.animationGroups[0].targetedAnimations) {
-        const animation = targetedAnimation.animation
-        const target = targetedAnimation.target as TransformNode
-        const newTargets = nodes.get(target.id)
-        if (newTargets && newTargets.length > 0) {
-          for (const newTarget of newTargets) {
-            emoteAnimationGroup.addTargetedAnimation(animation, newTarget)
+      if (container.animationGroups.length > 0) {
+        for (const targetedAnimation of container.animationGroups[0].targetedAnimations) {
+          const animation = targetedAnimation.animation
+          const target = targetedAnimation.target as TransformNode
+          const newTargets = nodes.get(target.id)
+          if (newTargets && newTargets.length > 0) {
+            for (const newTarget of newTargets) {
+              emoteAnimationGroup.addTargetedAnimation(animation, newTarget)
+            }
           }
         }
+      } else {
+        throw new Error(`No animationGroups found`)
       }
     }
     // play animation group and apply
@@ -105,6 +102,6 @@ export async function playEmote(scene: Scene, assets: Asset[], preview: AvatarPr
   }
 }
 
-export function shouldPlayEmote(preview: AvatarPreview) {
+export function shouldPlayEmote(preview: PreviewConfig) {
   return preview.emote
 }

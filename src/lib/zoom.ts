@@ -1,5 +1,4 @@
-import { WearableCategory } from '@dcl/schemas'
-import { Wearable } from './wearable'
+import { WearableCategory, WearableDefinition } from '@dcl/schemas'
 
 export function parseZoom(rawZoom: string | null) {
   const parsedZoom = rawZoom ? parseFloat(rawZoom) : null
@@ -12,7 +11,7 @@ export function parseZoom(rawZoom: string | null) {
  * @param category
  * @returns
  */
-export function getZoom(wearable?: Wearable | void) {
+export function getZoom(wearable?: WearableDefinition | void) {
   const category = wearable?.data.category
   switch (category) {
     case WearableCategory.UPPER_BODY:
