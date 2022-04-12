@@ -7,7 +7,6 @@ import {
   Color4,
   DirectionalLight,
   Engine,
-  GlowLayer,
   HemisphericLight,
   Mesh,
   PBRMaterial,
@@ -80,13 +79,6 @@ export async function createScene(canvas: HTMLCanvasElement, preview: PreviewCon
   root.autoClear = true
   root.clearColor = new Color4(0, 0, 0, 0)
   root.preventDefaultOnPointerDown = false
-
-  // effects
-  var glow = new GlowLayer('glow', root, {
-    mainTextureFixedSize: 1024,
-    blurKernelSize: 64,
-  })
-  glow.intensity = 0.2
 
   // Setup Camera
   var camera = new ArcRotateCamera('camera', 0, 0, 0, new Vector3(0, 0, 0), root)
