@@ -63,7 +63,7 @@ function refreshBoundingInfo(parent: Mesh) {
  * @returns
  */
 let engine: Engine
-export async function createScene(canvas: HTMLCanvasElement, preview: PreviewConfig) {
+export async function createScene(canvas: HTMLCanvasElement, config: PreviewConfig) {
   // Create engine
   if (engine) {
     engine.dispose()
@@ -83,11 +83,11 @@ export async function createScene(canvas: HTMLCanvasElement, preview: PreviewCon
   // Setup Camera
   var camera = new ArcRotateCamera('camera', 0, 0, 0, new Vector3(0, 0, 0), root)
   camera.mode = Camera.PERSPECTIVE_CAMERA
-  switch (preview.camera) {
+  switch (config.camera) {
     case PreviewCamera.INTERACTIVE: {
-      switch (preview.type) {
+      switch (config.type) {
         case PreviewType.WEARABLE: {
-          startAutoRotateBehavior(camera, preview)
+          startAutoRotateBehavior(camera, config)
           camera.position = new Vector3(-2, 2, 2)
           break
         }
@@ -96,7 +96,7 @@ export async function createScene(canvas: HTMLCanvasElement, preview: PreviewCon
           break
         }
         default: {
-          console.warn(`Unexpected preview.type="${preview.type}"`)
+          console.warn(`Unexpected preview.type="${config.type}"`)
           // do nothing
         }
       }
@@ -108,10 +108,10 @@ export async function createScene(canvas: HTMLCanvasElement, preview: PreviewCon
       break
     }
   }
-  const offset = new Vector3(preview.offsetX, preview.offsetY, preview.offsetZ)
+  const offset = new Vector3(config.offsetX, config.offsetY, config.offsetZ)
   camera.position.addInPlace(offset)
   camera.setTarget(offset)
-  camera.lowerRadiusLimit = camera.upperRadiusLimit = camera.radius / preview.zoom
+  camera.lowerRadiusLimit = camera.upperRadiusLimit = camera.radius / config.zoom
 
   // Setup lights
   var directional = new DirectionalLight('directional', new Vector3(0, 0, 1), root)

@@ -14,16 +14,16 @@ const categoriesHiddenBySkin = [
   WearableCategory.FEET,
 ]
 
-export function getSlots(preview: PreviewConfig) {
+export function getSlots(config: PreviewConfig) {
   const slots = new Map<WearableCategory, WearableDefinition>()
 
-  let wearables: WearableDefinition[] = preview.wearables.filter((wearable) => !isEmote(wearable)) // remove emotes if any
+  let wearables: WearableDefinition[] = config.wearables.filter((wearable) => !isEmote(wearable)) // remove emotes if any
 
   // remove other wearables that hide the equipped wearable
-  if (preview.wearable && !isEmote(preview.wearable)) {
-    wearables = preview.wearables.filter((wearable) => {
-      if (preview.wearable) {
-        const { category, hides, replaces } = preview.wearable.data
+  if (config.wearable && !isEmote(config.wearable)) {
+    wearables = config.wearables.filter((wearable) => {
+      if (config.wearable) {
+        const { category, hides, replaces } = config.wearable.data
         if (wearable.data.category === 'skin') {
           if (categoriesHiddenBySkin.includes(category)) {
             return false
@@ -45,13 +45,13 @@ export function getSlots(preview: PreviewConfig) {
       return true
     })
     // add the equipped wearable at the end
-    wearables.push(preview.wearable)
+    wearables.push(config.wearable)
   }
 
   // arrange wearbles in slots
   for (const wearable of wearables) {
     const slot = wearable.data.category
-    if (hasRepresentation(wearable, preview.bodyShape)) {
+    if (hasRepresentation(wearable, config.bodyShape)) {
       slots.set(slot, wearable)
     }
   }

@@ -29,41 +29,41 @@ export async function loadEmoteFromUrl(scene: Scene, url: string) {
   return container
 }
 
-export async function loadEmoteFromWearable(scene: Scene, wearable: WearableDefinition, preview: PreviewConfig) {
-  const representation = getRepresentation(wearable, preview.bodyShape)
+export async function loadEmoteFromWearable(scene: Scene, wearable: WearableDefinition, config: PreviewConfig) {
+  const representation = getRepresentation(wearable, config.bodyShape)
   const content = representation.contents.find((content) => content.key === representation.mainFile)
   if (!content) {
-    throw new Error(`Could not find a valid content in representation for wearable=${wearable.id} and bodyShape=${preview.bodyShape}`)
+    throw new Error(`Could not find a valid content in representation for wearable=${wearable.id} and bodyShape=${config.bodyShape}`)
   }
   return loadEmoteFromUrl(scene, content.url)
 }
 
-export async function playEmote(scene: Scene, assets: Asset[], preview: PreviewConfig) {
+export async function playEmote(scene: Scene, assets: Asset[], config: PreviewConfig) {
   // load asset container for emote
   let container: AssetContainer | undefined
-  let loop = isLooped(preview.emote)
-  if (preview.wearable && isEmote(preview.wearable)) {
+  let loop = isLooped(config.emote)
+  if (config.wearable && isEmote(config.wearable)) {
     try {
-      container = await loadEmoteFromWearable(scene, preview.wearable, preview)
-      loop = !!preview.wearable.emoteDataV0?.loop
+      container = await loadEmoteFromWearable(scene, config.wearable, config)
+      loop = !!config.wearable.emoteDataV0?.loop
     } catch (error) {
-      console.warn(`Could not load emote=${preview.wearable.id}`)
+      console.warn(`Could not load emote=${config.wearable.id}`)
     }
   }
   if (!container) {
-    const emoteUrl = buildEmoteUrl(preview.emote)
+    const emoteUrl = buildEmoteUrl(config.emote)
     container = await loadEmoteFromUrl(scene, emoteUrl)
   }
 
   // start camera rotation after animation ends
   async function onAnimationEnd() {
-    if (preview.camera !== PreviewCamera.STATIC) {
+    if (config.camera !== PreviewCamera.STATIC) {
       const camera = scene.cameras[0] as ArcRotateCamera
-      startAutoRotateBehavior(camera, preview)
+      startAutoRotateBehavior(camera, config)
     }
     if (loop) {
       // keep playing idle animation on loop
-      playEmote(scene, assets, preview)
+      playEmote(scene, assets, config)
     }
   }
 
@@ -98,10 +98,10 @@ export async function playEmote(scene: Scene, assets: Asset[], preview: PreviewC
     emoteAnimationGroup.play()
     emoteAnimationGroup.onAnimationEndObservable.addOnce(onAnimationEnd)
   } catch (error) {
-    console.warn(`Could not play emote=${preview.emote}`, error)
+    console.warn(`Could not play emote=${config.emote}`, error)
   }
 }
 
-export function shouldPlayEmote(preview: PreviewConfig) {
-  return preview.emote
+export function shouldPlayEmote(config: PreviewConfig) {
+  return config.emote
 }

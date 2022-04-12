@@ -25,9 +25,9 @@ export function createMappings(wearables: WearableDefinition[], bodyShape = Wear
  * Configures the mappings for all the relative paths within a model to the right IPFS in the catalyst
  * @param wearables
  */
-export function setupMappings(preview: PreviewConfig) {
-  const wearables = preview.wearable ? [preview.wearable, ...preview.wearables] : preview.wearables
-  const mappings = createMappings(wearables, preview.bodyShape)
+export function setupMappings(config: PreviewConfig) {
+  const wearables = config.wearable ? [config.wearable, ...config.wearables] : config.wearables
+  const mappings = createMappings(wearables, config.bodyShape)
   SceneLoader.OnPluginActivatedObservable.add((plugin) => {
     if (plugin.name === 'gltf') {
       const gltf = plugin as GLTFFileLoader

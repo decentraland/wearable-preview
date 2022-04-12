@@ -32,25 +32,25 @@ export async function applyFacialFeatures(
   eyes: [Texture | null, Texture | null],
   eyebrows: [Texture | null, Texture | null],
   mouth: [Texture | null, Texture | null],
-  preview: PreviewConfig
+  config: PreviewConfig
 ) {
   for (const mesh of bodyShape.container.meshes) {
     if (mesh.name.toLowerCase().endsWith('mask_eyes')) {
       const [texture, mask] = eyes
       if (texture) {
-        applyTextureAndMask(scene, 'eyes', mesh, texture, preview.eyes, mask, '#ffffff')
+        applyTextureAndMask(scene, 'eyes', mesh, texture, config.eyes, mask, '#ffffff')
       }
     }
     if (mesh.name.toLowerCase().endsWith('mask_eyebrows')) {
       const [texture, mask] = eyebrows
       if (texture) {
-        applyTextureAndMask(scene, 'eyebrows', mesh, texture, preview.hair, mask, preview.hair)
+        applyTextureAndMask(scene, 'eyebrows', mesh, texture, config.hair, mask, config.hair)
       }
     }
     if (mesh.name.toLowerCase().endsWith('mask_mouth')) {
       const [texture, mask] = mouth
       if (texture) {
-        applyTextureAndMask(scene, 'mouth', mesh, texture, preview.skin, mask, preview.skin)
+        applyTextureAndMask(scene, 'mouth', mesh, texture, config.skin, mask, config.skin)
       }
     }
   }

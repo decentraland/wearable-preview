@@ -13,25 +13,25 @@ import { isFacialFeature, isModel, isSuccesful } from './utils'
  * @param wearables
  * @param options
  */
-export async function render(canvas: HTMLCanvasElement, preview: PreviewConfig) {
+export async function render(canvas: HTMLCanvasElement, config: PreviewConfig) {
   // create the root scene
-  const root = await createScene(canvas, preview)
+  const root = await createScene(canvas, config)
 
   // setup the mappings for all the contents
-  setupMappings(preview)
+  setupMappings(config)
 
   // load all the wearables into the root scene
   const promises: Promise<void | Asset>[] = []
 
-  if (preview.type === PreviewType.AVATAR) {
+  if (config.type === PreviewType.AVATAR) {
     // get slots
-    const slots = getSlots(preview)
+    const slots = getSlots(config)
 
     // get wearables
     const wearables = Array.from(slots.values())
 
     for (const wearable of wearables.filter(isModel)) {
-      const promise = loadAsset(root, wearable, preview.bodyShape, preview.skin, preview.hair).catch((error) => {
+      const promise = loadAsset(root, wearable, config.bodyShape, config.skin, config.hair).catch((error) => {
         console.warn(error.message)
       })
       promises.push(promise)
@@ -47,28 +47,28 @@ export async function render(canvas: HTMLCanvasElement, preview: PreviewConfig) 
     const bodyShape = getBodyShape(assets)
     // apply facial features
     const features = wearables.filter(isFacialFeature)
-    const { eyes, eyebrows, mouth } = await getFacialFeatures(root, features, preview.bodyShape)
-    applyFacialFeatures(root, bodyShape, eyes, eyebrows, mouth, preview)
+    const { eyes, eyebrows, mouth } = await getFacialFeatures(root, features, config.bodyShape)
+    applyFacialFeatures(root, bodyShape, eyes, eyebrows, mouth, config)
 
     // play emote
-    await playEmote(root, assets, preview)
+    await playEmote(root, assets, config)
   } else {
-    if (!preview.wearable) {
+    if (!config.wearable) {
       throw new Error('No wearable to render')
     }
-    const wearable = preview.wearable
+    const wearable = config.wearable
     try {
       // try loading with the required body shape
-      const asset = await loadAsset(root, wearable, preview.bodyShape, preview.skin, preview.hair)
+      const asset = await loadAsset(root, wearable, config.bodyShape, config.skin, config.hair)
       asset.container.addAllToScene()
     } catch (error) {
       // default to other body shape if failed
       const asset = await loadAsset(
         root,
         wearable,
-        preview.bodyShape === WearableBodyShape.MALE ? WearableBodyShape.FEMALE : WearableBodyShape.MALE,
-        preview.skin,
-        preview.hair
+        config.bodyShape === WearableBodyShape.MALE ? WearableBodyShape.FEMALE : WearableBodyShape.MALE,
+        config.skin,
+        config.hair
       )
       asset.container.addAllToScene()
     }
