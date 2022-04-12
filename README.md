@@ -32,7 +32,7 @@ It's possible to load the `wearable-preview` in an iframe and communicate with i
 If you want to update some options without having to reload the iframe, you can send an `update` message with the options and their new values:
 
 ```ts
-window.postMessage({ type: 'update', options: { emote: 'dab' } })
+iframe.contentWindow.postMessage({ type: 'update', options: { emote: 'dab' } })
 ```
 
 ### `iframe` events:
@@ -41,7 +41,7 @@ You can listen to events sent by the iframe via `postMessage`.
 
 ```ts
 function handleMessage(msgEvent) {
-  const event = JSON.parse(msgEvent.data || msgEvent.message)
+  const event = JSON.parse(msgEvent.data)
   switch (event.type) {
     case 'load': {
       console.log('Preview loaded successfully')
