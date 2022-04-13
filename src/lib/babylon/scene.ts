@@ -3,13 +3,11 @@ import {
   AssetContainer,
   BoundingInfo,
   Camera,
-  Color3,
   Color4,
   DirectionalLight,
   Engine,
   HemisphericLight,
   Mesh,
-  PBRMaterial,
   Scene,
   SceneLoader,
   SpotLight,
@@ -19,7 +17,7 @@ import {
 } from '@babylonjs/core'
 import '@babylonjs/loaders'
 import { PreviewCamera, PreviewConfig, PreviewType, WearableBodyShape, WearableDefinition } from '@dcl/schemas'
-import { getContentUrl, getRepresentation, isTexture } from '../representation'
+import { getRepresentation } from '../representation'
 import { startAutoRotateBehavior } from './camera'
 
 export type Asset = {
@@ -173,66 +171,6 @@ export async function loadAssetContainer(scene: Scene, url: string) {
   } catch (error) {
     return await load(url, '.gltf')
   }
-}
-
-/**
- * Loads a wearable into the Scene, using a given a body shape, skin and hair color
- * @param scene
- * @param wearable
- * @param bodyShape
- * @param skin
- * @param hair
- */
-
-const hairMaterials = ['hair_mat']
-// there are some representations that use a modified material name like "skin-f" or "skin_f", i added them to the list support those wearables
-const skinMaterials = ['avatarskin_mat', 'skin-f', 'skin_f']
-export async function loadAsset(
-  scene: Scene,
-  wearable: WearableDefinition,
-  bodyShape = WearableBodyShape.MALE,
-  skin?: string,
-  hair?: string
-) {
-  const representation = getRepresentation(wearable, bodyShape)
-  if (isTexture(representation)) {
-    throw new Error(`The wearable="${wearable.id}" is a texture`)
-  }
-  const url = getContentUrl(representation)
-  const container = await loadAssetContainer(scene, url)
-
-  // Clean up
-  for (let material of container.materials) {
-    if (hairMaterials.some((mat) => material.name.toLowerCase().includes(mat))) {
-      if (hair) {
-        const pbr = material as PBRMaterial
-        pbr.albedoColor = Color3.FromHexString(hair)
-        pbr.alpha = 1
-      } else {
-        material.alpha = 0
-        scene.removeMaterial(material)
-      }
-    }
-    if (skinMaterials.some((mat) => material.name.toLowerCase().includes(mat))) {
-      if (skin) {
-        const pbr = material as PBRMaterial
-        pbr.albedoColor = Color3.FromHexString(skin)
-        pbr.alpha = 1
-      } else {
-        material.alpha = 0
-        scene.removeMaterial(material)
-      }
-    }
-  }
-
-  // Stop any animations
-  for (const animationGroup of container.animationGroups) {
-    animationGroup.stop()
-    animationGroup.reset()
-    animationGroup.dispose()
-  }
-
-  return { container, wearable }
 }
 
 /**

@@ -4,8 +4,9 @@ import { getSlots } from './slots'
 import { playEmote } from './emotes'
 import { applyFacialFeatures, getFacialFeatures } from './face'
 import { setupMappings } from './mappings'
-import { Asset, center, createScene, loadAsset } from './scene'
+import { Asset, center, createScene } from './scene'
 import { isFacialFeature, isModel, isSuccesful } from './utils'
+import { loadWearable } from './wearable'
 
 /**
  * Initializes Babylon, creates the scene and loads a list of wearables in it
@@ -31,7 +32,7 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig) {
     const wearables = Array.from(slots.values())
 
     for (const wearable of wearables.filter(isModel)) {
-      const promise = loadAsset(root, wearable, config.bodyShape, config.skin, config.hair).catch((error) => {
+      const promise = loadWearable(root, wearable, config.bodyShape, config.skin, config.hair).catch((error) => {
         console.warn(error.message)
       })
       promises.push(promise)
@@ -59,11 +60,11 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig) {
     const wearable = config.wearable
     try {
       // try loading with the required body shape
-      const asset = await loadAsset(root, wearable, config.bodyShape, config.skin, config.hair)
+      const asset = await loadWearable(root, wearable, config.bodyShape, config.skin, config.hair)
       asset.container.addAllToScene()
     } catch (error) {
       // default to other body shape if failed
-      const asset = await loadAsset(
+      const asset = await loadWearable(
         root,
         wearable,
         config.bodyShape === WearableBodyShape.MALE ? WearableBodyShape.FEMALE : WearableBodyShape.MALE,
