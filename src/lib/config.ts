@@ -161,7 +161,7 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
   }
 
   // if loading multiple wearables (either from URNs or URLs), or if wearable is emote, render full avatar
-  if (urls.length > 0 || urns.length > 0 || (wearable && isEmote(wearable)) || options.profile === DEFAULT_PROFILE) {
+  if (urns.length > 0 || urls.length > 0 || base64s.length > 0 || (wearable && isEmote(wearable)) || options.profile === DEFAULT_PROFILE) {
     type = PreviewType.AVATAR
     wearables = await fetchAvatar(urns, urls, base64s, bodyShape, env)
   }
