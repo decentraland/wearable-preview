@@ -31,6 +31,8 @@ export const useOptions = () => {
       zoom: parseZoom(params.get('zoom')),
       bodyShape: bodyShapeParam === 'female' ? WearableBodyShape.FEMALE : bodyShapeParam === 'male' ? WearableBodyShape.MALE : null,
       urns: params.getAll('urn'),
+      urls: params.getAll('url'),
+      base64s: params.getAll('base64'),
       profile: params.get('profile'),
       env: Object.values(PreviewEnv)
         .filter((value): value is PreviewEnv => typeof value === 'string')

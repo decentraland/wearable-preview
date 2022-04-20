@@ -16,21 +16,41 @@ import { peerApi } from './api/peer'
 import { createMemo } from './cache'
 import { colorToHex, formatHex } from './color'
 import { getRepresentationOrDefault, hasRepresentation, isTexture } from './representation'
-import { getDefaultCategories, getDefaultWearableUrn, getWearableBodyShape, getWearableByCategory, isEmote } from './wearable'
+import { getDefaultCategories, getDefaultWearableUrn, getWearableBodyShape, getWearableByCategory, isEmote, isWearable } from './wearable'
 import { getZoom } from './zoom'
 
 const DEFAULT_PROFILE = 'default'
 
 async function fetchWearable(urn: string, env: PreviewEnv) {
-  const results = await fetchWearables([urn], env)
+  const results = await fetchURNs([urn], env)
   if (results.length !== 1) {
     throw new Error(`Could not find wearable for urn="${urn}"`)
   }
   return results[0]
 }
-export const wearableMemo = createMemo<WearableDefinition[]>()
-async function fetchWearables(urns: string[], env: PreviewEnv) {
+
+function toWearable(base64: string): WearableDefinition {
+  return JSON.parse(atob(base64))
+}
+
+async function fetchURNs(urns: string[], env: PreviewEnv) {
+  if (urns.length === 0) {
+    return []
+  }
   return peerApi.fetchWearables(urns, env)
+}
+
+async function fetchURLs(urls: string[]) {
+  if (urls.length === 0) {
+    return []
+  }
+  const promises = urls.map((url) =>
+    fetch(url)
+      .then((resp) => resp.json())
+      .catch()
+  )
+  const results = await Promise.all(promises)
+  return results.filter(isWearable)
 }
 
 export const profileMemo = createMemo<Avatar | null>()
@@ -72,9 +92,9 @@ async function fetchWearableFromContract(options: {
   return fetchWearable(urn, env)
 }
 
-async function fetchAvatar(urns: string[], bodyShape: WearableBodyShape, env: PreviewEnv) {
-  // fetch wearables
-  let wearables = await fetchWearables([bodyShape, ...urns], env)
+async function fetchAvatar(urns: string[], urls: string[], base64s: string[], bodyShape: WearableBodyShape, env: PreviewEnv) {
+  // fetch wearables from urns, urls and base64s
+  let wearables = [...(await fetchURNs([bodyShape, ...urns], env)), ...(await fetchURLs(urls)), ...base64s.map(toWearable)]
   // filter out wearables that don't have a representation for the body shape
   wearables = wearables.filter((wearable) => hasRepresentation(wearable, bodyShape))
   // fill default categories
@@ -91,7 +111,7 @@ async function fetchAvatar(urns: string[], bodyShape: WearableBodyShape, env: Pr
     }
   }
   if (defaultWearableUrns.length > 0) {
-    const defaultWearables = await fetchWearables(defaultWearableUrns, env)
+    const defaultWearables = await fetchURNs(defaultWearableUrns, env)
     wearables = [...wearables, ...defaultWearables]
   }
   return wearables
@@ -127,6 +147,12 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
   // merge urns from profile (if any) and extra urns
   const urns = [...(profile ? profile.avatar.wearables : []), ...(options.urns || [])]
 
+  // urls to load wearables from
+  const urls = options.urls || []
+
+  // wearables passed as base64
+  const base64s = options.base64s || []
+
   let wearables: WearableDefinition[] = []
   let zoom = 1.75
   let type = PreviewType.WEARABLE
@@ -134,10 +160,10 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
     gradient: options.transparentBackground ? undefined : `radial-gradient(#676370, #18141b)`,
   }
 
-  // if loading multiple wearables, or if wearable is emote, render full avatar
-  if (urns.length > 0 || (wearable && isEmote(wearable)) || options.profile === DEFAULT_PROFILE) {
+  // if loading multiple wearables (either from URNs or URLs), or if wearable is emote, render full avatar
+  if (urls.length > 0 || urns.length > 0 || (wearable && isEmote(wearable)) || options.profile === DEFAULT_PROFILE) {
     type = PreviewType.AVATAR
-    wearables = await fetchAvatar(urns, bodyShape, env)
+    wearables = await fetchAvatar(urns, urls, base64s, bodyShape, env)
   }
 
   if (wearable) {

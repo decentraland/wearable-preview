@@ -1,9 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react'
 import classNames from 'classnames'
-import { PreviewCamera, PreviewType } from '@dcl/schemas'
+import { PreviewCamera, PreviewType, PreviewMessageType, sendMessage } from '@dcl/schemas'
 import { useWindowSize } from '../../hooks/useWindowSize'
 import { useConfig } from '../../hooks/useConfig'
-import { MessageType, sendMessage } from '../../lib/message'
 import { render } from '../../lib/babylon/render'
 import './Preview.css'
 
@@ -56,10 +55,10 @@ const Preview: React.FC = () => {
   useEffect(() => {
     if (!isMessageSent) {
       if (isLoaded) {
-        sendMessage(MessageType.LOAD)
+        sendMessage(window.parent, PreviewMessageType.LOAD, null)
         setIsMessageSent(true)
       } else if (error) {
-        sendMessage(MessageType.ERROR, error)
+        sendMessage(window.parent, PreviewMessageType.ERROR, { message: error })
         setIsMessageSent(true)
       }
     }

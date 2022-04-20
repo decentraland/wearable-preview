@@ -7,6 +7,8 @@ This webapp renders an interactive 3D preview of a wearable or an avatar. It can
 - `token`: The id of the token (to preview a specific NFT).
 - `profile`: an ethereum address of a profile to load as the base avatar. It can be set to `default` to use a default profile.
 - `urn`: a URN of a wearable to load. It will override anything loaded from a profile. It can be used many times.
+- `url`: a URL of a wearable to load. It will override anything loaded from a profile. It can be used many times. The url will be fetched and must return a valid wearable following the [`WearableDefinition`](https://github.com/decentraland/common-schemas/blob/main/src/dapps/preview/wearable-definition.ts) type.
+- `base64`: a wearable to load, encoded in base64. It will override anything loaded from a profile. It can be used many times. Once parsed it should be a valid wearable following the [`WearableDefinition`](https://github.com/decentraland/common-schemas/blob/main/src/dapps/preview/wearable-definition.ts) type.
 - `skin`: a color to be used by the skin material, it must be in hex.
 - `hair`: a color to be used by the hair material, it must be in hex.
 - `eyes`: a color to be used by the eyes tint, it must be in hex.
