@@ -1,6 +1,5 @@
-import { PreviewOptions } from '@dcl/schemas'
 import { useState, useEffect } from 'react'
-import { MessageType } from '../lib/message'
+import { PreviewMessagePayload, PreviewMessageType, PreviewOptions } from '@dcl/schemas'
 
 export const useOverrides = () => {
   const [overrides, setOverrides] = useState<PreviewOptions>({})
@@ -9,11 +8,14 @@ export const useOverrides = () => {
   useEffect(() => {
     const previous = window.onmessage
     window.onmessage = function (event: MessageEvent) {
-      if (event.data && event.data.type === MessageType.UPDATE) {
-        const message = event.data as { type: MessageType.UPDATE; options: PreviewOptions }
-        if (message.options && typeof message.options === 'object') {
-          setOverrides(message.options)
-        }
+      if (
+        event.data &&
+        event.data.type === PreviewMessageType.UPDATE &&
+        typeof event.data.payload === 'object' &&
+        typeof event.data.payload.options === 'object'
+      ) {
+        const { options } = event.data.payload as PreviewMessagePayload<PreviewMessageType.UPDATE>
+        setOverrides(options)
       }
     }
     return () => {
