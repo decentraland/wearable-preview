@@ -43,22 +43,13 @@ export const useOptions = () => {
 
   // apply overrides
   const overrides = useOverrides()
-  const optionsWithOverrides = useMemo(() => {
-    const keysToOverride = (Object.keys(overrides) as (keyof PreviewOptions)[]).filter(
-      (key) => typeof overrides[key] !== 'undefined' && overrides[key] !== null
-    )
-    if (options && keysToOverride.length > 0) {
-      const newOptions: PreviewOptions = { ...options }
-      for (const key of keysToOverride) {
-        const value = overrides[key]
-        if (value) {
-          newOptions[key] = value as never
-        }
-      }
-      return newOptions
-    }
-    return options
-  }, [options, overrides])
+  const optionsWithOverrides = useMemo(
+    () => ({
+      ...options,
+      ...overrides,
+    }),
+    [options, overrides]
+  )
 
   // return options with overrides applied (if any)
   return optionsWithOverrides
