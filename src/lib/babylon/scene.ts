@@ -79,7 +79,7 @@ export async function createScene(canvas: HTMLCanvasElement, config: PreviewConf
   root.preventDefaultOnPointerDown = false
 
   // Setup Camera
-  var camera = new ArcRotateCamera('camera', 0, 0, 0, new Vector3(0, 0, 0), root)
+  const camera = new ArcRotateCamera('camera', 0, 0, 0, new Vector3(0, 0, 0), root)
   camera.mode = Camera.PERSPECTIVE_CAMERA
   switch (config.camera) {
     case PreviewCamera.INTERACTIVE: {
@@ -112,13 +112,13 @@ export async function createScene(canvas: HTMLCanvasElement, config: PreviewConf
   camera.lowerRadiusLimit = camera.upperRadiusLimit = camera.radius / config.zoom
 
   // Setup lights
-  var directional = new DirectionalLight('directional', new Vector3(0, 0, 1), root)
+  const directional = new DirectionalLight('directional', new Vector3(0, 0, 1), root)
   directional.intensity = 1
-  var top = new HemisphericLight('top', new Vector3(0, -1, 0), root)
+  const top = new HemisphericLight('top', new Vector3(0, -1, 0), root)
   top.intensity = 1
-  var bottom = new HemisphericLight('bottom', new Vector3(0, 1, 0), root)
+  const bottom = new HemisphericLight('bottom', new Vector3(0, 1, 0), root)
   bottom.intensity = 1
-  var spot = new SpotLight('spot', new Vector3(-2, 2, 2), new Vector3(2, -2, -2), Math.PI / 2, 1000, root)
+  const spot = new SpotLight('spot', new Vector3(-2, 2, 2), new Vector3(2, -2, -2), Math.PI / 2, 1000, root)
   spot.intensity = 1
 
   // render loop
@@ -180,7 +180,7 @@ export async function loadAssetContainer(scene: Scene, url: string) {
 
 export function center(scene: Scene) {
   // Setup parent
-  var parent = new Mesh('parent', scene)
+  const parent = new Mesh('parent', scene)
   for (const mesh of scene.meshes) {
     if (mesh !== parent) {
       mesh.setParent(parent)
