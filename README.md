@@ -34,7 +34,13 @@ It's possible to load the `wearable-preview` in an iframe and communicate with i
 If you want to update some options without having to reload the iframe, you can send an `update` message with the options and their new values:
 
 ```ts
-iframe.contentWindow.postMessage({ type: 'update', options: { emote: 'dab' } })
+import { PreviewMessageType, sendMessage } from '@dcl/schemas'
+
+sendMessage(iframe.contentWindow, PreviewMessageType.UPDATE, {
+  options: {
+    emote: 'dab',
+  },
+})
 ```
 
 ### `iframe` events:
@@ -42,15 +48,17 @@ iframe.contentWindow.postMessage({ type: 'update', options: { emote: 'dab' } })
 You can listen to events sent by the iframe via `postMessage`.
 
 ```ts
-function handleMessage(msgEvent) {
-  const event = JSON.parse(msgEvent.data)
-  switch (event.type) {
-    case 'load': {
+import { PreviewMessageType, PreviewMessagePayload } from '@dcl/schemas'
+
+function handleMessage(event) {
+  switch (event.data.type) {
+    case PreviewMessageType.LOAD: {
       console.log('Preview loaded successfully')
       break
     }
-    case 'error': {
-      console.error('Something went wrong:', event.message)
+    case PreviewMessageType.ERROR: {
+      const { message } = event.data.payload as PreviewMessagePayload<PreviewMessageType.ERROR>
+      console.error('Something went wrong:', message)
     }
   }
 }
