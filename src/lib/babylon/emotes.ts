@@ -101,7 +101,3 @@ export async function playEmote(scene: Scene, assets: Asset[], config: PreviewCo
     console.warn(`Could not play emote=${config.emote}`, error)
   }
 }
-
-export function shouldPlayEmote(config: PreviewConfig) {
-  return config.emote
-}
