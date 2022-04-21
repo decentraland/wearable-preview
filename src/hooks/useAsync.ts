@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 /* 
  ids and nonces are used to identity the order on which async functions are called, 
  to avoid race conditions and always keep the value of the last function call, 
- regardles of the order in which they resolve 
+ regardless of the order in which they resolve 
 */
 const nonces: Record<string, number> = {}
 function isValid(id: string, nonce: number) {
