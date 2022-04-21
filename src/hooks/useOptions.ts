@@ -29,7 +29,12 @@ export const useOptions = () => {
       offsetY: offsetYParam ? parseFloat(offsetYParam) : null,
       offsetZ: offsetZParam ? parseFloat(offsetZParam) : null,
       zoom: parseZoom(params.get('zoom')),
-      bodyShape: bodyShapeParam === 'female' ? WearableBodyShape.FEMALE : bodyShapeParam === 'male' ? WearableBodyShape.MALE : null,
+      bodyShape:
+        bodyShapeParam === 'female' || bodyShapeParam === WearableBodyShape.FEMALE
+          ? WearableBodyShape.FEMALE
+          : bodyShapeParam === 'male' || bodyShapeParam === WearableBodyShape.MALE
+          ? WearableBodyShape.MALE
+          : null,
       urns: params.getAll('urn'),
       urls: params.getAll('url'),
       base64s: params.getAll('base64'),
