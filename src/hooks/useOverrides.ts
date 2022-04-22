@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import equal from 'deep-equal'
 import { PreviewMessagePayload, PreviewMessageType, PreviewOptions } from '@dcl/schemas'
 
 export const useOverrides = () => {
@@ -6,8 +7,7 @@ export const useOverrides = () => {
 
   // receive message from parent window to update options
   useEffect(() => {
-    const previous = window.onmessage
-    window.onmessage = function (event: MessageEvent) {
+    function handleMessage(event: MessageEvent) {
       if (
         event.data &&
         event.data.type === PreviewMessageType.UPDATE &&
@@ -15,13 +15,16 @@ export const useOverrides = () => {
         typeof event.data.payload.options === 'object'
       ) {
         const { options } = event.data.payload as PreviewMessagePayload<PreviewMessageType.UPDATE>
-        setOverrides(options)
+        if (!equal(overrides, options)) {
+          setOverrides(options)
+        }
       }
     }
+    window.addEventListener('message', handleMessage)
     return () => {
-      window.onmessage = previous
+      window.removeEventListener('message', handleMessage)
     }
-  }, [])
+  }, [overrides])
 
   return overrides
 }
