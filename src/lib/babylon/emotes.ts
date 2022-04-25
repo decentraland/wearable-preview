@@ -42,6 +42,7 @@ export async function playEmote(scene: Scene, assets: Asset[], config: PreviewCo
   // load asset container for emote
   let container: AssetContainer | undefined
   let loop = isLooped(config.emote)
+  // if target wearable is emote, play that one
   if (config.wearable && isEmote(config.wearable)) {
     try {
       container = await loadEmoteFromWearable(scene, config.wearable, config)
@@ -49,6 +50,11 @@ export async function playEmote(scene: Scene, assets: Asset[], config: PreviewCo
     } catch (error) {
       console.warn(`Could not load emote=${config.wearable.id}`)
     }
+  } else if (config.wearables.some(isEmote)) {
+    // if there's some emote in the wearables list, play the last one
+    const emote = config.wearables.reverse().find(isEmote)!
+    container = await loadEmoteFromWearable(scene, emote, config)
+    loop = !!emote.emoteDataV0?.loop
   }
   if (!container) {
     const emoteUrl = buildEmoteUrl(config.emote)
