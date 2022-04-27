@@ -3,8 +3,7 @@ import { Asset } from './scene'
 import { isHidden } from './utils'
 
 export function getBodyShape(assets: Asset[]) {
-  const bodyShape = assets.find((part) => part.wearable.data.category === ('body_shape' as WearableCategory))
-
+  const bodyShape = assets.find((part) => part.wearable.data.category === WearableCategory.BODY_SHAPE)
   if (!bodyShape) {
     throw new Error(`Could not find a bodyShape when trying to hide base body parts`)
   }
@@ -14,7 +13,7 @@ export function getBodyShape(assets: Asset[]) {
   const hideUpperBody = hasSkin || assets.some(isHidden(WearableCategory.UPPER_BODY))
   const hideLowerBody = hasSkin || assets.some(isHidden(WearableCategory.LOWER_BODY))
   const hideFeet = hasSkin || assets.some(isHidden(WearableCategory.FEET))
-  const hideHead = hasSkin || assets.some(isHidden('head' as WearableCategory))
+  const hideHead = hasSkin || assets.some(isHidden(WearableCategory.HEAD))
 
   for (const mesh of bodyShape.container.meshes) {
     const name = mesh.name.toLowerCase()

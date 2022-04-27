@@ -28,10 +28,10 @@ export function getSlots(config: PreviewConfig) {
           if (categoriesHiddenBySkin.includes(category)) {
             return false
           }
-          if (hides && hides.includes('head' as WearableCategory)) {
+          if (hides && hides.includes(WearableCategory.HEAD)) {
             return false
           }
-          if (replaces && replaces.includes('head' as WearableCategory)) {
+          if (replaces && replaces.includes(WearableCategory.HEAD)) {
             return false
           }
         }
