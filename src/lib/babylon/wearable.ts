@@ -31,7 +31,8 @@ export async function loadWearable(
     if (material.name.toLowerCase().includes('hair')) {
       if (hair) {
         const pbr = material as PBRMaterial
-        pbr.albedoColor = Color3.FromHexString(hair)
+        pbr.albedoColor = Color3.FromHexString(hair).toLinearSpace()
+        pbr.unlit = true
         pbr.alpha = 1
       } else {
         material.alpha = 0
@@ -41,7 +42,8 @@ export async function loadWearable(
     if (material.name.toLowerCase().includes('skin')) {
       if (skin) {
         const pbr = material as PBRMaterial
-        pbr.albedoColor = Color3.FromHexString(skin)
+        pbr.albedoColor = Color3.FromHexString(skin).toLinearSpace()
+        pbr.unlit = true
         pbr.alpha = 1
       } else {
         material.alpha = 0

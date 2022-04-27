@@ -112,14 +112,16 @@ export async function createScene(canvas: HTMLCanvasElement, config: PreviewConf
   camera.lowerRadiusLimit = camera.upperRadiusLimit = camera.radius / config.zoom
 
   // Setup lights
-  const directional = new DirectionalLight('directional', new Vector3(0, 0, 1), root)
-  directional.intensity = 1
+  if (config.type === PreviewType.WEARABLE) {
+    const directional = new DirectionalLight('directional', new Vector3(0, 0, 1), root)
+    directional.intensity = 1
+    const spot = new SpotLight('spot', new Vector3(-2, 2, 2), new Vector3(2, -2, -2), Math.PI / 2, 1000, root)
+    spot.intensity = 1
+  }
   const top = new HemisphericLight('top', new Vector3(0, -1, 0), root)
-  top.intensity = 1
+  top.intensity = 1.1
   const bottom = new HemisphericLight('bottom', new Vector3(0, 1, 0), root)
-  bottom.intensity = 1
-  const spot = new SpotLight('spot', new Vector3(-2, 2, 2), new Vector3(2, -2, -2), Math.PI / 2, 1000, root)
-  spot.intensity = 1
+  bottom.intensity = 1.1
 
   // render loop
   engine.runRenderLoop(() => root.render())
