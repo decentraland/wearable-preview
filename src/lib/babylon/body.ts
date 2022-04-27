@@ -5,7 +5,7 @@ import { isHidden } from './utils'
 export function getBodyShape(assets: Asset[]) {
   const bodyShape = assets.find((part) => part.wearable.data.category === WearableCategory.BODY_SHAPE)
   if (!bodyShape) {
-    throw new Error(`Could not find a bodyShape when trying to hide base body parts`)
+    return null
   }
 
   // hide base body parts if necessary
