@@ -46,10 +46,12 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig) {
 
     // build avatar
     const bodyShape = getBodyShape(assets)
-    // apply facial features
-    const features = wearables.filter(isFacialFeature)
-    const { eyes, eyebrows, mouth } = await getFacialFeatures(root, features, config.bodyShape)
-    applyFacialFeatures(root, bodyShape, eyes, eyebrows, mouth, config)
+    if (bodyShape) {
+      // apply facial features
+      const features = wearables.filter(isFacialFeature)
+      const { eyes, eyebrows, mouth } = await getFacialFeatures(root, features, config.bodyShape)
+      applyFacialFeatures(root, bodyShape, eyes, eyebrows, mouth, config)
+    }
 
     // play emote
     await playEmote(root, assets, config)
