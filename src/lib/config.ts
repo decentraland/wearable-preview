@@ -29,8 +29,16 @@ async function fetchWearable(urn: string, env: PreviewEnv) {
   return results[0]
 }
 
-function toWearable(base64: string): WearableDefinition {
+function parseWearable(base64: string): WearableDefinition {
   return JSON.parse(atob(base64))
+}
+
+async function fetchProfileWearables(profile: Avatar | null, env: PreviewEnv) {
+  if (!profile) {
+    return []
+  }
+  const results = await fetchURNs(profile.avatar.wearables, env)
+  return results.filter((result) => !isEmote(result))
 }
 
 async function fetchURNs(urns: string[], env: PreviewEnv) {
@@ -92,9 +100,21 @@ async function fetchWearableFromContract(options: {
   return fetchWearable(urn, env)
 }
 
-async function fetchAvatar(urns: string[], urls: string[], base64s: string[], bodyShape: WearableBodyShape, env: PreviewEnv) {
-  // fetch wearables from urns, urls and base64s
-  let wearables = [...(await fetchURNs([bodyShape, ...urns], env)), ...(await fetchURLs(urls)), ...base64s.map(toWearable)]
+async function fetchAvatar(
+  profile: Avatar | null,
+  urns: string[],
+  urls: string[],
+  base64s: string[],
+  bodyShape: WearableBodyShape,
+  env: PreviewEnv
+) {
+  // gather wearables from profile, urns, urls and base64s
+  let wearables = [
+    ...(await fetchProfileWearables(profile, env)),
+    ...(await fetchURNs([bodyShape, ...urns], env)),
+    ...(await fetchURLs(urls)),
+    ...base64s.map(parseWearable),
+  ]
   // filter out wearables that don't have a representation for the body shape
   wearables = wearables.filter((wearable) => hasRepresentation(wearable, bodyShape))
   // fill default categories
@@ -145,7 +165,7 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
   const eyes = formatHex(options.eyes || (profile && colorToHex(profile.avatar.eyes.color)) || '000000')
 
   // merge urns from profile (if any) and extra urns
-  const urns = [...(profile ? profile.avatar.wearables : []), ...(options.urns || [])]
+  const urns = [...(options.urns || [])]
 
   // urls to load wearables from
   const urls = options.urls || []
@@ -161,9 +181,9 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
   }
 
   // if loading multiple wearables (either from URNs or URLs), or if wearable is emote, render full avatar
-  if (urns.length > 0 || urls.length > 0 || base64s.length > 0 || (wearable && isEmote(wearable)) || options.profile === DEFAULT_PROFILE) {
+  if (urns.length > 0 || urls.length > 0 || base64s.length > 0 || (wearable && isEmote(wearable)) || options.profile) {
     type = PreviewType.AVATAR
-    wearables = await fetchAvatar(urns, urls, base64s, bodyShape, env)
+    wearables = await fetchAvatar(profile, urns, urls, base64s, bodyShape, env)
   }
 
   if (wearable) {
