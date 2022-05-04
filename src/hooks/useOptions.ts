@@ -24,6 +24,7 @@ export const useOptions = () => {
       emote: params.get('emote') as PreviewEmote | null,
       camera: params.get('camera') as PreviewCamera | null,
       transparentBackground: params.has('transparentBackground'),
+      centerBoundingBox: params.get('centerBoundingBox') !== 'false',
       autoRotateSpeed: autoRotateSpeedParam ? parseFloat(autoRotateSpeedParam) : null,
       offsetX: offsetXParam ? parseFloat(offsetXParam) : null,
       offsetY: offsetYParam ? parseFloat(offsetYParam) : null,
