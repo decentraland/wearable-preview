@@ -13,10 +13,11 @@ This webapp renders an interactive 3D preview of a wearable or an avatar. It can
 - `hair`: a color to be used by the hair material, it must be in hex.
 - `eyes`: a color to be used by the eyes tint, it must be in hex.
 - `bodyShape`: which body shape to use, possible values are `urn:decentraland:off-chain:base-avatars:BaseMale` or `urn:decentraland:off-chain:base-avatars:BaseFemale`.
-- `emote`: the emote that the avatar will play. Default value is `idle`, other possible values are: `clap`, `dab`, `dance`, `fashion`, `fashion-2`, `fashion-3`,`fashion-4`, `love` and `money`.
+- `emote`: the emote that the avatar will play. Default value is `idle`, other possible values are: `clap`, `dab`, `dance`, `fashion`, `fashion-2`, `fashion-3`,`fashion-4`, `love`, `money`, `fist-pump` and `head-explode`.
 - `zoom`: the level of zoom, it must be a number between 1 and 100.
 - `camera`: which camera type to use, either `interactive` or `static`. By default it uses the `interactive` one.
 - `autoRotateSpeed`: the speed of the auto-rotate behavior of the camera. By default it is `0.2`, and it only works when the camera is not `static`.
+- `centerBoundingBox`: wheter to center or not the camera around the bounding box of the avatar/wearable. By default is `true`.
 - `offsetX`: apply an offset in the X position of the camera. By default is `0`.
 - `offsetY`: apply an offset in the Y position of the camera. By default is `0`.
 - `offsetZ`: apply an offset in the Z position of the camera. By default is `0`.

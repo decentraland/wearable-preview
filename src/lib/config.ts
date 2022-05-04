@@ -210,6 +210,7 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
     camera = options.camera
   }
   const autoRotateSpeed = typeof options.autoRotateSpeed === 'number' && !isNaN(options.autoRotateSpeed) ? options.autoRotateSpeed : 0.2
+  const centerBoundingBox = typeof options.centerBoundingBox === 'boolean' && options.centerBoundingBox !== false
 
   return {
     wearable: wearable ?? undefined,
@@ -223,6 +224,7 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
     emote,
     camera,
     autoRotateSpeed,
+    centerBoundingBox,
     offsetX: options.offsetX || 0,
     offsetY: options.offsetY || 0,
     offsetZ: options.offsetZ || 0,

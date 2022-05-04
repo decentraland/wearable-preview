@@ -78,5 +78,7 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig) {
   }
 
   // center the root scene into the camera
-  center(root)
+  if (config.centerBoundingBox) {
+    center(root)
+  }
 }
