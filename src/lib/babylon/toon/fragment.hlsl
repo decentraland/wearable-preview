@@ -45,21 +45,19 @@ vec3 computeCustomDiffuseLighting(lightingInfo info, vec3 diffuseBase, float sha
 	float level = 1.0;
 	if (info.ndl < 0.5)
 		level = 0.5;
-	
+
 	diffuseBase.rgb * vec3(level, level, level);
 #else
-	float ToonThresholds[4];
-	ToonThresholds[0] = 0.95;
-	ToonThresholds[1] = 0.5;
-	ToonThresholds[2] = 0.2;
-	ToonThresholds[3] = 0.03;
+	float ToonThresholds[3];
+	ToonThresholds[0] = 0.75;
+	ToonThresholds[1] = 0.50;
+	ToonThresholds[2] = 0.25;
 
-	float ToonBrightnessLevels[5];
+	float ToonBrightnessLevels[4];
 	ToonBrightnessLevels[0] = 1.0;
 	ToonBrightnessLevels[1] = 0.8;
-	ToonBrightnessLevels[2] = 0.6;
-	ToonBrightnessLevels[3] = 0.35;
-	ToonBrightnessLevels[4] = 0.2;
+	ToonBrightnessLevels[2] = 0.8;
+	ToonBrightnessLevels[3] = 0.6;
 
 	if (info.ndl > ToonThresholds[0])
 	{
@@ -73,17 +71,13 @@ vec3 computeCustomDiffuseLighting(lightingInfo info, vec3 diffuseBase, float sha
 	{
 		diffuseBase.rgb *= ToonBrightnessLevels[2];
 	}
-	else if (info.ndl > ToonThresholds[3])
+	else
 	{
 		diffuseBase.rgb *= ToonBrightnessLevels[3];
 	}
-	else
-	{
-		diffuseBase.rgb *= ToonBrightnessLevels[4];
-	}
 #endif
 
-	return max(diffuseBase, vec3(0.2));
+	return max(diffuseBase, vec3(0.5));
 }
 
 void main(void)
@@ -131,7 +125,7 @@ void main(void)
 
 #ifdef SPECULARTERM
 	vec3 specularBase = vec3(0., 0., 0.);
-#endif    
+#endif
 #include<lightFragment>[0..maxSimultaneousLights]
 
 #ifdef VERTEXALPHA

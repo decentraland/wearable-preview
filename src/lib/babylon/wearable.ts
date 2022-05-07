@@ -8,10 +8,10 @@
  */
 
 import { Color3, PBRMaterial, Scene } from '@babylonjs/core'
-import { CellMaterial } from '@babylonjs/materials'
 import { WearableDefinition, WearableBodyShape } from '@dcl/schemas'
 import { getRepresentation, isTexture, getContentUrl } from '../representation'
 import { loadAssetContainer } from './scene'
+import { CellMaterial } from './toon'
 
 export async function loadWearable(
   scene: Scene,
