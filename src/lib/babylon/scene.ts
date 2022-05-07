@@ -3,11 +3,13 @@ import {
   AssetContainer,
   BoundingInfo,
   Camera,
+  Color3,
   Color4,
   DirectionalLight,
   Engine,
   HemisphericLight,
   Mesh,
+  PointLight,
   Scene,
   SceneLoader,
   SpotLight,
@@ -19,6 +21,7 @@ import '@babylonjs/loaders'
 import { PreviewCamera, PreviewConfig, PreviewType, WearableBodyShape, WearableDefinition } from '@dcl/schemas'
 import { getRepresentation } from '../representation'
 import { startAutoRotateBehavior } from './camera'
+if (process.env.NODE_ENV !== 'production') require('@babylonjs/inspector')
 
 export type Asset = {
   container: AssetContainer
@@ -76,6 +79,7 @@ export async function createScene(canvas: HTMLCanvasElement, config: PreviewConf
   const root = new Scene(engine)
   root.autoClear = true
   root.clearColor = new Color4(0, 0, 0, 0)
+  root.ambientColor = new Color3(0, 0, 0);
   root.preventDefaultOnPointerDown = false
 
   // Setup Camera
@@ -118,13 +122,19 @@ export async function createScene(canvas: HTMLCanvasElement, config: PreviewConf
     const spot = new SpotLight('spot', new Vector3(-2, 2, 2), new Vector3(2, -2, -2), Math.PI / 2, 1000, root)
     spot.intensity = 1
   }
-  const top = new HemisphericLight('top', new Vector3(0, -1, 0), root)
-  top.intensity = 1.1
-  const bottom = new HemisphericLight('bottom', new Vector3(0, 1, 0), root)
-  bottom.intensity = 1.1
+  // const top = new HemisphericLight('top', new Vector3(0, -1, 0), root)
+  // top.intensity = 0.8
+  // const bottom = new HemisphericLight('bottom', new Vector3(0, 1, 0), root)
+  // bottom.intensity = 0.6
+
+  const light = new PointLight('light', new Vector3(10, 10, 10), root)
+  light.intensity = 1.0
 
   // render loop
   engine.runRenderLoop(() => root.render())
+
+  if (process.env.NODE_ENV !== 'production') root.debugLayer.show({ showExplorer: true, embedMode: true })
+  // root.debugLayer.select(pbr, "DEBUG");
 
   return root
 }

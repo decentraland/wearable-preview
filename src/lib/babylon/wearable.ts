@@ -8,6 +8,7 @@
  */
 
 import { Color3, PBRMaterial, Scene } from '@babylonjs/core'
+import { CellMaterial } from '@babylonjs/materials'
 import { WearableDefinition, WearableBodyShape } from '@dcl/schemas'
 import { getRepresentation, isTexture, getContentUrl } from '../representation'
 import { loadAssetContainer } from './scene'
@@ -26,28 +27,42 @@ export async function loadWearable(
   const url = getContentUrl(representation)
   const container = await loadAssetContainer(scene, url)
 
+  var i = 0
   // Clean up
-  for (let material of container.materials) {
-    if (material.name.toLowerCase().includes('hair')) {
+  for (const originalMaterial of container.materials) {
+    originalMaterial.name = originalMaterial.name + '-' + i++
+
+    const newMaterial = new CellMaterial(originalMaterial.name + '_cell', scene)
+
+    newMaterial.diffuseColor = (originalMaterial as PBRMaterial).albedoColor
+    newMaterial.diffuseTexture = (originalMaterial as PBRMaterial).albedoTexture;
+    newMaterial.transparencyMode = originalMaterial.transparencyMode
+    newMaterial.computeHighLevel = true;
+
+    for (const mesh of originalMaterial.getBindedMeshes()) {
+      mesh.material = newMaterial
+    }
+
+    scene.removeMaterial(originalMaterial)
+
+    if (newMaterial.name.toLowerCase().includes('hair')) {
       if (hair) {
-        const pbr = material as PBRMaterial
-        pbr.albedoColor = Color3.FromHexString(hair).toLinearSpace()
-        pbr.unlit = true
-        pbr.alpha = 1
+        newMaterial.diffuseColor = Color3.FromHexString(hair).toLinearSpace()
+        // pbr.unlit = true
+        newMaterial.alpha = 1
       } else {
-        material.alpha = 0
-        scene.removeMaterial(material)
+        newMaterial.alpha = 0
+        scene.removeMaterial(newMaterial)
       }
     }
-    if (material.name.toLowerCase().includes('skin')) {
+    if (newMaterial.name.toLowerCase().includes('skin')) {
       if (skin) {
-        const pbr = material as PBRMaterial
-        pbr.albedoColor = Color3.FromHexString(skin).toLinearSpace()
-        pbr.unlit = true
-        pbr.alpha = 1
+        newMaterial.diffuseColor = Color3.FromHexString(skin).toLinearSpace()
+        // newMaterial.unlit = true
+        newMaterial.alpha = 1
       } else {
-        material.alpha = 0
-        scene.removeMaterial(material)
+        newMaterial.alpha = 0
+        scene.removeMaterial(newMaterial)
       }
     }
   }

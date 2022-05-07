@@ -4,7 +4,10 @@
   "private": true,
   "dependencies": {
     "@babylonjs/core": "^4.2.0",
+    "@babylonjs/gui": "^4.2.0",
+    "@babylonjs/inspector": "^4.2.0",
     "@babylonjs/loaders": "^4.2.0",
+    "@babylonjs/materials": "^4.2.0",
     "@dcl/schemas": "^4.8.0",
     "@testing-library/jest-dom": "^5.15.0",
     "@testing-library/react": "^11.2.7",
