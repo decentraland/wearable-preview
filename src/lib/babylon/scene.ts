@@ -7,6 +7,7 @@ import {
   Color4,
   DirectionalLight,
   Engine,
+  GlowLayer,
   HemisphericLight,
   Mesh,
   PointLight,
@@ -123,20 +124,15 @@ export async function createScene(canvas: HTMLCanvasElement, config: PreviewConf
     const spot = new SpotLight('spot', new Vector3(-2, 2, 2), new Vector3(2, -2, -2), Math.PI / 2, 1000, root)
     spot.intensity = 1
   }
-  // const top = new HemisphericLight('top', new Vector3(0, -1, 0), root)
-  // top.intensity = 0.1
-  // const bottom = new HemisphericLight('bottom', new Vector3(0, 1, 0), root)
-  // bottom.intensity = 0.1
-
-  const light = new PointLight('light', new Vector3(10, 10, 10), root)
+  const glowLayer = new GlowLayer('glow', root)
+  glowLayer.intensity = 1.0
+  const top = new HemisphericLight('top', new Vector3(0, -1, 0), root)
+  top.intensity = 1.0
+  const bottom = new HemisphericLight('bottom', new Vector3(0, 1, 0), root)
+  bottom.intensity = 1.0
 
   // render loop
   engine.runRenderLoop(() => {
-    new Vector3(-10, 10, -10).rotateByQuaternionAroundPointToRef(
-      root.activeCamera?.absoluteRotation || Quaternion.Identity(),
-      Vector3.Zero(),
-      light.position
-    )
     root.render()
   })
 
