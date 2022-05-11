@@ -124,8 +124,10 @@ export async function createScene(canvas: HTMLCanvasElement, config: PreviewConf
     const spot = new SpotLight('spot', new Vector3(-2, 2, 2), new Vector3(2, -2, -2), Math.PI / 2, 1000, root)
     spot.intensity = 1
   }
-  const glowLayer = new GlowLayer('glow', root)
-  glowLayer.intensity = 1.0
+  if (!isIOs()) {
+    const glowLayer = new GlowLayer('glow', root)
+    glowLayer.intensity = 1.0
+  }
   const top = new HemisphericLight('top', new Vector3(0, -1, 0), root)
   top.intensity = 1.0
   const bottom = new HemisphericLight('bottom', new Vector3(0, 1, 0), root)
@@ -157,6 +159,10 @@ export async function loadMask(scene: Scene, wearable: WearableDefinition, bodyS
     })
   }
   return null
+}
+
+function isIOs() {
+  return ['iPad Simulator', 'iPhone Simulator', 'iPod Simulator', 'iPad', 'iPhone', 'iPod'].includes(navigator.platform)
 }
 
 export async function loadTexture(scene: Scene, wearable: WearableDefinition, bodyShape: WearableBodyShape): Promise<Texture | null> {

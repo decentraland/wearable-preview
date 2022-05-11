@@ -30,39 +30,30 @@ export async function loadWearable(
   var i = 0
   // Clean up
   for (const originalMaterial of container.materials) {
-    originalMaterial.name = originalMaterial.name + '-' + i++
+    if (originalMaterial instanceof PBRMaterial) {
+      const newMaterial = originalMaterial as PBRMaterial
+      newMaterial.specularIntensity = 0
 
-    const newMaterial = originalMaterial as PBRMaterial; //new CellMaterial(originalMaterial.name + '_cell', scene)
-
-    // newMaterial.diffuseColor = (originalMaterial as PBRMaterial).albedoColor
-    // newMaterial.diffuseTexture = (originalMaterial as PBRMaterial).albedoTexture;
-    // newMaterial.transparencyMode = originalMaterial.transparencyMode
-    // newMaterial.computeHighLevel = true;
-
-    for (const mesh of originalMaterial.getBindedMeshes()) {
-      mesh.material = newMaterial
-    }
-
-    scene.removeMaterial(originalMaterial)
-
-    if (newMaterial.name.toLowerCase().includes('hair')) {
-      if (hair) {
-        newMaterial.albedoColor = Color3.FromHexString(hair).toLinearSpace()
-        // pbr.unlit = true
-        newMaterial.alpha = 1
-      } else {
-        newMaterial.alpha = 0
-        scene.removeMaterial(newMaterial)
+      if (newMaterial.name.toLowerCase().includes('hair')) {
+        if (hair) {
+          newMaterial.albedoColor = Color3.FromHexString(hair).toLinearSpace()
+          newMaterial.specularIntensity = 0
+          newMaterial.alpha = 1
+        } else {
+          newMaterial.alpha = 0
+          scene.removeMaterial(newMaterial)
+        }
       }
-    }
-    if (newMaterial.name.toLowerCase().includes('skin')) {
-      if (skin) {
-        newMaterial.albedoColor = Color3.FromHexString(skin).toLinearSpace()
-        // newMaterial.unlit = true
-        newMaterial.alpha = 1
-      } else {
-        newMaterial.alpha = 0
-        scene.removeMaterial(newMaterial)
+      if (newMaterial.name.toLowerCase().includes('skin')) {
+        if (skin) {
+          newMaterial.albedoColor = Color3.FromHexString(skin).toLinearSpace()
+          newMaterial.specularIntensity = 0
+          // newMaterial.unlit = true
+          newMaterial.alpha = 1
+        } else {
+          newMaterial.alpha = 0
+          scene.removeMaterial(newMaterial)
+        }
       }
     }
   }
