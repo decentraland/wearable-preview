@@ -27,7 +27,6 @@ export async function loadWearable(
   const url = getContentUrl(representation)
   const container = await loadAssetContainer(scene, url)
 
-  var i = 0
   // Clean up
   for (const originalMaterial of container.materials) {
     if (originalMaterial instanceof PBRMaterial) {
@@ -48,7 +47,6 @@ export async function loadWearable(
         if (skin) {
           newMaterial.albedoColor = Color3.FromHexString(skin).toLinearSpace()
           newMaterial.specularIntensity = 0
-          // newMaterial.unlit = true
           newMaterial.alpha = 1
         } else {
           newMaterial.alpha = 0

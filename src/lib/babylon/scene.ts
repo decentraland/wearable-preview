@@ -10,8 +10,6 @@ import {
   GlowLayer,
   HemisphericLight,
   Mesh,
-  PointLight,
-  Quaternion,
   Scene,
   SceneLoader,
   SpotLight,
