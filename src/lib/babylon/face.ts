@@ -75,7 +75,7 @@ function applyTextureAndMask(
   newMaterial.diffuseColor = mask ? Color3.Black() : hexToColor(maskColor)
   if (mask) {
     newMaterial.emissiveTexture = mask
-    newMaterial.emissiveColor = hexToColor(color)
+    newMaterial.emissiveColor = hexToColor(color).toLinearSpace()
   }
   mesh.material = newMaterial
 }
