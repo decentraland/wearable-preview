@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import equal from 'deep-equal'
-import { PreviewMessagePayload, PreviewMessageType, PreviewOptions } from '@dcl/schemas'
+import { PreviewMessagePayload, PreviewMessageType, PreviewOptions, sendMessage } from '@dcl/schemas'
 
 export const useOverrides = () => {
   const [overrides, setOverrides] = useState<PreviewOptions>({})
@@ -21,6 +21,7 @@ export const useOverrides = () => {
       }
     }
     window.addEventListener('message', handleMessage)
+    sendMessage(window.parent, PreviewMessageType.READY, {})
     return () => {
       window.removeEventListener('message', handleMessage)
     }
