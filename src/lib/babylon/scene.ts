@@ -19,9 +19,14 @@ import {
 } from '@babylonjs/core'
 import '@babylonjs/loaders'
 import { PreviewCamera, PreviewConfig, PreviewType, WearableBodyShape, WearableDefinition } from '@dcl/schemas'
+import { isDev, isIOs } from '../env'
 import { getRepresentation } from '../representation'
 import { startAutoRotateBehavior } from './camera'
-if (process.env.NODE_ENV !== 'production') require('@babylonjs/inspector')
+
+// needed for debugging
+if (isDev) {
+  require('@babylonjs/inspector')
+}
 
 export type Asset = {
   container: AssetContainer
@@ -122,22 +127,27 @@ export async function createScene(canvas: HTMLCanvasElement, config: PreviewConf
     const spot = new SpotLight('spot', new Vector3(-2, 2, 2), new Vector3(2, -2, -2), Math.PI / 2, 1000, root)
     spot.intensity = 1
   }
-  if (!isIOs()) {
-    const glowLayer = new GlowLayer('glow', root)
-    glowLayer.intensity = 0.4
-  }
   const top = new HemisphericLight('top', new Vector3(0, -1, 0), root)
   top.intensity = 1.0
   const bottom = new HemisphericLight('bottom', new Vector3(0, 1, 0), root)
   bottom.intensity = 1.0
 
-  // render loop
+  // Setup effects
+  // Avoid ios since the glow effect breaks on safari: https://github.com/decentraland/wearable-preview/issues/11
+  if (!isIOs()) {
+    const glowLayer = new GlowLayer('glow', root)
+    glowLayer.intensity = 0.4
+  }
+
+  // Render loop
   engine.runRenderLoop(() => {
     root.render()
   })
 
-  if (process.env.NODE_ENV !== 'production') root.debugLayer.show({ showExplorer: true, embedMode: true })
-  // root.debugLayer.select(pbr, "DEBUG");
+  // Dev tools
+  if (isDev) {
+    root.debugLayer.show({ showExplorer: true, embedMode: true })
+  }
 
   return root
 }
@@ -157,10 +167,6 @@ export async function loadMask(scene: Scene, wearable: WearableDefinition, bodyS
     })
   }
   return null
-}
-
-function isIOs() {
-  return ['iPad Simulator', 'iPhone Simulator', 'iPod Simulator', 'iPad', 'iPhone', 'iPod'].includes(navigator.platform)
 }
 
 export async function loadTexture(scene: Scene, wearable: WearableDefinition, bodyShape: WearableBodyShape): Promise<Texture | null> {
