@@ -11,6 +11,7 @@ import { Color3, PBRMaterial, Scene } from '@babylonjs/core'
 import { WearableDefinition, WearableBodyShape } from '@dcl/schemas'
 import { getRepresentation, isTexture, getContentUrl } from '../representation'
 import { loadAssetContainer } from './scene'
+import './toon'
 
 export async function loadWearable(
   scene: Scene,
@@ -27,27 +28,30 @@ export async function loadWearable(
   const container = await loadAssetContainer(scene, url)
 
   // Clean up
-  for (let material of container.materials) {
-    if (material.name.toLowerCase().includes('hair')) {
-      if (hair) {
-        const pbr = material as PBRMaterial
-        pbr.albedoColor = Color3.FromHexString(hair).toLinearSpace()
-        pbr.unlit = true
-        pbr.alpha = 1
-      } else {
-        material.alpha = 0
-        scene.removeMaterial(material)
+  for (const originalMaterial of container.materials) {
+    if (originalMaterial instanceof PBRMaterial) {
+      const newMaterial = originalMaterial as PBRMaterial
+      newMaterial.specularIntensity = 0
+
+      if (newMaterial.name.toLowerCase().includes('hair')) {
+        if (hair) {
+          newMaterial.albedoColor = Color3.FromHexString(hair).toLinearSpace()
+          newMaterial.specularIntensity = 0
+          newMaterial.alpha = 1
+        } else {
+          newMaterial.alpha = 0
+          scene.removeMaterial(newMaterial)
+        }
       }
-    }
-    if (material.name.toLowerCase().includes('skin')) {
-      if (skin) {
-        const pbr = material as PBRMaterial
-        pbr.albedoColor = Color3.FromHexString(skin).toLinearSpace()
-        pbr.unlit = true
-        pbr.alpha = 1
-      } else {
-        material.alpha = 0
-        scene.removeMaterial(material)
+      if (newMaterial.name.toLowerCase().includes('skin')) {
+        if (skin) {
+          newMaterial.albedoColor = Color3.FromHexString(skin).toLinearSpace()
+          newMaterial.specularIntensity = 0
+          newMaterial.alpha = 1
+        } else {
+          newMaterial.alpha = 0
+          scene.removeMaterial(newMaterial)
+        }
       }
     }
   }

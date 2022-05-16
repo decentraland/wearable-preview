@@ -68,6 +68,7 @@ function applyTextureAndMask(
   const newMaterial = new StandardMaterial(`${name}_standard_material`, scene)
   newMaterial.alphaMode = PBRMaterial.PBRMATERIAL_ALPHABLEND
   newMaterial.backFaceCulling = true
+  newMaterial.specularColor = Color3.Black()
   texture.hasAlpha = true
   newMaterial.sideOrientation = Orientation.CW
   newMaterial.diffuseTexture = texture
