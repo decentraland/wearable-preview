@@ -124,7 +124,7 @@ export async function createScene(canvas: HTMLCanvasElement, config: PreviewConf
   }
   if (!isIOs()) {
     const glowLayer = new GlowLayer('glow', root)
-    glowLayer.intensity = 1.0
+    glowLayer.intensity = 0.4
   }
   const top = new HemisphericLight('top', new Vector3(0, -1, 0), root)
   top.intensity = 1.0
