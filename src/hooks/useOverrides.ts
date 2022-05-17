@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import equal from 'deep-equal'
-import { PreviewMessagePayload, PreviewMessageType, PreviewOptions } from '@dcl/schemas'
+import { PreviewMessagePayload, PreviewMessageType, PreviewOptions, sendMessage } from '@dcl/schemas'
 
 export const useOverrides = () => {
   const [overrides, setOverrides] = useState<PreviewOptions>({})
+  const [isReady, setIsReady] = useState(false)
 
   // receive message from parent window to update options
   useEffect(() => {
@@ -21,10 +22,14 @@ export const useOverrides = () => {
       }
     }
     window.addEventListener('message', handleMessage)
+    if (!isReady) {
+      sendMessage(window.parent, PreviewMessageType.READY, {})
+      setIsReady(true)
+    }
     return () => {
       window.removeEventListener('message', handleMessage)
     }
-  }, [overrides])
+  }, [overrides, isReady])
 
   return overrides
 }
