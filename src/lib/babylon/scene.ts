@@ -118,7 +118,12 @@ export async function createScene(canvas: HTMLCanvasElement, config: PreviewConf
   const offset = new Vector3(config.offsetX, config.offsetY, config.offsetZ)
   camera.position.addInPlace(offset)
   camera.setTarget(offset)
-  camera.lowerRadiusLimit = camera.upperRadiusLimit = camera.radius / config.zoom
+
+  // compute camera radius
+  camera.lowerRadiusLimit = camera.radius / config.zoom
+  camera.upperRadiusLimit = camera.lowerRadiusLimit * config.wheelZoom
+  camera.radius = camera.lowerRadiusLimit + ((camera.upperRadiusLimit - camera.lowerRadiusLimit) * config.wheelStart) / 100
+  camera.wheelPrecision = config.wheelPrecision
 
   // Setup lights
   if (config.type === PreviewType.WEARABLE) {

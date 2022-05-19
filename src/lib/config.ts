@@ -212,6 +212,20 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
   const autoRotateSpeed = typeof options.autoRotateSpeed === 'number' && !isNaN(options.autoRotateSpeed) ? options.autoRotateSpeed : 0.2
   const centerBoundingBox = typeof options.centerBoundingBox === 'boolean' && options.centerBoundingBox !== false
 
+  // wheel options
+  let wheelZoom = 1
+  let wheelPrecision = 100
+  let wheelStart = 50
+  if (isNumber(options.wheelZoom)) {
+    wheelZoom = Math.max(options.wheelZoom!, 1) // min value 1
+  }
+  if (isNumber(options.wheelPrecision)) {
+    wheelPrecision = Math.max(options.wheelPrecision!, 1) // min value 1
+  }
+  if (isNumber(options.wheelStart)) {
+    wheelStart = 100 - Math.min(Math.max(options.wheelStart!, 0), 100) // value between 0 and 100
+  }
+
   return {
     wearable: wearable ?? undefined,
     wearables,
@@ -229,5 +243,12 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
     offsetY: options.offsetY || 0,
     offsetZ: options.offsetZ || 0,
     zoom: options.zoom || zoom,
+    wheelZoom,
+    wheelPrecision,
+    wheelStart,
   }
+}
+
+function isNumber(value: number | null | undefined): boolean {
+  return typeof value === 'number' && !isNaN(value)
 }
