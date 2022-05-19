@@ -13,6 +13,9 @@ export const useOptions = () => {
     const offsetXParam = params.get('offsetX') as string | null
     const offsetYParam = params.get('offsetY') as string | null
     const offsetZParam = params.get('offsetZ') as string | null
+    const wheelZoomParam = params.get('wheelZoom') as string | null
+    const wheelPrecisionParam = params.get('wheelPrecision') as string | null
+    const wheelStartParam = params.get('wheelStart') as string | null
     const bodyShapeParam = params.get('bodyShape')
     const options = {
       contractAddress: params.get('contract')!,
@@ -29,6 +32,9 @@ export const useOptions = () => {
       offsetX: offsetXParam ? parseFloat(offsetXParam) : null,
       offsetY: offsetYParam ? parseFloat(offsetYParam) : null,
       offsetZ: offsetZParam ? parseFloat(offsetZParam) : null,
+      wheelZoom: wheelZoomParam ? parseFloat(wheelZoomParam) : null,
+      wheelPrecision: wheelPrecisionParam ? parseFloat(wheelPrecisionParam) : null,
+      wheelStart: wheelStartParam ? parseFloat(wheelStartParam) : null,
       zoom: parseZoom(params.get('zoom')),
       bodyShape:
         bodyShapeParam === 'female' || bodyShapeParam === WearableBodyShape.FEMALE
