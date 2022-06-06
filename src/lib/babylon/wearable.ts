@@ -31,7 +31,12 @@ export async function loadWearable(
   for (const originalMaterial of container.materials) {
     if (originalMaterial instanceof PBRMaterial) {
       const newMaterial = originalMaterial as PBRMaterial
-      newMaterial.specularIntensity = 0
+
+      // remove metallic effect
+      if (newMaterial.metallic) {
+        newMaterial.metallic = 0
+        newMaterial.metallicF0Factor = 0
+      }
 
       if (newMaterial.name.toLowerCase().includes('hair')) {
         if (hair) {
