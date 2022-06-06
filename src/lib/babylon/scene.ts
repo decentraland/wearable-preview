@@ -24,7 +24,8 @@ import { getRepresentation } from '../representation'
 import { startAutoRotateBehavior } from './camera'
 
 // needed for debugging
-if (isDev) {
+const showInspector = isDev && process.env.REACT_APP_DEBUG
+if (showInspector) {
   require('@babylonjs/inspector')
 }
 
@@ -150,7 +151,7 @@ export async function createScene(canvas: HTMLCanvasElement, config: PreviewConf
   })
 
   // Dev tools
-  if (isDev) {
+  if (showInspector) {
     root.debugLayer.show({ showExplorer: true, embedMode: true })
   }
 
