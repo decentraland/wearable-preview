@@ -142,7 +142,7 @@ export async function createScene(canvas: HTMLCanvasElement, config: PreviewConf
   // Avoid ios since the glow effect breaks on safari: https://github.com/decentraland/wearable-preview/issues/11
   if (!isIOs()) {
     const glowLayer = new GlowLayer('glow', root)
-    glowLayer.intensity = 0.4
+    glowLayer.intensity = 2.5
   }
 
   // Render loop
