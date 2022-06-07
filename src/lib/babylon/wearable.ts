@@ -33,6 +33,7 @@ export async function loadWearable(
       const newMaterial = originalMaterial as PBRMaterial
 
       // remove metallic effect
+      newMaterial.specularIntensity = 0
       if (newMaterial.metallic) {
         newMaterial.metallic = 0
         newMaterial.metallicF0Factor = 0
