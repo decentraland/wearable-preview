@@ -3,7 +3,7 @@ name: Set rollout
 on: [deployment_status]
 
 jobs:
-  set-rollout-zone:
+  set-rollout:
     if: ${{ github.event.deployment.task == 'upload-to-cdn' && github.event.deployment_status.state == 'success' }}
     runs-on: ubuntu-18.04
     steps:
