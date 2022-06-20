@@ -1,4 +1,4 @@
-name: Set delivery rollout - Manual
+name: Set rollout - Manual
 
 on:
   workflow_dispatch:
@@ -7,21 +7,29 @@ on:
         description: 'NPM Version of the release (@dcl/wearable-preview)'
         required: true
         default: ''
-      percentage:
-        description: 'Percentage of users getting this version'
-        required: true
-        default: '0'
       deploymentDomain:
+        type: 'choice'
         description: 'Deployment domain'
         required: true
-        default: 'wearable-preview.decentraland.zone'
+        default: '.zone'
+        options:
+          - .zone
+          - .today
+          - .org
+      rolloutPercentage:
+        description: 'The percentage for this rollout'
+        required: true
+        default: '100'
 
 jobs:
   set-manual-rollout:
     runs-on: ubuntu-18.04
+    defaults:
+      run:
+        working-directory: ./webapp
     steps:
       - uses: hmarr/debug-action@v2
-      - name: set-rollout
+      - name: Set Rollout
         uses: decentraland/set-rollout-action@main
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -35,6 +43,6 @@ jobs:
           packageVersion: ${{ github.event.inputs.packageVersion }}
 
           # Rollout information
-          deploymentDomain: ${{ github.event.inputs.deploymentDomain }}
+          deploymentDomain: wearable-preview.decentraland${{ github.event.inputs.deploymentDomain }}
           deploymentName: '_site'
-          percentage: ${{ github.event.inputs.percentage }}
+          percentage: ${{ github.event.inputs.rolloutPercentage }}
