@@ -26,6 +26,7 @@ export const useOptions = () => {
       eyes: params.get('eyes'),
       emote: params.get('emote') as PreviewEmote | null,
       camera: params.get('camera') as PreviewCamera | null,
+      background: params.get('background'),
       transparentBackground: params.has('transparentBackground'),
       centerBoundingBox: params.get('centerBoundingBox') !== 'false',
       autoRotateSpeed: autoRotateSpeedParam ? parseFloat(autoRotateSpeedParam) : null,

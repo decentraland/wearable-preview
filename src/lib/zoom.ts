@@ -2,7 +2,8 @@ import { WearableCategory, WearableDefinition } from '@dcl/schemas'
 
 export function parseZoom(rawZoom: string | null) {
   const parsedZoom = rawZoom ? parseFloat(rawZoom) : null
-  const zoom = parsedZoom === null || isNaN(parsedZoom) ? null : (Math.min(Math.max(parsedZoom, 0), 100) * 1.8) / 100 + 1
+  const zoom =
+    parsedZoom === null || isNaN(parsedZoom) ? null : (Math.min(Math.max(parsedZoom, 0), 100) * 1.8) / 100 + 1
   return zoom
 }
 

@@ -16,7 +16,14 @@ import { peerApi } from './api/peer'
 import { createMemo } from './cache'
 import { colorToHex, formatHex } from './color'
 import { getRepresentationOrDefault, hasRepresentation, isTexture } from './representation'
-import { getDefaultCategories, getDefaultWearableUrn, getWearableBodyShape, getWearableByCategory, isEmote, isWearable } from './wearable'
+import {
+  getDefaultCategories,
+  getDefaultWearableUrn,
+  getWearableBodyShape,
+  getWearableByCategory,
+  isEmote,
+  isWearable,
+} from './wearable'
 import { getZoom } from './zoom'
 
 const DEFAULT_PROFILE = 'default'
@@ -177,7 +184,8 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
   let zoom = 1.75
   let type = PreviewType.WEARABLE
   let background: PreviewConfig['background'] = {
-    gradient: options.transparentBackground ? undefined : `radial-gradient(#676370, #18141b)`,
+    color: '#4b4852', // grey
+    transparent: options.transparentBackground === true,
   }
 
   // if loading multiple wearables (either from URNs or URLs), or if wearable is emote, render full avatar
@@ -192,11 +200,11 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
     if (isTexture(representation) && type !== PreviewType.AVATAR) {
       type = PreviewType.TEXTURE
     }
-    const [light, dark] = Rarity.getGradient(wearable.rarity!)
-    const gradient = `radial-gradient(${light}, ${dark})`
+    const color = Rarity.getColor(wearable.rarity!)
     background = {
+      ...background,
       image: wearable.thumbnail,
-      gradient,
+      color,
     }
   }
 
@@ -209,7 +217,8 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
   if (options.camera && Object.values(PreviewCamera).includes(options.camera)) {
     camera = options.camera
   }
-  const autoRotateSpeed = typeof options.autoRotateSpeed === 'number' && !isNaN(options.autoRotateSpeed) ? options.autoRotateSpeed : 0.2
+  const autoRotateSpeed =
+    typeof options.autoRotateSpeed === 'number' && !isNaN(options.autoRotateSpeed) ? options.autoRotateSpeed : 0.2
   const centerBoundingBox = typeof options.centerBoundingBox === 'boolean' && options.centerBoundingBox !== false
 
   // wheel options
@@ -224,6 +233,11 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
   }
   if (isNumber(options.wheelStart)) {
     wheelStart = 100 - Math.min(Math.max(options.wheelStart!, 0), 100) // value between 0 and 100
+  }
+
+  // custom background color
+  if (options.background) {
+    background.color = options.background
   }
 
   return {

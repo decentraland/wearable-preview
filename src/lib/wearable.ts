@@ -71,8 +71,9 @@ export function isWearable(value: WearableDefinition | void): value is WearableD
 export function getWearableBodyShape(wearabe: WearableDefinition): WearableBodyShape {
   const bodyShapes = [WearableBodyShape.MALE, WearableBodyShape.FEMALE]
   return (
-    bodyShapes.find((bodyShape) => wearabe.data.representations.some((representation) => representation.bodyShapes.includes(bodyShape))) ||
-    bodyShapes[0]
+    bodyShapes.find((bodyShape) =>
+      wearabe.data.representations.some((representation) => representation.bodyShapes.includes(bodyShape))
+    ) || bodyShapes[0]
   )
 }
 
