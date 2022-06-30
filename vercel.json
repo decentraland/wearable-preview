@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "name": "builder",
+  "build": {
+    "env": {
+      "GEN_STATIC_LOCAL": "true",
+      "PUBLIC_URL": "/"
+    }
+  },
+  "routes": [
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/.*",
+      "dest": "/index.html"
+    }
+  ]
+}
