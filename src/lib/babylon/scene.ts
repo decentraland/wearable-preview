@@ -18,13 +18,14 @@ import {
   Vector3,
 } from '@babylonjs/core'
 import '@babylonjs/loaders'
-import { PreviewCamera, PreviewConfig, PreviewType, WearableBodyShape, WearableDefinition } from '@dcl/schemas'
-import { isDev, isIOs } from '../env'
+import { BodyShape, PreviewCamera, PreviewConfig, PreviewType, WearableDefinition } from '@dcl/schemas'
+import { hexToColor } from '../color'
+import { isIOs } from '../env'
 import { getRepresentation } from '../representation'
 import { startAutoRotateBehavior } from './camera'
 
 // needed for debugging
-const showInspector = isDev && process.env.REACT_APP_DEBUG
+const showInspector = process.env.REACT_APP_DEBUG
 if (showInspector) {
   require('@babylonjs/inspector')
 }
@@ -81,10 +82,12 @@ export async function createScene(canvas: HTMLCanvasElement, config: PreviewConf
     antialias: true,
   })
 
-  // Load GLB/GLTF
+  // Setup scene
   const root = new Scene(engine)
   root.autoClear = true
-  root.clearColor = new Color4(0, 0, 0, 0)
+  root.clearColor = config.background.transparent
+    ? new Color4(0, 0, 0, 0)
+    : hexToColor(config.background.color).toColor4()
   root.ambientColor = new Color3(1, 1, 1)
   root.preventDefaultOnPointerDown = false
 
@@ -123,7 +126,8 @@ export async function createScene(canvas: HTMLCanvasElement, config: PreviewConf
   // compute camera radius
   camera.lowerRadiusLimit = camera.radius / config.zoom
   camera.upperRadiusLimit = camera.lowerRadiusLimit * config.wheelZoom
-  camera.radius = camera.lowerRadiusLimit + ((camera.upperRadiusLimit - camera.lowerRadiusLimit) * config.wheelStart) / 100
+  camera.radius =
+    camera.lowerRadiusLimit + ((camera.upperRadiusLimit - camera.lowerRadiusLimit) * config.wheelStart) / 100
   camera.wheelPrecision = config.wheelPrecision
 
   // Setup lights
@@ -142,7 +146,7 @@ export async function createScene(canvas: HTMLCanvasElement, config: PreviewConf
   // Avoid ios since the glow effect breaks on safari: https://github.com/decentraland/wearable-preview/issues/11
   if (!isIOs()) {
     const glowLayer = new GlowLayer('glow', root)
-    glowLayer.intensity = 2.5
+    glowLayer.intensity = 2.0
   }
 
   // Render loop
@@ -158,7 +162,11 @@ export async function createScene(canvas: HTMLCanvasElement, config: PreviewConf
   return root
 }
 
-export async function loadMask(scene: Scene, wearable: WearableDefinition, bodyShape: WearableBodyShape): Promise<Texture | null> {
+export async function loadMask(
+  scene: Scene,
+  wearable: WearableDefinition,
+  bodyShape: BodyShape
+): Promise<Texture | null> {
   const name = wearable.id
   const representation = getRepresentation(wearable, bodyShape)
   const file = representation.contents.find((file) => file.key.toLowerCase().endsWith('_mask.png'))
@@ -175,7 +183,11 @@ export async function loadMask(scene: Scene, wearable: WearableDefinition, bodyS
   return null
 }
 
-export async function loadTexture(scene: Scene, wearable: WearableDefinition, bodyShape: WearableBodyShape): Promise<Texture | null> {
+export async function loadTexture(
+  scene: Scene,
+  wearable: WearableDefinition,
+  bodyShape: BodyShape
+): Promise<Texture | null> {
   const name = wearable.id
   const representation = getRepresentation(wearable, bodyShape)
   const file = representation.contents.find(
@@ -195,7 +207,8 @@ export async function loadTexture(scene: Scene, wearable: WearableDefinition, bo
 }
 
 export async function loadAssetContainer(scene: Scene, url: string) {
-  const load = async (url: string, extension: string) => SceneLoader.LoadAssetContainerAsync(url, '', scene, null, extension)
+  const load = async (url: string, extension: string) =>
+    SceneLoader.LoadAssetContainerAsync(url, '', scene, null, extension)
   // try with GLB, if it fails try with GLTF
   try {
     return await load(url, '.glb')

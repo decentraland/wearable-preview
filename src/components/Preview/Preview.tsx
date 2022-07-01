@@ -26,8 +26,8 @@ const Preview: React.FC = () => {
 
   useEffect(() => {
     if (canvasRef.current && config) {
-      // rarity background
-      setStyle({ backgroundImage: config.background.gradient ? config.background.gradient : undefined, opacity: 1 })
+      // fade in effect
+      setStyle({ opacity: 1 })
 
       // set background image
       if (config.background.image) {

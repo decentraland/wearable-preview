@@ -33,7 +33,9 @@ export async function loadEmoteFromWearable(scene: Scene, wearable: WearableDefi
   const representation = getRepresentation(wearable, config.bodyShape)
   const content = representation.contents.find((content) => content.key === representation.mainFile)
   if (!content) {
-    throw new Error(`Could not find a valid content in representation for wearable=${wearable.id} and bodyShape=${config.bodyShape}`)
+    throw new Error(
+      `Could not find a valid content in representation for wearable=${wearable.id} and bodyShape=${config.bodyShape}`
+    )
   }
   return loadEmoteFromUrl(scene, content.url)
 }

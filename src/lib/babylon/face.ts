@@ -1,10 +1,10 @@
 import { AbstractMesh, Color3, Orientation, PBRMaterial, Scene, StandardMaterial, Texture } from '@babylonjs/core'
-import { PreviewConfig, WearableBodyShape, WearableCategory, WearableDefinition } from '@dcl/schemas'
+import { PreviewConfig, BodyShape, WearableCategory, WearableDefinition } from '@dcl/schemas'
 import { hexToColor } from '../color'
 import { Asset, loadMask, loadTexture } from './scene'
 import { isCategory } from './utils'
 
-function getCategoryLoader(scene: Scene, features: WearableDefinition[], bodyShape: WearableBodyShape) {
+function getCategoryLoader(scene: Scene, features: WearableDefinition[], bodyShape: BodyShape) {
   return async (category: WearableCategory) => {
     const feature = features.find(isCategory(category))
     if (feature) {
@@ -16,7 +16,7 @@ function getCategoryLoader(scene: Scene, features: WearableDefinition[], bodySha
   }
 }
 
-export async function getFacialFeatures(scene: Scene, features: WearableDefinition[], bodyShape: WearableBodyShape) {
+export async function getFacialFeatures(scene: Scene, features: WearableDefinition[], bodyShape: BodyShape) {
   const loadCategory = getCategoryLoader(scene, features, bodyShape)
   const [eyes, eyebrows, mouth] = await Promise.all([
     loadCategory(WearableCategory.EYES),

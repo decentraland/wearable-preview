@@ -1,9 +1,9 @@
 import { SceneLoader } from '@babylonjs/core'
 import { GLTFFileLoader } from '@babylonjs/loaders'
-import { PreviewConfig, WearableBodyShape, WearableDefinition } from '@dcl/schemas'
+import { PreviewConfig, BodyShape, WearableDefinition } from '@dcl/schemas'
 import { getRepresentation } from '../representation'
 
-export function createMappings(wearables: WearableDefinition[], bodyShape = WearableBodyShape.MALE) {
+export function createMappings(wearables: WearableDefinition[], bodyShape = BodyShape.MALE) {
   const mappings: Record<string, string> = {}
   for (const wearable of wearables) {
     try {

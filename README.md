@@ -24,6 +24,7 @@ This webapp renders an interactive 3D preview of a wearable or an avatar. It can
 - `wheelZoom`: a multiplier of how much the user can zoom with the mouse wheel. By default is `1`, which means the wheel doesn't do any zoom. If the value were `2` the user would be able to zoom up to 2x.
 - `wheelPrecision`: the higher the value, the slower the wheel zooms when scrolled. By default is `100`.
 - `wheelStart`: a value between 0 and 100 which determines how zoomed in or out the wheel starts. By default is `50`, so the user can zoom in or out. If the value were `0` the zoom would start at minimum and the user would be able to zoom in. If the value were `100` the zoom would start at max and the user would be able to zoom out.
+- `background`: the color of the background in hex, ie: `ff0000`.
 - `transparentBackground`: if set it will make the background transparent.
 - `env`: The environment to use, it can be `prod` (uses mainnet wearables and catalysts) or `dev` (uses testnet wearables and catalysts).
 

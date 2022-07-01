@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useOverrides } from './useOverrides'
 
-import { PreviewCamera, PreviewEmote, PreviewEnv, PreviewOptions, WearableBodyShape } from '@dcl/schemas'
+import { BodyShape, PreviewCamera, PreviewEmote, PreviewEnv, PreviewOptions } from '@dcl/schemas'
 import { parseZoom } from '../lib/zoom'
 
 export const useOptions = () => {
@@ -26,6 +26,7 @@ export const useOptions = () => {
       eyes: params.get('eyes'),
       emote: params.get('emote') as PreviewEmote | null,
       camera: params.get('camera') as PreviewCamera | null,
+      background: params.get('background'),
       transparentBackground: params.has('transparentBackground'),
       centerBoundingBox: params.get('centerBoundingBox') !== 'false',
       autoRotateSpeed: autoRotateSpeedParam ? parseFloat(autoRotateSpeedParam) : null,
@@ -37,10 +38,10 @@ export const useOptions = () => {
       wheelStart: wheelStartParam ? parseFloat(wheelStartParam) : null,
       zoom: parseZoom(params.get('zoom')),
       bodyShape:
-        bodyShapeParam === 'female' || bodyShapeParam === WearableBodyShape.FEMALE
-          ? WearableBodyShape.FEMALE
-          : bodyShapeParam === 'male' || bodyShapeParam === WearableBodyShape.MALE
-          ? WearableBodyShape.MALE
+        bodyShapeParam === 'female' || bodyShapeParam === BodyShape.FEMALE
+          ? BodyShape.FEMALE
+          : bodyShapeParam === 'male' || bodyShapeParam === BodyShape.MALE
+          ? BodyShape.MALE
           : null,
       urns: params.getAll('urn'),
       urls: params.getAll('url'),

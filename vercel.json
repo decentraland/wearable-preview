@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "name": "builder",
+  "build": {
+    "env": {
+      "GEN_STATIC_LOCAL": "true",
+      "PUBLIC_URL": "/",
+      "REACT_APP_DEBUG": "true"
+    }
+  },
+  "routes": [
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/.*",
+      "dest": "/index.html"
+    }
+  ]
+}

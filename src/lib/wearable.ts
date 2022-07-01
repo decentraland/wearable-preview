@@ -1,12 +1,12 @@
-import { WearableBodyShape, WearableCategory, WearableDefinition } from '@dcl/schemas'
+import { BodyShape, WearableCategory, WearableDefinition } from '@dcl/schemas'
 
 export function getWearableByCategory(wearables: WearableDefinition[], category: WearableCategory) {
   return wearables.find((wearable) => wearable.data.category === category) || null
 }
 
-export function getDefaultCategories(shape: WearableBodyShape) {
+export function getDefaultCategories(shape: BodyShape) {
   switch (shape) {
-    case WearableBodyShape.MALE:
+    case BodyShape.MALE:
       return [
         WearableCategory.EYEBROWS,
         WearableCategory.MOUTH,
@@ -16,7 +16,7 @@ export function getDefaultCategories(shape: WearableBodyShape) {
         WearableCategory.LOWER_BODY,
         WearableCategory.FEET,
       ]
-    case WearableBodyShape.FEMALE:
+    case BodyShape.FEMALE:
       return [
         WearableCategory.EYEBROWS,
         WearableCategory.MOUTH,
@@ -29,34 +29,34 @@ export function getDefaultCategories(shape: WearableBodyShape) {
   }
 }
 
-export function getDefaultWearableUrn(category: WearableCategory, shape: WearableBodyShape) {
+export function getDefaultWearableUrn(category: WearableCategory, shape: BodyShape) {
   switch (category) {
     case WearableCategory.EYEBROWS:
-      return shape === WearableBodyShape.MALE
+      return shape === BodyShape.MALE
         ? 'urn:decentraland:off-chain:base-avatars:eyebrows_00'
         : 'urn:decentraland:off-chain:base-avatars:f_eyebrows_00'
     case WearableCategory.MOUTH:
-      return shape === WearableBodyShape.MALE
+      return shape === BodyShape.MALE
         ? 'urn:decentraland:off-chain:base-avatars:mouth_00'
         : 'urn:decentraland:off-chain:base-avatars:f_mouth_00'
     case WearableCategory.EYES:
-      return shape === WearableBodyShape.MALE
+      return shape === BodyShape.MALE
         ? 'urn:decentraland:off-chain:base-avatars:eyes_00'
         : 'urn:decentraland:off-chain:base-avatars:f_eyes_00'
     case WearableCategory.HAIR:
-      return shape === WearableBodyShape.MALE
+      return shape === BodyShape.MALE
         ? 'urn:decentraland:off-chain:base-avatars:casual_hair_01'
         : 'urn:decentraland:off-chain:base-avatars:standard_hair'
     case WearableCategory.UPPER_BODY:
-      return shape === WearableBodyShape.MALE
+      return shape === BodyShape.MALE
         ? 'urn:decentraland:off-chain:base-avatars:green_hoodie'
         : 'urn:decentraland:off-chain:base-avatars:f_sweater'
     case WearableCategory.LOWER_BODY:
-      return shape === WearableBodyShape.MALE
+      return shape === BodyShape.MALE
         ? 'urn:decentraland:off-chain:base-avatars:brown_pants'
         : 'urn:decentraland:off-chain:base-avatars:f_jeans'
     case WearableCategory.FEET:
-      return shape === WearableBodyShape.MALE
+      return shape === BodyShape.MALE
         ? 'urn:decentraland:off-chain:base-avatars:sneakers'
         : 'urn:decentraland:off-chain:base-avatars:bun_shoes'
     default:
@@ -68,11 +68,12 @@ export function isWearable(value: WearableDefinition | void): value is WearableD
   return !!value
 }
 
-export function getWearableBodyShape(wearabe: WearableDefinition): WearableBodyShape {
-  const bodyShapes = [WearableBodyShape.MALE, WearableBodyShape.FEMALE]
+export function getBodyShape(wearabe: WearableDefinition): BodyShape {
+  const bodyShapes = [BodyShape.MALE, BodyShape.FEMALE]
   return (
-    bodyShapes.find((bodyShape) => wearabe.data.representations.some((representation) => representation.bodyShapes.includes(bodyShape))) ||
-    bodyShapes[0]
+    bodyShapes.find((bodyShape) =>
+      wearabe.data.representations.some((representation) => representation.bodyShapes.includes(bodyShape))
+    ) || bodyShapes[0]
   )
 }
 

@@ -1,26 +1,26 @@
-import { RepresentationDefinition, WearableBodyShape, WearableDefinition } from '@dcl/schemas'
+import { BodyShape, RepresentationDefinition, WearableDefinition } from '@dcl/schemas'
 
-export function is(representation: RepresentationDefinition, bodyShape: WearableBodyShape) {
+export function is(representation: RepresentationDefinition, bodyShape: BodyShape) {
   return representation.bodyShapes.includes(bodyShape)
 }
 
 export function isMale(representation: RepresentationDefinition) {
-  return is(representation, WearableBodyShape.MALE)
+  return is(representation, BodyShape.MALE)
 }
 
 export function isFemale(representation: RepresentationDefinition) {
-  return is(representation, WearableBodyShape.FEMALE)
+  return is(representation, BodyShape.FEMALE)
 }
 
-export function getRepresentation(wearable: WearableDefinition, shape = WearableBodyShape.MALE) {
+export function getRepresentation(wearable: WearableDefinition, shape = BodyShape.MALE) {
   switch (shape) {
-    case WearableBodyShape.FEMALE: {
+    case BodyShape.FEMALE: {
       if (!wearable.data.representations.some(isFemale)) {
         throw new Error(`Could not find a BaseFemale representation for wearable="${wearable.id}"`)
       }
       return wearable.data.representations.find(isFemale)!
     }
-    case WearableBodyShape.MALE: {
+    case BodyShape.MALE: {
       if (!wearable.data.representations.some(isMale)) {
         throw new Error(`Could not find a BaseMale representation for wearable="${wearable.id}"`)
       }
@@ -29,7 +29,7 @@ export function getRepresentation(wearable: WearableDefinition, shape = Wearable
   }
 }
 
-export function getRepresentationOrDefault(wearable: WearableDefinition, shape = WearableBodyShape.MALE) {
+export function getRepresentationOrDefault(wearable: WearableDefinition, shape = BodyShape.MALE) {
   if (hasRepresentation(wearable, shape)) {
     return getRepresentation(wearable, shape)
   }
@@ -39,7 +39,7 @@ export function getRepresentationOrDefault(wearable: WearableDefinition, shape =
   throw new Error(`The wearable="${wearable.id}" has no representation`)
 }
 
-export function hasRepresentation(wearable: WearableDefinition, shape = WearableBodyShape.MALE) {
+export function hasRepresentation(wearable: WearableDefinition, shape = BodyShape.MALE) {
   try {
     getRepresentation(wearable, shape)
     return true

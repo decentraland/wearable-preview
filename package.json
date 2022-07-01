@@ -8,7 +8,7 @@
     "@babylonjs/inspector": "^4.2.0",
     "@babylonjs/loaders": "^4.2.0",
     "@babylonjs/materials": "^4.2.0",
-    "@dcl/schemas": "^4.9.0",
+    "@dcl/schemas": "^5.1.0",
     "@testing-library/jest-dom": "^5.15.0",
     "@testing-library/react": "^11.2.7",
     "@testing-library/user-event": "^12.8.3",
@@ -58,7 +58,7 @@
   "prettier": {
     "semi": false,
     "singleQuote": true,
-    "printWidth": 140
+    "printWidth": 120
   },
   "homepage": ""
 }
