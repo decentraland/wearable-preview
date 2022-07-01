@@ -33,8 +33,9 @@
   cursor: grabbing;
 }
 
-.Preview.has-error {
+.Preview.is-3d.has-error  {
   opacity: 1;
+  cursor: default;
 }
 
 .Preview .thumbnail {

@@ -8,7 +8,7 @@
  */
 
 import { Color3, PBRMaterial, Scene } from '@babylonjs/core'
-import { WearableDefinition, WearableBodyShape } from '@dcl/schemas'
+import { WearableDefinition, BodyShape } from '@dcl/schemas'
 import { getRepresentation, isTexture, getContentUrl } from '../representation'
 import { loadAssetContainer } from './scene'
 import './toon'
@@ -16,7 +16,7 @@ import './toon'
 export async function loadWearable(
   scene: Scene,
   wearable: WearableDefinition,
-  bodyShape = WearableBodyShape.MALE,
+  bodyShape = BodyShape.MALE,
   skin?: string,
   hair?: string
 ) {

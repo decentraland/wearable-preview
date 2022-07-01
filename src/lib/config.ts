@@ -1,5 +1,7 @@
 import {
   Avatar,
+  BodyShape,
+  isStandard,
   Network,
   PreviewCamera,
   PreviewConfig,
@@ -8,7 +10,6 @@ import {
   PreviewOptions,
   PreviewType,
   Rarity,
-  WearableBodyShape,
   WearableDefinition,
 } from '@dcl/schemas'
 import { nftApi } from './api/nft'
@@ -19,7 +20,7 @@ import { getRepresentationOrDefault, hasRepresentation, isTexture } from './repr
 import {
   getDefaultCategories,
   getDefaultWearableUrn,
-  getWearableBodyShape,
+  getBodyShape,
   getWearableByCategory,
   isEmote,
   isWearable,
@@ -112,7 +113,7 @@ async function fetchAvatar(
   urns: string[],
   urls: string[],
   base64s: string[],
-  bodyShape: WearableBodyShape,
+  bodyShape: BodyShape,
   env: PreviewEnv
 ) {
   // gather wearables from profile, urns, urls and base64s
@@ -163,8 +164,8 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
   // use body shape from options, default to the profile one, if no profile default to the wearable bodyShape, if none, default to male
   const bodyShape =
     options.bodyShape ||
-    (profile && (profile.avatar.bodyShape as WearableBodyShape)) ||
-    (wearable ? getWearableBodyShape(wearable!) : WearableBodyShape.MALE)
+    (profile && (profile.avatar.bodyShape as BodyShape)) ||
+    (wearable ? getBodyShape(wearable!) : BodyShape.MALE)
 
   // use colors from options, default to profile, if none, use default values
   const skin = formatHex(options.skin || (profile && colorToHex(profile.avatar.skin.color)) || 'cc9b76')
@@ -200,11 +201,17 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
     if (isTexture(representation) && type !== PreviewType.AVATAR) {
       type = PreviewType.TEXTURE
     }
-    const color = Rarity.getColor(wearable.rarity!)
     background = {
       ...background,
       image: wearable.thumbnail,
-      color,
+    }
+    if (isStandard(wearable)) {
+      const color = Rarity.getColor(wearable.rarity)
+      background = {
+        ...background,
+        image: wearable.thumbnail,
+        color,
+      }
     }
   }
 

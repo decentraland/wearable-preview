@@ -18,7 +18,7 @@ import {
   Vector3,
 } from '@babylonjs/core'
 import '@babylonjs/loaders'
-import { PreviewCamera, PreviewConfig, PreviewType, WearableBodyShape, WearableDefinition } from '@dcl/schemas'
+import { BodyShape, PreviewCamera, PreviewConfig, PreviewType, WearableDefinition } from '@dcl/schemas'
 import { hexToColor } from '../color'
 import { isDev, isIOs } from '../env'
 import { getRepresentation } from '../representation'
@@ -165,7 +165,7 @@ export async function createScene(canvas: HTMLCanvasElement, config: PreviewConf
 export async function loadMask(
   scene: Scene,
   wearable: WearableDefinition,
-  bodyShape: WearableBodyShape
+  bodyShape: BodyShape
 ): Promise<Texture | null> {
   const name = wearable.id
   const representation = getRepresentation(wearable, bodyShape)
@@ -186,7 +186,7 @@ export async function loadMask(
 export async function loadTexture(
   scene: Scene,
   wearable: WearableDefinition,
-  bodyShape: WearableBodyShape
+  bodyShape: BodyShape
 ): Promise<Texture | null> {
   const name = wearable.id
   const representation = getRepresentation(wearable, bodyShape)
