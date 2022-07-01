@@ -63,21 +63,21 @@ export async function playEmote(scene: Scene, assets: Asset[], config: PreviewCo
     container = await loadEmoteFromUrl(scene, emoteUrl)
   }
 
+  const emoteAnimationGroup = new AnimationGroup('emote', scene)
+
   // start camera rotation after animation ends
-  async function onAnimationEnd() {
+  function onAnimationEnd() {
     if (config.camera !== PreviewCamera.STATIC) {
       const camera = scene.cameras[0] as ArcRotateCamera
       startAutoRotateBehavior(camera, config)
     }
     if (loop) {
-      // keep playing idle animation on loop
-      playEmote(scene, assets, config)
+      emoteAnimationGroup.play(true) // keep playing animation in loop
     }
   }
 
   // play emote animation
   try {
-    const emoteAnimationGroup = new AnimationGroup('emote', scene)
     for (const asset of assets) {
       // store all the transform nodes in a map, there can be repeated node ids
       // if a wearable has multiple representations, so for each id we keep an array of nodes
@@ -103,8 +103,8 @@ export async function playEmote(scene: Scene, assets: Asset[], config: PreviewCo
       }
     }
     // play animation group and apply
+    emoteAnimationGroup.onAnimationGroupEndObservable.addOnce(onAnimationEnd)
     emoteAnimationGroup.play()
-    emoteAnimationGroup.onAnimationEndObservable.addOnce(onAnimationEnd)
   } catch (error) {
     console.warn(`Could not play emote=${config.emote}`, error)
   }
