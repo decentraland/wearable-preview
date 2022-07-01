@@ -16,13 +16,13 @@ import { nftApi } from './api/nft'
 import { peerApi } from './api/peer'
 import { createMemo } from './cache'
 import { colorToHex, formatHex } from './color'
+import { isEmote } from './emote'
 import { getRepresentationOrDefault, hasRepresentation, isTexture } from './representation'
 import {
   getDefaultCategories,
   getDefaultWearableUrn,
   getBodyShape,
   getWearableByCategory,
-  isEmote,
   isWearable,
 } from './wearable'
 import { getZoom } from './zoom'

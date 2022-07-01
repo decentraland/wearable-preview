@@ -76,7 +76,3 @@ export function getBodyShape(wearabe: WearableDefinition): BodyShape {
     ) || bodyShapes[0]
   )
 }
-
-export function isEmote(wearable: WearableDefinition) {
-  return `emoteDataV0` in wearable
-}
