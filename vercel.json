@@ -4,7 +4,8 @@
   "build": {
     "env": {
       "GEN_STATIC_LOCAL": "true",
-      "PUBLIC_URL": "/"
+      "PUBLIC_URL": "/",
+      "REACT_APP_DEBUG": "true"
     }
   },
   "routes": [
