@@ -1,3 +1,5 @@
+name: Build and release
+
 on:
   push:
     branches:
@@ -6,9 +8,8 @@ on:
     types:
       - created
 
-name: CI
 jobs:
-  build:
+  build-release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
@@ -21,11 +22,11 @@ jobs:
         with:
           deterministic-snapshot: true
           only-update-versions: true
-      - name: install
-        run: npm install
-      - name: build
+      - name: Install
+        run: npm ci --legacy-peer-deps
+      - name: Build
         run: npm run build
-      - name: publish
+      - name: Publish
         uses: menduz/oddish-action@master
         with:
           cwd: './build'
