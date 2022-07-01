@@ -20,12 +20,12 @@ import {
 import '@babylonjs/loaders'
 import { BodyShape, PreviewCamera, PreviewConfig, PreviewType, WearableDefinition } from '@dcl/schemas'
 import { hexToColor } from '../color'
-import { isDev, isIOs } from '../env'
+import { isIOs } from '../env'
 import { getRepresentation } from '../representation'
 import { startAutoRotateBehavior } from './camera'
 
 // needed for debugging
-const showInspector = isDev && process.env.REACT_APP_DEBUG
+const showInspector = process.env.REACT_APP_DEBUG
 if (showInspector) {
   require('@babylonjs/inspector')
 }
