@@ -94,31 +94,21 @@ export async function createScene(canvas: HTMLCanvasElement, config: PreviewConf
   // Setup Camera
   const camera = new ArcRotateCamera('camera', 0, 0, 0, new Vector3(0, 0, 0), root)
   camera.mode = Camera.PERSPECTIVE_CAMERA
-  switch (config.camera) {
-    case PreviewCamera.INTERACTIVE: {
-      switch (config.type) {
-        case PreviewType.WEARABLE: {
-          startAutoRotateBehavior(camera, config)
-          camera.position = new Vector3(-2, 2, 2)
-          break
-        }
-        case PreviewType.AVATAR: {
-          camera.position = new Vector3(0, 1, 3.5)
-          break
-        }
-        default: {
-          console.warn(`Unexpected preview.type="${config.type}"`)
-          // do nothing
-        }
-      }
-      camera.attachControl(canvas, true)
+  switch (config.type) {
+    case PreviewType.WEARABLE: {
+      startAutoRotateBehavior(camera, config)
+      camera.position = new Vector3(-2, 2, 2)
       break
     }
-    case PreviewCamera.STATIC: {
+    case PreviewType.AVATAR: {
       camera.position = new Vector3(0, 1, 3.5)
       break
     }
   }
+  if (config.camera === PreviewCamera.INTERACTIVE) {
+    camera.attachControl(canvas, true)
+  }
+
   const offset = new Vector3(config.offsetX, config.offsetY, config.offsetZ)
   camera.position.addInPlace(offset)
   camera.setTarget(offset)
