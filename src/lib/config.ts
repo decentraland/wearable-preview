@@ -24,6 +24,8 @@ import {
   getBodyShape,
   getWearableByCategory,
   isWearable,
+  getFacialFeatureCategories,
+  getNonFacialFeatureCategories,
 } from './wearable'
 import { getZoom } from './zoom'
 
@@ -114,6 +116,8 @@ async function fetchAvatar(
   urls: string[],
   base64s: string[],
   bodyShape: BodyShape,
+  includeDefaultWearables: boolean,
+  includeFacialFeatures: boolean,
   env: PreviewEnv
 ) {
   // gather wearables from profile, urns, urls and base64s
@@ -127,7 +131,15 @@ async function fetchAvatar(
   wearables = wearables.filter((wearable) => hasRepresentation(wearable, bodyShape))
   // fill default categories
   const defaultWearableUrns: string[] = []
-  for (const category of getDefaultCategories(bodyShape)) {
+  const categories =
+    includeDefaultWearables && includeFacialFeatures
+      ? getDefaultCategories()
+      : includeDefaultWearables
+      ? getNonFacialFeatureCategories()
+      : includeFacialFeatures
+      ? getFacialFeatureCategories()
+      : []
+  for (const category of categories) {
     const wearable = getWearableByCategory(wearables, category)
     if (!wearable) {
       const urn = getDefaultWearableUrn(category, bodyShape)
@@ -142,6 +154,7 @@ async function fetchAvatar(
     const defaultWearables = await fetchURNs(defaultWearableUrns, env)
     wearables = [...wearables, ...defaultWearables]
   }
+
   return wearables
 }
 
@@ -186,13 +199,22 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
   let type = PreviewType.WEARABLE
   let background: PreviewConfig['background'] = {
     color: '#4b4852', // grey
-    transparent: options.transparentBackground === true,
+    transparent: options.disableBackground === true,
   }
 
   // if loading multiple wearables (either from URNs or URLs), or if wearable is emote, render full avatar
   if (urns.length > 0 || urls.length > 0 || base64s.length > 0 || (wearable && isEmote(wearable)) || options.profile) {
     type = PreviewType.AVATAR
-    wearables = await fetchAvatar(profile, urns, urls, base64s, bodyShape, env)
+    wearables = await fetchAvatar(
+      profile,
+      urns,
+      urls,
+      base64s,
+      bodyShape,
+      !options.disableDefaultWearables,
+      !options.disableFace,
+      env
+    )
   }
 
   if (wearable) {
@@ -226,7 +248,7 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
   }
   const autoRotateSpeed =
     typeof options.autoRotateSpeed === 'number' && !isNaN(options.autoRotateSpeed) ? options.autoRotateSpeed : 0.2
-  const centerBoundingBox = typeof options.centerBoundingBox === 'boolean' && options.centerBoundingBox !== false
+  const centerBoundingBox = !options.disableAutoCenter
 
   // wheel options
   let wheelZoom = 1
@@ -256,9 +278,10 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
     eyes,
     type,
     background,
+    face: options.disableFace !== false,
     emote,
     camera,
-    autoRotateSpeed,
+    autoRotateSpeed: options.disableAutoRotate ? 0 : autoRotateSpeed,
     centerBoundingBox,
     offsetX: options.offsetX || 0,
     offsetY: options.offsetY || 0,

@@ -17,7 +17,21 @@ export const useOptions = () => {
     const wheelPrecisionParam = params.get('wheelPrecision') as string | null
     const wheelStartParam = params.get('wheelStart') as string | null
     const bodyShapeParam = params.get('bodyShape')
-    const options = {
+
+    const transparentBackground = params.has('transparentBackground')
+    if (transparentBackground) {
+      console.warn(
+        `Deprecated: you are using the query param "transparentBackground" that has been deprecated in favor of "disableBackground". Please switch to the new query param since in the future this will not be supported.`
+      )
+    }
+    const centerBoundingBox = params.get('centerBoundingBox') !== 'false'
+    if (transparentBackground) {
+      console.warn(
+        `Deprecated: you are using the query param "transparentBackground" that has been deprecated in favor of "disableBackground". Please switch to the new query param since in the future this will not be supported.`
+      )
+    }
+
+    const options: PreviewOptions = {
       contractAddress: params.get('contract')!,
       tokenId: params.get('token'),
       itemId: params.get('item'),
@@ -27,8 +41,6 @@ export const useOptions = () => {
       emote: params.get('emote') as PreviewEmote | null,
       camera: params.get('camera') as PreviewCamera | null,
       background: params.get('background'),
-      transparentBackground: params.has('transparentBackground'),
-      centerBoundingBox: params.get('centerBoundingBox') !== 'false',
       autoRotateSpeed: autoRotateSpeedParam ? parseFloat(autoRotateSpeedParam) : null,
       offsetX: offsetXParam ? parseFloat(offsetXParam) : null,
       offsetY: offsetYParam ? parseFloat(offsetYParam) : null,
@@ -47,6 +59,11 @@ export const useOptions = () => {
       urls: params.getAll('url'),
       base64s: params.getAll('base64'),
       profile: params.get('profile'),
+      disableBackground: params.has('disableBackground') || transparentBackground,
+      disableAutoCenter: params.has('disableAutoCenter') || !centerBoundingBox,
+      disableAutoRotate: params.has('disableAutoRotate') || !centerBoundingBox,
+      disableFace: params.has('disableFace'),
+      disableDefaultWearables: params.has('disableDefaultWearables'),
       env: Object.values(PreviewEnv)
         .filter((value): value is PreviewEnv => typeof value === 'string')
         .reduce((selected, value) => (value === params.get('env') ? value : selected), PreviewEnv.PROD),
