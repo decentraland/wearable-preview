@@ -22,6 +22,7 @@ import { BodyShape, PreviewCamera, PreviewConfig, PreviewType, WearableDefinitio
 import { hexToColor } from '../color'
 import { isIOs } from '../env'
 import { getRepresentation } from '../representation'
+import { createSceneController, ISceneController } from '../scene'
 import { startAutoRotateBehavior } from './camera'
 
 // needed for debugging
@@ -71,7 +72,10 @@ function refreshBoundingInfo(parent: Mesh) {
  * @returns
  */
 let engine: Engine
-export async function createScene(canvas: HTMLCanvasElement, config: PreviewConfig) {
+export async function createScene(
+  canvas: HTMLCanvasElement,
+  config: PreviewConfig
+): Promise<[Scene, ISceneController]> {
   // Create engine
   if (engine) {
     engine.dispose()
@@ -149,7 +153,7 @@ export async function createScene(canvas: HTMLCanvasElement, config: PreviewConf
     root.debugLayer.show({ showExplorer: true, embedMode: true })
   }
 
-  return root
+  return [root, createSceneController(engine, root, camera)]
 }
 
 export async function loadMask(
