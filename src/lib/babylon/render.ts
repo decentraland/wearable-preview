@@ -1,5 +1,5 @@
 import { Color4 } from '@babylonjs/core'
-import { PreviewConfig, PreviewType, BodyShape } from '@dcl/schemas'
+import { PreviewConfig, PreviewType, BodyShape, IPreviewController, IEmoteController } from '@dcl/schemas'
 import { getBodyShape } from './body'
 import { getSlots } from './slots'
 import { playEmote } from './emote'
@@ -8,8 +8,7 @@ import { setupMappings } from './mappings'
 import { Asset, center, createScene } from './scene'
 import { isFacialFeature, isModel, isSuccesful } from './utils'
 import { loadWearable } from './wearable'
-import { IPreviewController } from '../controller'
-import { createInvalidEmoteController, IEmoteController } from '../emote'
+import { createInvalidEmoteController } from '../emote'
 
 /**
  * Initializes Babylon, creates the scene and loads a list of wearables in it

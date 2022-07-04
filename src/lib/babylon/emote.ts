@@ -1,6 +1,6 @@
 import { AnimationGroup, ArcRotateCamera, AssetContainer, Scene, TransformNode } from '@babylonjs/core'
-import { PreviewCamera, PreviewConfig, PreviewEmote, WearableDefinition } from '@dcl/schemas'
-import { IEmoteController, isEmote } from '../emote'
+import { IEmoteController, PreviewCamera, PreviewConfig, PreviewEmote, WearableDefinition } from '@dcl/schemas'
+import { isEmote } from '../emote'
 import { getRepresentation } from '../representation'
 import { startAutoRotateBehavior } from './camera'
 import { Asset, loadAssetContainer } from './scene'

@@ -1,11 +1,5 @@
 import { Camera, Engine, Scene, Tools } from '@babylonjs/core'
-
-export type SceneMetrics = {
-  triangles: number
-  materials: number
-  meshes: number
-  textures: number
-}
+import { ISceneController } from '@dcl/schemas'
 
 // These are textures created by the preview itself so we don't count them
 const ignoreTextureList = [
@@ -16,11 +10,6 @@ const ignoreTextureList = [
   'GlowLayerBlurRTT2',
   'HighlightLayerMainRTT',
 ]
-
-export interface ISceneController {
-  getScreenshot(width: number, height: number): Promise<string>
-  getMetrics(): SceneMetrics
-}
 
 export function createSceneController(engine: Engine, scene: Scene, camera: Camera): ISceneController {
   async function getScreenshot(width: number, height: number) {

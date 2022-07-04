@@ -1,13 +1,4 @@
-import { WearableDefinition } from '@dcl/schemas'
-
-export interface IEmoteController {
-  getLength(): number
-  isPlaying(): boolean
-  goTo(seconds: number): void
-  play(): void
-  pause(): void
-  stop(): void
-}
+import { IEmoteController, WearableDefinition } from '@dcl/schemas'
 
 export function isEmote(wearable: WearableDefinition) {
   return `emoteDataV0` in wearable
