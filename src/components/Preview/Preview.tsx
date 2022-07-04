@@ -42,6 +42,9 @@ const Preview: React.FC = () => {
       } else {
         // preview models
         render(canvasRef.current, config)
+          .then((controller) => {
+            ;(window as any).controller = controller
+          })
           .catch((error) => setPreviewError(error.message))
           .finally(() => {
             setIsLoadingModel(false)

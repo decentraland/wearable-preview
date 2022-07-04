@@ -1,6 +1,6 @@
 import { PreviewConfig, WearableCategory, WearableDefinition } from '@dcl/schemas'
 import { hasRepresentation } from '../representation'
-import { isEmote } from '../wearable'
+import { isEmote } from '../emote'
 
 const categoriesHiddenBySkin = [
   WearableCategory.HELMET,

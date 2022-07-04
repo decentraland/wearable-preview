@@ -1,7 +1,7 @@
 import { AnimationGroup, ArcRotateCamera, AssetContainer, Scene, TransformNode } from '@babylonjs/core'
 import { PreviewCamera, PreviewConfig, PreviewEmote, WearableDefinition } from '@dcl/schemas'
+import { IEmoteController, isEmote } from '../emote'
 import { getRepresentation } from '../representation'
-import { isEmote } from '../wearable'
 import { startAutoRotateBehavior } from './camera'
 import { Asset, loadAssetContainer } from './scene'
 
@@ -63,21 +63,21 @@ export async function playEmote(scene: Scene, assets: Asset[], config: PreviewCo
     container = await loadEmoteFromUrl(scene, emoteUrl)
   }
 
+  const emoteAnimationGroup = new AnimationGroup('emote', scene)
+
   // start camera rotation after animation ends
-  async function onAnimationEnd() {
+  function onAnimationEnd() {
     if (config.camera !== PreviewCamera.STATIC) {
       const camera = scene.cameras[0] as ArcRotateCamera
       startAutoRotateBehavior(camera, config)
     }
     if (loop) {
-      // keep playing idle animation on loop
-      playEmote(scene, assets, config)
+      emoteAnimationGroup.play(true) // keep playing animation in loop
     }
   }
 
   // play emote animation
   try {
-    const emoteAnimationGroup = new AnimationGroup('emote', scene)
     for (const asset of assets) {
       // store all the transform nodes in a map, there can be repeated node ids
       // if a wearable has multiple representations, so for each id we keep an array of nodes
@@ -103,9 +103,81 @@ export async function playEmote(scene: Scene, assets: Asset[], config: PreviewCo
       }
     }
     // play animation group and apply
-    emoteAnimationGroup.play()
-    emoteAnimationGroup.onAnimationEndObservable.addOnce(onAnimationEnd)
+    emoteAnimationGroup.onAnimationGroupEndObservable.addOnce(onAnimationEnd)
+    const controller = createController(emoteAnimationGroup, loop)
+
+    if (config.camera === PreviewCamera.STATIC) {
+      controller.stop() // we call the stop here to freeze the animation at frame 0, otherwise the avatar would be on T-pose
+    } else {
+      controller.play()
+    }
+
+    return controller
   } catch (error) {
     console.warn(`Could not play emote=${config.emote}`, error)
+  }
+}
+
+function createController(animationGroup: AnimationGroup, loop: boolean): IEmoteController {
+  let startFrom = 0
+  let hasPlayed = false
+
+  function getLength() {
+    return animationGroup.to
+  }
+
+  function isPlaying() {
+    return animationGroup.isPlaying
+  }
+
+  function goTo(seconds: number) {
+    if (isPlaying()) {
+      animationGroup.pause()
+      goTo(seconds)
+      window.requestAnimationFrame(play)
+    } else {
+      // for some reason the start() method doesn't work as expected if playing, so I need to stop it first
+      animationGroup.stop()
+      // I had to use this hack because the native goToFrame would not work as expected :/
+      animationGroup.start(false, 1, seconds, seconds, false)
+      startFrom = seconds
+    }
+  }
+
+  function play() {
+    if (!isPlaying()) {
+      if (startFrom) {
+        animationGroup.start(loop, 1, startFrom, getLength(), false)
+        startFrom = 0
+      } else {
+        animationGroup.play(loop)
+      }
+      hasPlayed = true
+    }
+  }
+
+  function pause() {
+    if (isPlaying()) {
+      animationGroup.pause()
+    }
+  }
+
+  function stop() {
+    if (hasPlayed) {
+      goTo(0)
+      window.requestAnimationFrame(pause)
+    } else {
+      play()
+      window.requestAnimationFrame(stop)
+    }
+  }
+
+  return {
+    getLength,
+    isPlaying,
+    goTo,
+    play,
+    pause,
+    stop,
   }
 }

@@ -39,18 +39,24 @@ export async function applyFacialFeatures(
       const [texture, mask] = eyes
       if (texture) {
         applyTextureAndMask(scene, 'eyes', mesh, texture, config.eyes, mask, '#ffffff')
+      } else {
+        mesh.setEnabled(false)
       }
     }
     if (mesh.name.toLowerCase().endsWith('mask_eyebrows')) {
       const [texture, mask] = eyebrows
       if (texture) {
         applyTextureAndMask(scene, 'eyebrows', mesh, texture, config.hair, mask, config.hair)
+      } else {
+        mesh.setEnabled(false)
       }
     }
     if (mesh.name.toLowerCase().endsWith('mask_mouth')) {
       const [texture, mask] = mouth
       if (texture) {
         applyTextureAndMask(scene, 'mouth', mesh, texture, config.skin, mask, config.skin)
+      } else {
+        mesh.setEnabled(false)
       }
     }
   }

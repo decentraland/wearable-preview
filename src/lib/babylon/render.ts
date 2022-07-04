@@ -1,13 +1,15 @@
+import { Color4 } from '@babylonjs/core'
 import { PreviewConfig, PreviewType, BodyShape } from '@dcl/schemas'
 import { getBodyShape } from './body'
 import { getSlots } from './slots'
-import { playEmote } from './emotes'
+import { playEmote } from './emote'
 import { applyFacialFeatures, getFacialFeatures } from './face'
 import { setupMappings } from './mappings'
 import { Asset, center, createScene } from './scene'
 import { isFacialFeature, isModel, isSuccesful } from './utils'
 import { loadWearable } from './wearable'
-import { Color4 } from '@babylonjs/core'
+import { IPreviewController } from '../controller'
+import { createInvalidEmoteController, IEmoteController } from '../emote'
 
 /**
  * Initializes Babylon, creates the scene and loads a list of wearables in it
@@ -15,12 +17,15 @@ import { Color4 } from '@babylonjs/core'
  * @param wearables
  * @param options
  */
-export async function render(canvas: HTMLCanvasElement, config: PreviewConfig) {
+export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): Promise<IPreviewController> {
   // create the root scene
-  const root = await createScene(canvas, config)
+  const [scene, sceneController] = await createScene(canvas, config)
   try {
     // setup the mappings for all the contents
     setupMappings(config)
+
+    // emote controller
+    let emoteController: IEmoteController
 
     // load all the wearables into the root scene
     const promises: Promise<void | Asset>[] = []
@@ -33,7 +38,7 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig) {
       const wearables = Array.from(slots.values())
 
       for (const wearable of wearables.filter(isModel)) {
-        const promise = loadWearable(root, wearable, config.bodyShape, config.skin, config.hair).catch((error) => {
+        const promise = loadWearable(scene, wearable, config.bodyShape, config.skin, config.hair).catch((error) => {
           console.warn(error.message)
         })
         promises.push(promise)
@@ -50,12 +55,12 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig) {
       if (bodyShape) {
         // apply facial features
         const features = wearables.filter(isFacialFeature)
-        const { eyes, eyebrows, mouth } = await getFacialFeatures(root, features, config.bodyShape)
-        applyFacialFeatures(root, bodyShape, eyes, eyebrows, mouth, config)
+        const { eyes, eyebrows, mouth } = await getFacialFeatures(scene, features, config.bodyShape)
+        applyFacialFeatures(scene, bodyShape, eyes, eyebrows, mouth, config)
       }
 
       // play emote
-      await playEmote(root, assets, config)
+      emoteController = (await playEmote(scene, assets, config)) || createInvalidEmoteController() // default to invalid emote controller if there is an issue with the emote, but let the rest of the preview keep working
     } else {
       if (!config.wearable) {
         throw new Error('No wearable to render')
@@ -63,12 +68,12 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig) {
       const wearable = config.wearable
       try {
         // try loading with the required body shape
-        const asset = await loadWearable(root, wearable, config.bodyShape, config.skin, config.hair)
+        const asset = await loadWearable(scene, wearable, config.bodyShape, config.skin, config.hair)
         asset.container.addAllToScene()
       } catch (error) {
         // default to other body shape if failed
         const asset = await loadWearable(
-          root,
+          scene,
           wearable,
           config.bodyShape === BodyShape.MALE ? BodyShape.FEMALE : BodyShape.MALE,
           config.skin,
@@ -76,15 +81,25 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig) {
         )
         asset.container.addAllToScene()
       }
+
+      // can't use emote controller if PreviewType is not "avatar"
+      emoteController = createInvalidEmoteController()
     }
 
     // center the root scene into the camera
     if (config.centerBoundingBox) {
-      center(root)
+      center(scene)
     }
+
+    // return preview controller
+    const controller: IPreviewController = {
+      scene: sceneController,
+      emote: emoteController,
+    }
+    return controller
   } catch (error) {
     // remove background on error
-    root.clearColor = new Color4(0, 0, 0, 0)
+    scene.clearColor = new Color4(0, 0, 0, 0)
     throw error
   }
 }

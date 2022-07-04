@@ -16,8 +16,6 @@ This webapp renders an interactive 3D preview of a wearable or an avatar. It can
 - `emote`: the emote that the avatar will play. Default value is `idle`, other possible values are: `clap`, `dab`, `dance`, `fashion`, `fashion-2`, `fashion-3`,`fashion-4`, `love`, `money`, `fist-pump` and `head-explode`.
 - `zoom`: the level of zoom, it must be a number between 1 and 100.
 - `camera`: which camera type to use, either `interactive` or `static`. By default it uses the `interactive` one.
-- `autoRotateSpeed`: the speed of the auto-rotate behavior of the camera. By default it is `0.2`, and it only works when the camera is not `static`.
-- `centerBoundingBox`: wheter to center or not the camera around the bounding box of the avatar/wearable. By default is `true`.
 - `offsetX`: apply an offset in the X position of the camera. By default is `0`.
 - `offsetY`: apply an offset in the Y position of the camera. By default is `0`.
 - `offsetZ`: apply an offset in the Z position of the camera. By default is `0`.
@@ -25,7 +23,11 @@ This webapp renders an interactive 3D preview of a wearable or an avatar. It can
 - `wheelPrecision`: the higher the value, the slower the wheel zooms when scrolled. By default is `100`.
 - `wheelStart`: a value between 0 and 100 which determines how zoomed in or out the wheel starts. By default is `50`, so the user can zoom in or out. If the value were `0` the zoom would start at minimum and the user would be able to zoom in. If the value were `100` the zoom would start at max and the user would be able to zoom out.
 - `background`: the color of the background in hex, ie: `ff0000`.
-- `transparentBackground`: if set it will make the background transparent.
+- `disableBackground`: if `true` it will make the background transparent.
+- `disableAutoRotate`: if `true` it will disable the auto-rotate behaviour of the camera.
+- `disableAutoCenter`: if `true` it will disable the auto-center around the bounding box.
+- `disableFace`: if `true` it will disable the facial features.
+- `disableDefaultWearables`: if `true` it will not load the default wearables (it will only load the base body shape).
 - `env`: The environment to use, it can be `prod` (uses mainnet wearables and catalysts) or `dev` (uses testnet wearables and catalysts).
 
 Example: https://wearable-preview.decentraland.org?contract=0xee8ae4c668edd43b34b98934d6d2ff82e41e6488&item=5

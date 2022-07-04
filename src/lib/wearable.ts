@@ -4,29 +4,24 @@ export function getWearableByCategory(wearables: WearableDefinition[], category:
   return wearables.find((wearable) => wearable.data.category === category) || null
 }
 
-export function getDefaultCategories(shape: BodyShape) {
-  switch (shape) {
-    case BodyShape.MALE:
-      return [
-        WearableCategory.EYEBROWS,
-        WearableCategory.MOUTH,
-        WearableCategory.EYES,
-        WearableCategory.HAIR,
-        WearableCategory.UPPER_BODY,
-        WearableCategory.LOWER_BODY,
-        WearableCategory.FEET,
-      ]
-    case BodyShape.FEMALE:
-      return [
-        WearableCategory.EYEBROWS,
-        WearableCategory.MOUTH,
-        WearableCategory.EYES,
-        WearableCategory.HAIR,
-        WearableCategory.UPPER_BODY,
-        WearableCategory.LOWER_BODY,
-        WearableCategory.FEET,
-      ]
-  }
+export function getFacialFeatureCategories() {
+  return [WearableCategory.EYEBROWS, WearableCategory.MOUTH, WearableCategory.EYES]
+}
+
+export function getNonFacialFeatureCategories() {
+  return [WearableCategory.HAIR, WearableCategory.UPPER_BODY, WearableCategory.LOWER_BODY, WearableCategory.FEET]
+}
+
+export function getDefaultCategories() {
+  return [
+    WearableCategory.EYEBROWS,
+    WearableCategory.MOUTH,
+    WearableCategory.EYES,
+    WearableCategory.HAIR,
+    WearableCategory.UPPER_BODY,
+    WearableCategory.LOWER_BODY,
+    WearableCategory.FEET,
+  ]
 }
 
 export function getDefaultWearableUrn(category: WearableCategory, shape: BodyShape) {
@@ -75,8 +70,4 @@ export function getBodyShape(wearabe: WearableDefinition): BodyShape {
       wearabe.data.representations.some((representation) => representation.bodyShapes.includes(bodyShape))
     ) || bodyShapes[0]
   )
-}
-
-export function isEmote(wearable: WearableDefinition) {
-  return !!wearable && `emoteDataV0` in wearable
 }

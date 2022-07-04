@@ -23,7 +23,7 @@ export const useOverrides = () => {
     }
     window.addEventListener('message', handleMessage)
     if (!isReady) {
-      sendMessage(window.parent, PreviewMessageType.READY, {})
+      sendMessage(window.parent, PreviewMessageType.READY, null)
       setIsReady(true)
     }
     return () => {
