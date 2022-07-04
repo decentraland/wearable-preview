@@ -18,11 +18,18 @@ import {
   Vector3,
 } from '@babylonjs/core'
 import '@babylonjs/loaders'
-import { BodyShape, PreviewCamera, PreviewConfig, PreviewType, WearableDefinition } from '@dcl/schemas'
+import {
+  BodyShape,
+  ISceneController,
+  PreviewCamera,
+  PreviewConfig,
+  PreviewType,
+  WearableDefinition,
+} from '@dcl/schemas'
 import { hexToColor } from '../color'
 import { isIOs } from '../env'
 import { getRepresentation } from '../representation'
-import { createSceneController, ISceneController } from '../scene'
+import { createSceneController } from '../scene'
 import { startAutoRotateBehavior } from './camera'
 
 // needed for debugging
