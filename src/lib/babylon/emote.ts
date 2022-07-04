@@ -132,11 +132,12 @@ function createController(animationGroup: AnimationGroup, loop: boolean): IEmote
 
   function goTo(seconds: number) {
     if (isPlaying()) {
-      // for some reason the goTo doesn't work as expected if playing, so I need to stop it and play it again
-      animationGroup.stop()
+      animationGroup.pause()
       goTo(seconds)
       window.requestAnimationFrame(play)
     } else {
+      // for some reason the start() method doesn't work as expected if playing, so I need to stop it first
+      animationGroup.stop()
       // I had to use this hack because the native goToFrame would not work as expected :/
       animationGroup.start(false, 1, seconds, seconds, false)
       startFrom = seconds
