@@ -1,6 +1,6 @@
 {
   "name": "@dcl/wearable-preview",
-  "version": "0.1.0",
+  "version": "0.0.0-development",
   "private": true,
   "dependencies": {
     "@babylonjs/core": "^4.2.0",

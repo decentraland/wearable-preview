@@ -1,6 +1,6 @@
 {
   "name": "@dcl/wearable-preview",
-  "version": "0.1.0",
+  "version": "0.0.0-development",
   "description": "Static website for the wearable preview",
   "main": "index.js",
   "scripts": {
