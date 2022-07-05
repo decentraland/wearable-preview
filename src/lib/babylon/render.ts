@@ -61,24 +61,23 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
       // play emote
       emoteController = (await playEmote(scene, assets, config)) || createInvalidEmoteController() // default to invalid emote controller if there is an issue with the emote, but let the rest of the preview keep working
     } else {
-      if (!config.wearable) {
-        throw new Error('No wearable to render')
-      }
       const wearable = config.wearable
-      try {
-        // try loading with the required body shape
-        const asset = await loadWearable(scene, wearable, config.bodyShape, config.skin, config.hair)
-        asset.container.addAllToScene()
-      } catch (error) {
-        // default to other body shape if failed
-        const asset = await loadWearable(
-          scene,
-          wearable,
-          config.bodyShape === BodyShape.MALE ? BodyShape.FEMALE : BodyShape.MALE,
-          config.skin,
-          config.hair
-        )
-        asset.container.addAllToScene()
+      if (wearable) {
+        try {
+          // try loading with the required body shape
+          const asset = await loadWearable(scene, wearable, config.bodyShape, config.skin, config.hair)
+          asset.container.addAllToScene()
+        } catch (error) {
+          // default to other body shape if failed
+          const asset = await loadWearable(
+            scene,
+            wearable,
+            config.bodyShape === BodyShape.MALE ? BodyShape.FEMALE : BodyShape.MALE,
+            config.skin,
+            config.hair
+          )
+          asset.container.addAllToScene()
+        }
       }
 
       // can't use emote controller if PreviewType is not "avatar"

@@ -3,6 +3,8 @@ import classNames from 'classnames'
 import { PreviewCamera, PreviewType, PreviewMessageType, sendMessage } from '@dcl/schemas'
 import { useWindowSize } from '../../hooks/useWindowSize'
 import { useConfig } from '../../hooks/useConfig'
+import { useReady } from '../../hooks/useReady'
+import { useController } from '../../hooks/useController'
 import { render } from '../../lib/babylon/render'
 import './Preview.css'
 
@@ -14,6 +16,7 @@ const Preview: React.FC = () => {
   const [isLoadingModel, setIsLoadingModel] = useState(true)
   const [isLoaded, setIsLoaded] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const controller = useController()
   const [config, isLoadingConfig, configError] = useConfig()
   const [image, setImage] = useState('')
   const [is3D, setIs3D] = useState(true)
@@ -42,9 +45,7 @@ const Preview: React.FC = () => {
       } else {
         // preview models
         render(canvasRef.current, config)
-          .then((controller) => {
-            ;(window as any).controller = controller
-          })
+          .then((_controller) => (controller.current = _controller))
           .catch((error) => setPreviewError(error.message))
           .finally(() => {
             setIsLoadingModel(false)
@@ -84,6 +85,9 @@ const Preview: React.FC = () => {
       }
     }
   }, [isLoadingConfig, isLoadingModel, isMessageSent, isLoaded])
+
+  // send ready message to parent
+  useReady()
 
   return (
     <div
