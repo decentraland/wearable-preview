@@ -29,13 +29,19 @@ const Preview: React.FC = () => {
 
   useEffect(() => {
     if (canvasRef.current && config) {
-      // fade in effect
-      setStyle({ opacity: 1 })
+      let style: React.CSSProperties = { opacity: 1 } // fade in effect
 
       // set background image
       if (config.background.image) {
         setImage(config.background.image)
+        style.opacity = 1
+        // if rendering a texture, babylon won't render the background, so we do it by css
+        if (!config.background.transparent && config.type === PreviewType.TEXTURE) {
+          style.backgroundColor = config.background.color
+        }
       }
+
+      setStyle(style)
 
       // load model or image (for texture only wearables)
       if (config.type === PreviewType.TEXTURE) {
