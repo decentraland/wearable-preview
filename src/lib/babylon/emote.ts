@@ -122,16 +122,16 @@ function createController(animationGroup: AnimationGroup, loop: boolean): IEmote
   let startFrom = 0
   let hasPlayed = false
 
-  function getLength() {
+  async function getLength() {
     return animationGroup.to
   }
 
-  function isPlaying() {
+  async function isPlaying() {
     return animationGroup.isPlaying
   }
 
-  function goTo(seconds: number) {
-    if (isPlaying()) {
+  async function goTo(seconds: number) {
+    if (await isPlaying()) {
       animationGroup.pause()
       goTo(seconds)
       window.requestAnimationFrame(play)
@@ -144,10 +144,10 @@ function createController(animationGroup: AnimationGroup, loop: boolean): IEmote
     }
   }
 
-  function play() {
-    if (!isPlaying()) {
+  async function play() {
+    if (!(await isPlaying())) {
       if (startFrom) {
-        animationGroup.start(loop, 1, startFrom, getLength(), false)
+        animationGroup.start(loop, 1, startFrom, await getLength(), false)
         startFrom = 0
       } else {
         animationGroup.play(loop)
@@ -156,13 +156,13 @@ function createController(animationGroup: AnimationGroup, loop: boolean): IEmote
     }
   }
 
-  function pause() {
-    if (isPlaying()) {
+  async function pause() {
+    if (await isPlaying()) {
       animationGroup.pause()
     }
   }
 
-  function stop() {
+  async function stop() {
     if (hasPlayed) {
       goTo(0)
       window.requestAnimationFrame(pause)

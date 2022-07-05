@@ -3,6 +3,8 @@ import classNames from 'classnames'
 import { PreviewCamera, PreviewType, PreviewMessageType, sendMessage } from '@dcl/schemas'
 import { useWindowSize } from '../../hooks/useWindowSize'
 import { useConfig } from '../../hooks/useConfig'
+import { useReady } from '../../hooks/useReady'
+import { useController } from '../../hooks/useController'
 import { render } from '../../lib/babylon/render'
 import './Preview.css'
 
@@ -14,6 +16,7 @@ const Preview: React.FC = () => {
   const [isLoadingModel, setIsLoadingModel] = useState(true)
   const [isLoaded, setIsLoaded] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const controller = useController()
   const [config, isLoadingConfig, configError] = useConfig()
   const [image, setImage] = useState('')
   const [is3D, setIs3D] = useState(true)
@@ -26,13 +29,19 @@ const Preview: React.FC = () => {
 
   useEffect(() => {
     if (canvasRef.current && config) {
-      // fade in effect
-      setStyle({ opacity: 1 })
+      let style: React.CSSProperties = { opacity: 1 } // fade in effect
 
       // set background image
       if (config.background.image) {
         setImage(config.background.image)
+        style.opacity = 1
+        // if rendering a texture, babylon won't render the background, so we do it by css
+        if (!config.background.transparent && config.type === PreviewType.TEXTURE) {
+          style.backgroundColor = config.background.color
+        }
       }
+
+      setStyle(style)
 
       // load model or image (for texture only wearables)
       if (config.type === PreviewType.TEXTURE) {
@@ -42,9 +51,7 @@ const Preview: React.FC = () => {
       } else {
         // preview models
         render(canvasRef.current, config)
-          .then((controller) => {
-            ;(window as any).controller = controller
-          })
+          .then((_controller) => (controller.current = _controller))
           .catch((error) => setPreviewError(error.message))
           .finally(() => {
             setIsLoadingModel(false)
@@ -84,6 +91,9 @@ const Preview: React.FC = () => {
       }
     }
   }, [isLoadingConfig, isLoadingModel, isMessageSent, isLoaded])
+
+  // send ready message to parent
+  useReady()
 
   return (
     <div

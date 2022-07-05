@@ -16,7 +16,7 @@ export function createSceneController(engine: Engine, scene: Scene, camera: Came
     return Tools.CreateScreenshotUsingRenderTargetAsync(engine, camera, { width, height }, undefined, undefined, true)
   }
 
-  function getMetrics() {
+  async function getMetrics() {
     const triangles = scene.meshes.reduce((total, mesh) => {
       return total + Math.floor(mesh.getTotalIndices() / 3)
     }, 0)
@@ -31,6 +31,8 @@ export function createSceneController(engine: Engine, scene: Scene, camera: Came
       materials,
       meshes,
       textures,
+      bodies: meshes,
+      entities: 1,
     }
   }
 

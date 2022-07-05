@@ -11,6 +11,7 @@ import {
   PreviewType,
   Rarity,
   WearableDefinition,
+  WearableWithBlobs,
 } from '@dcl/schemas'
 import { nftApi } from './api/nft'
 import { peerApi } from './api/peer'
@@ -270,7 +271,7 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
   }
 
   return {
-    wearable: wearable ?? undefined,
+    wearable: wearable ?? (options.blob ? fromBlob(options.blob) : undefined),
     wearables,
     bodyShape,
     skin,
@@ -286,7 +287,7 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
     offsetX: options.offsetX || 0,
     offsetY: options.offsetY || 0,
     offsetZ: options.offsetZ || 0,
-    zoom: options.zoom || zoom,
+    zoom: typeof options.zoom === 'number' ? options.zoom / 35 : zoom,
     wheelZoom,
     wheelPrecision,
     wheelStart,
@@ -295,4 +296,20 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
 
 function isNumber(value: number | null | undefined): boolean {
   return typeof value === 'number' && !isNaN(value)
+}
+
+function fromBlob(blob: WearableWithBlobs): WearableDefinition {
+  return {
+    ...blob,
+    data: {
+      ...blob.data,
+      representations: blob.data.representations.map((representation) => ({
+        ...representation,
+        contents: representation.contents.map((content) => ({
+          key: content.key,
+          url: URL.createObjectURL(content.blob),
+        })),
+      })),
+    },
+  }
 }
