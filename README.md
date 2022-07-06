@@ -73,6 +73,78 @@ function handleMessage(event) {
 window.addEventListener('message', handleMessage)
 ```
 
+### `controller` RPC
+
+The `controller` allows to take screenshots and get metrics from the scene, and also control the emote animations (play/pause/stop/goTo).
+
+To use the controller you can send `controller_request` messages and the response will arrive via a `controller_response` message.
+
+The available methods are:
+
+- namespace: `scene`
+  - method: `getScreenshot` params: `[width: number, height: number]` result: `string`
+  - method: `getMetrics` params: `[]` result: `Metrics`
+- namespace: `emote`
+  - method: `play` params: `[]` result: `void`
+  - method: `play` params: `[]` result: `void`
+  - method: `play` params: `[]` result: `void`
+  - method: `goTo` params: `[seconds: number]` result: `void`
+  - method: `getLength` params: `[]` result: `number`
+  - method: `isPlaying` params: `[]` result: `boolean`
+
+This is an example of an RPC:
+
+```ts
+import future, { IFuture } from 'fp-future'
+import { PreviewMessageType, PreviewMessagePayload, sendMessage } from '@dcl/schemas'
+
+let id = 0
+const promises = new Map<string, IFuture<any>>()
+
+function sendRequest<T>(
+  namespace: 'scene' | 'emote',
+  method: 'getScreenshot' | 'getMetrics' | 'getLength' | 'isPlaying' | 'goTo' | 'play' | 'pause' | 'stop',
+  params: any[]
+) {
+  // create promise
+  const promise = future<T>()
+  promises.set(id, promise)
+  // send message
+  sendMessage(iframe.contentWindow, PreviewMessageType.CONTROLLER_REQUEST, { id, namespace, method, params })
+  // increment id for next request
+  id++
+  return promise
+}
+
+function handleMessage(event) {
+  switch (event.data.type) {
+    // handle response
+    case PreviewMessageType.REQUEST_RESPONSE: {
+      const payload = event.data.payload as PreviewMessagePayload<PreviewMessageType.CONTROLLER_RESPONSE>
+      // grab promise and resolve/reject according to response
+      const { id } = payload
+      const promise = promises.get(id)
+      if (promise) {
+        if (payload.ok) {
+          promise.resolve(payload.result)
+        } else {
+          promise.reject(new Error(payload.error))
+        }
+      }
+      break
+    }
+  }
+}
+
+window.addEventListener('message', handleMessage)
+```
+
+Now you can use it like this:
+
+```ts
+const screenshot = await sendRequest('scene', 'getScreenshot', [512, 512]) // "data:image/png;base64..."
+```
+
 ### Setup
 
 ```
