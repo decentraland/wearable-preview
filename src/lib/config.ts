@@ -287,7 +287,7 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
     offsetX: options.offsetX || 0,
     offsetY: options.offsetY || 0,
     offsetZ: options.offsetZ || 0,
-    zoom: typeof options.zoom === 'number' ? options.zoom / 35 : zoom,
+    zoom: typeof options.zoom === 'number' ? options.zoom : zoom,
     wheelZoom,
     wheelPrecision,
     wheelStart,
