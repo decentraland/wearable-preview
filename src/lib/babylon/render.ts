@@ -1,5 +1,6 @@
 import { Color4 } from '@babylonjs/core'
 import { PreviewConfig, PreviewType, BodyShape, IPreviewController, IEmoteController } from '@dcl/schemas'
+import { createInvalidEmoteController, isEmote } from '../emote'
 import { getBodyShape } from './body'
 import { getSlots } from './slots'
 import { playEmote } from './emote'
@@ -8,7 +9,6 @@ import { setupMappings } from './mappings'
 import { Asset, center, createScene } from './scene'
 import { isFacialFeature, isModel, isSuccesful } from './utils'
 import { loadWearable } from './wearable'
-import { createInvalidEmoteController } from '../emote'
 
 /**
  * Initializes Babylon, creates the scene and loads a list of wearables in it
@@ -62,7 +62,7 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
       emoteController = (await playEmote(scene, assets, config)) || createInvalidEmoteController() // default to invalid emote controller if there is an issue with the emote, but let the rest of the preview keep working
     } else {
       const wearable = config.wearable
-      if (wearable) {
+      if (wearable && !isEmote(wearable)) {
         try {
           // try loading with the required body shape
           const asset = await loadWearable(scene, wearable, config.bodyShape, config.skin, config.hair)

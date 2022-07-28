@@ -1,7 +1,8 @@
-import { BodyShape, WearableCategory, WearableDefinition } from '@dcl/schemas'
+import { BodyShape, EmoteDefinition, WearableCategory, WearableDefinition } from '@dcl/schemas'
+import { isWearableDefinition } from './representation'
 
-export function getWearableByCategory(wearables: WearableDefinition[], category: WearableCategory) {
-  return wearables.find((wearable) => wearable.data.category === category) || null
+export function getWearableByCategory(wearables: (WearableDefinition | EmoteDefinition)[], category: WearableCategory) {
+  return wearables.find((wearable) => isWearableDefinition(wearable) && wearable.data.category === category) || null
 }
 
 export function getFacialFeatureCategories() {
