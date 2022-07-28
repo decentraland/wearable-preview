@@ -22,40 +22,12 @@ export function buildEmoteUrl(emote: PreviewEmote) {
 }
 
 export async function loadEmoteFromUrl(scene: Scene, url: string) {
-  console.log('url in loadEmoteFromUrl: ', url)
   const container = await loadAssetContainer(scene, url)
   if (container.animationGroups.length === 0) {
     throw new Error(`No animation groups found for emote with url=${url}`)
   }
   return container
 }
-
-// export type EmoteRepresentationDefinition = Omit<EmoteRepresentationADR74, 'contents'> & {
-//   contents: {
-//     key: string
-//     url: string
-//   }[]
-// }
-
-// export type EmoteDefinition = Omit<Emote, 'emoteDataADR74'> & {
-//   emoteDataADR74: Omit<Emote['emoteDataADR74'], 'representations'> & {
-//     representations: EmoteRepresentationDefinition[]
-//   }
-// }
-
-// export async function loadEmoteFromWearable(scene: Scene, wearable: Emote, config: PreviewConfig) {
-//   const representation = getRepresentation(wearable, config.bodyShape) as EmoteRepresentationADR74
-//   console.log('representation: ', representation)
-//   const content = representation.contents.find((content) => content === representation.mainFile)
-//   console.log('content: ', content)
-//   // const content = representation.contents.find((content) => content.key === representation.mainFile)
-//   if (!content) {
-//     throw new Error(
-//       `Could not find a valid content in representation for wearable=${wearable.id} and bodyShape=${config.bodyShape}`
-//     )
-//   }
-//   return loadEmoteFromUrl(scene, content)
-// }
 
 export async function loadEmoteFromWearable(scene: Scene, wearable: EmoteDefinition, config: PreviewConfig) {
   const representation = getRepresentation(wearable, config.bodyShape)
