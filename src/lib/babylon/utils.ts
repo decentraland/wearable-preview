@@ -1,4 +1,4 @@
-import { WearableCategory, WearableDefinition } from '@dcl/schemas'
+import { RepresentationDefinition, WearableCategory, WearableDefinition } from '@dcl/schemas'
 import { getRepresentationOrDefault, isTexture } from '../representation'
 import { Asset } from './scene'
 
@@ -22,7 +22,7 @@ export function isSuccesful(result: void | Asset): result is Asset {
 
 export function isModel(wearable: WearableDefinition): boolean {
   const representation = getRepresentationOrDefault(wearable)
-  return !isTexture(representation)
+  return !isTexture(representation as RepresentationDefinition)
 }
 
 export function isFacialFeature(wearable: WearableDefinition): boolean {

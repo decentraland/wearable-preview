@@ -1,5 +1,5 @@
 import { AnimationGroup, ArcRotateCamera, AssetContainer, Scene, TransformNode } from '@babylonjs/core'
-import { IEmoteController, PreviewCamera, PreviewConfig, PreviewEmote, WearableDefinition } from '@dcl/schemas'
+import { IEmoteController, PreviewCamera, PreviewConfig, PreviewEmote, EmoteDefinition } from '@dcl/schemas'
 import { isEmote } from '../emote'
 import { getRepresentation } from '../representation'
 import { startAutoRotateBehavior } from './camera'
@@ -29,7 +29,7 @@ export async function loadEmoteFromUrl(scene: Scene, url: string) {
   return container
 }
 
-export async function loadEmoteFromWearable(scene: Scene, wearable: WearableDefinition, config: PreviewConfig) {
+export async function loadEmoteFromWearable(scene: Scene, wearable: EmoteDefinition, config: PreviewConfig) {
   const representation = getRepresentation(wearable, config.bodyShape)
   const content = representation.contents.find((content) => content.key === representation.mainFile)
   if (!content) {
@@ -43,22 +43,28 @@ export async function loadEmoteFromWearable(scene: Scene, wearable: WearableDefi
 export async function playEmote(scene: Scene, assets: Asset[], config: PreviewConfig) {
   // load asset container for emote
   let container: AssetContainer | undefined
-  let loop = isLooped(config.emote)
+  let loop = !!config.emote && isLooped(config.emote)
+
   // if target wearable is emote, play that one
   if (config.wearable && isEmote(config.wearable)) {
     try {
-      container = await loadEmoteFromWearable(scene, config.wearable, config)
-      loop = !!config.wearable.emoteDataV0?.loop
+      container = await loadEmoteFromWearable(scene, config.wearable as EmoteDefinition, config)
+      //TODO: remove this cast that supports the old emote entity
+      loop =
+        (config.wearable as any).emoteDataV0 !== undefined
+          ? !!(config.wearable as any).emoteDataV0.loop
+          : config.wearable.emoteDataADR74.loop
     } catch (error) {
       console.warn(`Could not load emote=${config.wearable.id}`)
     }
   } else if (config.wearables.some(isEmote)) {
     // if there's some emote in the wearables list, play the last one
     const emote = config.wearables.reverse().find(isEmote)!
-    container = await loadEmoteFromWearable(scene, emote, config)
-    loop = !!emote.emoteDataV0?.loop
+    container = await loadEmoteFromWearable(scene, emote as EmoteDefinition, config)
+    //TODO: remove this cast that supports the old emote entity
+    loop = (emote as any).emoteDataV0 !== undefined ? !!(emote as any).emoteDataV0.loop : !!emote.emoteDataADR74?.loop
   }
-  if (!container) {
+  if (!container && config.emote) {
     const emoteUrl = buildEmoteUrl(config.emote)
     container = await loadEmoteFromUrl(scene, emoteUrl)
   }
@@ -87,7 +93,7 @@ export async function playEmote(scene: Scene, assets: Asset[], config: PreviewCo
         return map.set(node.id, list)
       }, new Map<string, TransformNode[]>())
       // apply each targeted animation from the emote asset container to the transform nodes of all the wearables
-      if (container.animationGroups.length > 0) {
+      if (container && container.animationGroups.length > 0) {
         for (const targetedAnimation of container.animationGroups[0].targetedAnimations) {
           const animation = targetedAnimation.animation
           const target = targetedAnimation.target as TransformNode
@@ -98,8 +104,6 @@ export async function playEmote(scene: Scene, assets: Asset[], config: PreviewCo
             }
           }
         }
-      } else {
-        throw new Error(`No animationGroups found`)
       }
     }
     // play animation group and apply
@@ -123,7 +127,8 @@ function createController(animationGroup: AnimationGroup, loop: boolean): IEmote
   let hasPlayed = false
 
   async function getLength() {
-    return animationGroup.to
+    // if there's no animation, it should return 0
+    return Math.max(animationGroup.to, 0)
   }
 
   async function isPlaying() {

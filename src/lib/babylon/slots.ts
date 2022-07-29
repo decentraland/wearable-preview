@@ -1,5 +1,5 @@
 import { PreviewConfig, WearableCategory, WearableDefinition } from '@dcl/schemas'
-import { hasRepresentation } from '../representation'
+import { hasRepresentation, isWearableDefinition } from '../representation'
 import { isEmote } from '../emote'
 
 const categoriesHiddenBySkin = [
@@ -17,12 +17,12 @@ const categoriesHiddenBySkin = [
 export function getSlots(config: PreviewConfig) {
   const slots = new Map<WearableCategory, WearableDefinition>()
 
-  let wearables: WearableDefinition[] = config.wearables.filter((wearable) => !isEmote(wearable)) // remove emotes if any
+  let wearables = config.wearables.filter((wearable) => !isEmote(wearable)) as WearableDefinition[] // remove emotes if any
 
   // remove other wearables that hide the equipped wearable
   if (config.wearable && !isEmote(config.wearable)) {
-    wearables = config.wearables.filter((wearable) => {
-      if (config.wearable) {
+    wearables = (config.wearables as WearableDefinition[]).filter((wearable) => {
+      if (config.wearable && isWearableDefinition(config.wearable)) {
         const { category, hides, replaces } = config.wearable.data
         if (wearable.data.category === 'skin') {
           if (categoriesHiddenBySkin.includes(category)) {

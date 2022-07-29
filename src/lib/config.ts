@@ -10,6 +10,7 @@ import {
   PreviewOptions,
   PreviewType,
   Rarity,
+  RepresentationDefinition,
   WearableDefinition,
   WearableWithBlobs,
 } from '@dcl/schemas'
@@ -220,7 +221,7 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
 
   if (wearable) {
     zoom = wearables.length > 0 ? zoom : getZoom(wearable)
-    const representation = getRepresentationOrDefault(wearable)
+    const representation = getRepresentationOrDefault(wearable) as RepresentationDefinition
     if (isTexture(representation) && type !== PreviewType.AVATAR) {
       type = PreviewType.TEXTURE
     }
@@ -238,7 +239,7 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
     }
   }
 
-  let emote = PreviewEmote.IDLE
+  let emote = options.emote === undefined ? PreviewEmote.IDLE : options.emote
   if (options.emote && Object.values(PreviewEmote).includes(options.emote)) {
     emote = options.emote
   }
