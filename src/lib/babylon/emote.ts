@@ -62,10 +62,7 @@ export async function playEmote(scene: Scene, assets: Asset[], config: PreviewCo
     const emote = config.wearables.reverse().find(isEmote)!
     container = await loadEmoteFromWearable(scene, emote as EmoteDefinition, config)
     //TODO: remove this cast that supports the old emote entity
-    loop =
-      (config.wearable as any).emoteDataV0 !== undefined
-        ? !!(config.wearable as any).emoteDataV0.loop
-        : !!emote.emoteDataADR74?.loop
+    loop = (emote as any).emoteDataV0 !== undefined ? !!(emote as any).emoteDataV0.loop : !!emote.emoteDataADR74?.loop
   }
   if (!container && config.emote) {
     const emoteUrl = buildEmoteUrl(config.emote)
