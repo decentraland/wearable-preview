@@ -64,6 +64,7 @@ export const useOptions = () => {
       disableAutoRotate: params.has('disableAutoRotate') || !centerBoundingBox,
       disableFace: params.has('disableFace'),
       disableDefaultWearables: params.has('disableDefaultWearables'),
+      disableDefaultEmotes: params.has('disableDefaultEmotes'),
       env: Object.values(PreviewEnv)
         .filter((value): value is PreviewEnv => typeof value === 'string')
         .reduce((selected, value) => (value === params.get('env') ? value : selected), PreviewEnv.PROD),

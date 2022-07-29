@@ -239,7 +239,7 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
     }
   }
 
-  let emote = options.emote === undefined ? PreviewEmote.IDLE : options.emote
+  let emote = options.disableDefaultEmotes ? null : options.emote ? options.emote : PreviewEmote.IDLE
   if (options.emote && Object.values(PreviewEmote).includes(options.emote)) {
     emote = options.emote
   }
