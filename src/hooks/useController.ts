@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { IPreviewController, PreviewMessageType, sendMessage } from '@dcl/schemas'
+import { IPreviewController, PreviewMessagePayload, PreviewMessageType, sendMessage } from '@dcl/schemas'
 import { useMessage } from './useMessage'
 
 function sendResult(id: string, result: any) {
@@ -24,12 +24,8 @@ export const useController = () => {
       typeof event.data.payload.params === 'object' &&
       Array.isArray(event.data.payload.params)
     ) {
-      const { id, method, namespace, params } = event.data.payload as {
-        id: string
-        namespace: string
-        method: string
-        params: any[]
-      }
+      const { id, method, namespace, params } = event.data
+        .payload as PreviewMessagePayload<PreviewMessageType.CONTROLLER_REQUEST>
       if (controllerRef.current) {
         if (namespace in controllerRef.current) {
           if (method in controllerRef.current[namespace as keyof IPreviewController]) {

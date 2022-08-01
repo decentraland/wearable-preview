@@ -1,5 +1,13 @@
+import { EventEmitter } from 'events'
 import { AnimationGroup, ArcRotateCamera, AssetContainer, Scene, TransformNode } from '@babylonjs/core'
-import { IEmoteController, PreviewCamera, PreviewConfig, PreviewEmote, EmoteDefinition } from '@dcl/schemas'
+import {
+  IEmoteController,
+  PreviewCamera,
+  PreviewConfig,
+  PreviewEmote,
+  EmoteDefinition,
+  PreviewEmoteEventType,
+} from '@dcl/schemas'
 import { isEmote } from '../emote'
 import { getRepresentation } from '../representation'
 import { startAutoRotateBehavior } from './camera'
@@ -177,6 +185,14 @@ function createController(animationGroup: AnimationGroup, loop: boolean): IEmote
     }
   }
 
+  const events = new EventEmitter()
+
+  // forward observable events to event emitter
+  animationGroup.onAnimationGroupPlayObservable.add(() => events.emit(PreviewEmoteEventType.ANIMATION_PLAY))
+  animationGroup.onAnimationGroupPauseObservable.add(() => events.emit(PreviewEmoteEventType.ANIMATION_PAUSE))
+  animationGroup.onAnimationGroupLoopObservable.add(() => events.emit(PreviewEmoteEventType.ANIMATION_LOOP))
+  animationGroup.onAnimationGroupEndObservable.add(() => events.emit(PreviewEmoteEventType.ANIMATION_END))
+
   return {
     getLength,
     isPlaying,
@@ -184,5 +200,6 @@ function createController(animationGroup: AnimationGroup, loop: boolean): IEmote
     play,
     pause,
     stop,
+    events,
   }
 }

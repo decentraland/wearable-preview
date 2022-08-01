@@ -1,3 +1,4 @@
+import { EventEmitter } from 'events'
 import { IEmoteController, WearableDefinition, EmoteDefinition } from '@dcl/schemas'
 
 export function isEmote(wearable: WearableDefinition | EmoteDefinition): wearable is EmoteDefinition {
@@ -31,5 +32,6 @@ export function createInvalidEmoteController(): IEmoteController {
     stop() {
       throw new InvalidEmoteError()
     },
+    events: new EventEmitter(),
   }
 }
