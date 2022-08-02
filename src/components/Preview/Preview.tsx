@@ -6,6 +6,7 @@ import { useConfig } from '../../hooks/useConfig'
 import { useReady } from '../../hooks/useReady'
 import { useController } from '../../hooks/useController'
 import { render } from '../../lib/babylon/render'
+import { handleEmoteEvents } from '../../lib/emote-events'
 import './Preview.css'
 
 const Preview: React.FC = () => {
@@ -51,7 +52,12 @@ const Preview: React.FC = () => {
       } else {
         // preview models
         render(canvasRef.current, config)
-          .then((_controller) => (controller.current = _controller))
+          .then((newController) => {
+            // set new controller as current one
+            controller.current = newController
+            // handle emote events and forward them as messages
+            handleEmoteEvents(controller.current)
+          })
           .catch((error) => setPreviewError(error.message))
           .finally(() => {
             setIsLoadingModel(false)
