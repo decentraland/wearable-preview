@@ -23,6 +23,7 @@ import {
   ISceneController,
   PreviewCamera,
   PreviewConfig,
+  PreviewProjection,
   PreviewType,
   WearableDefinition,
 } from '@dcl/schemas'
@@ -104,7 +105,22 @@ export async function createScene(
 
   // Setup Camera
   const camera = new ArcRotateCamera('camera', 0, 0, 0, new Vector3(0, 0, 0), root)
-  camera.mode = Camera.PERSPECTIVE_CAMERA
+
+  switch (config.projection) {
+    case PreviewProjection.PERSPECTIVE: {
+      camera.mode = Camera.PERSPECTIVE_CAMERA
+      break
+    }
+    case PreviewProjection.ORTHOGRAPHIC: {
+      camera.mode = Camera.ORTHOGRAPHIC_CAMERA
+      camera.orthoTop = 1
+      camera.orthoBottom = -1
+      camera.orthoLeft = -1
+      camera.orthoRight = 1
+      break
+    }
+  }
+
   switch (config.type) {
     case PreviewType.WEARABLE: {
       startAutoRotateBehavior(camera, config)
@@ -116,6 +132,7 @@ export async function createScene(
       break
     }
   }
+
   if (config.camera === PreviewCamera.INTERACTIVE) {
     camera.attachControl(canvas, true)
   }

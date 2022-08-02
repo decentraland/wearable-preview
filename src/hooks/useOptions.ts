@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useOverrides } from './useOverrides'
 
-import { BodyShape, PreviewCamera, PreviewEmote, PreviewEnv, PreviewOptions } from '@dcl/schemas'
+import { BodyShape, PreviewCamera, PreviewEmote, PreviewEnv, PreviewOptions, PreviewProjection } from '@dcl/schemas'
 import { parseZoom } from '../lib/zoom'
 
 export const useOptions = () => {
@@ -40,6 +40,7 @@ export const useOptions = () => {
       eyes: params.get('eyes'),
       emote: params.get('emote') as PreviewEmote | null,
       camera: params.get('camera') as PreviewCamera | null,
+      projection: params.get('projection') as PreviewProjection | null,
       background: params.get('background'),
       autoRotateSpeed: autoRotateSpeedParam ? parseFloat(autoRotateSpeedParam) : null,
       offsetX: offsetXParam ? parseFloat(offsetXParam) : null,

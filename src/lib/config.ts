@@ -8,6 +8,7 @@ import {
   PreviewEmote,
   PreviewEnv,
   PreviewOptions,
+  PreviewProjection,
   PreviewType,
   Rarity,
   RepresentationDefinition,
@@ -248,6 +249,10 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
   if (options.camera && Object.values(PreviewCamera).includes(options.camera)) {
     camera = options.camera
   }
+  let projection = PreviewProjection.PERSPECTIVE
+  if (options.projection && Object.values(PreviewProjection).includes(options.projection)) {
+    projection = options.projection
+  }
   const autoRotateSpeed =
     typeof options.autoRotateSpeed === 'number' && !isNaN(options.autoRotateSpeed) ? options.autoRotateSpeed : 0.2
   const centerBoundingBox = !options.disableAutoCenter
@@ -283,6 +288,7 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
     face: options.disableFace !== false,
     emote,
     camera,
+    projection,
     autoRotateSpeed: options.disableAutoRotate ? 0 : autoRotateSpeed,
     centerBoundingBox,
     offsetX: options.offsetX || 0,
