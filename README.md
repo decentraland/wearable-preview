@@ -63,13 +63,33 @@ import { PreviewMessageType, PreviewMessagePayload } from '@dcl/schemas'
 
 function handleMessage(event) {
   switch (event.data.type) {
+    // This message comes every time the preview finished loading
     case PreviewMessageType.LOAD: {
       console.log('Preview loaded successfully')
       break
     }
+    // This message comes every time there's an error
     case PreviewMessageType.ERROR: {
       const { message } = event.data.payload as PreviewMessagePayload<PreviewMessageType.ERROR>
       console.error('Something went wrong:', message)
+    }
+    // This message comes every time there's a native animation event, they only happen with emotes
+    case PreviewMessageType.EMOTE_EVENT: {
+      const { type } = event.data.payload as PreviewMessagePayload<PreviewMessageType.EMOTE_EVENT>
+      switch (type) {
+        case PreviewEmoteEventType.ANIMATION_PLAY:
+          console.error('Animation started')
+          break
+        case PreviewEmoteEventType.ANIMATION_PAUSE:
+          console.error('Animation paused')
+          break
+        case PreviewEmoteEventType.ANIMATION_LOOP:
+          console.error('Animation looped')
+          break
+        case PreviewEmoteEventType.ANIMATION_END:
+          console.error('Animation ended')
+          break
+      }
     }
   }
 }
