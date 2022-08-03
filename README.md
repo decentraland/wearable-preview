@@ -16,9 +16,13 @@ This webapp renders an interactive 3D preview of a wearable or an avatar. It can
 - `emote`: the emote that the avatar will play. Default value is `idle`, other possible values are: `clap`, `dab`, `dance`, `fashion`, `fashion-2`, `fashion-3`,`fashion-4`, `love`, `money`, `fist-pump` and `head-explode`.
 - `zoom`: the level of zoom, it must be a number between 1 and 100.
 - `camera`: which camera type to use, either `interactive` or `static`. By default it uses the `interactive` one.
-- `offsetX`: apply an offset in the X position of the camera. By default is `0`.
-- `offsetY`: apply an offset in the Y position of the camera. By default is `0`.
-- `offsetZ`: apply an offset in the Z position of the camera. By default is `0`.
+- `projection`: which projection type to use, either `orthographic` or `perspective`. By default it uses the `perspective` one.
+- `offsetX`: apply an offset in the X position of the scene. By default is `0`.
+- `offsetY`: apply an offset in the Y position of the scene. By default is `0`.
+- `offsetZ`: apply an offset in the Z position of the scene. By default is `0`.
+- `cameraX`: set the X position of the camera.
+- `cameraY`: set the Y position of the camera.
+- `cameraZ`: set the Z position of the camera.
 - `wheelZoom`: a multiplier of how much the user can zoom with the mouse wheel. By default is `1`, which means the wheel doesn't do any zoom. If the value were `2` the user would be able to zoom up to 2x.
 - `wheelPrecision`: the higher the value, the slower the wheel zooms when scrolled. By default is `100`.
 - `wheelStart`: a value between 0 and 100 which determines how zoomed in or out the wheel starts. By default is `50`, so the user can zoom in or out. If the value were `0` the zoom would start at minimum and the user would be able to zoom in. If the value were `100` the zoom would start at max and the user would be able to zoom out.
