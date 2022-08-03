@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useOverrides } from './useOverrides'
 
-import { BodyShape, PreviewCamera, PreviewEmote, PreviewEnv, PreviewOptions } from '@dcl/schemas'
+import { BodyShape, PreviewCamera, PreviewEmote, PreviewEnv, PreviewOptions, PreviewProjection } from '@dcl/schemas'
 import { parseZoom } from '../lib/zoom'
 
 export const useOptions = () => {
@@ -13,6 +13,9 @@ export const useOptions = () => {
     const offsetXParam = params.get('offsetX') as string | null
     const offsetYParam = params.get('offsetY') as string | null
     const offsetZParam = params.get('offsetZ') as string | null
+    const cameraXParam = params.get('cameraX') as string | null
+    const cameraYParam = params.get('cameraY') as string | null
+    const cameraZParam = params.get('cameraZ') as string | null
     const wheelZoomParam = params.get('wheelZoom') as string | null
     const wheelPrecisionParam = params.get('wheelPrecision') as string | null
     const wheelStartParam = params.get('wheelStart') as string | null
@@ -40,11 +43,15 @@ export const useOptions = () => {
       eyes: params.get('eyes'),
       emote: params.get('emote') as PreviewEmote | null,
       camera: params.get('camera') as PreviewCamera | null,
+      projection: params.get('projection') as PreviewProjection | null,
       background: params.get('background'),
       autoRotateSpeed: autoRotateSpeedParam ? parseFloat(autoRotateSpeedParam) : null,
       offsetX: offsetXParam ? parseFloat(offsetXParam) : null,
       offsetY: offsetYParam ? parseFloat(offsetYParam) : null,
       offsetZ: offsetZParam ? parseFloat(offsetZParam) : null,
+      cameraX: cameraXParam ? parseFloat(cameraXParam) : null,
+      cameraY: cameraYParam ? parseFloat(cameraYParam) : null,
+      cameraZ: cameraZParam ? parseFloat(cameraZParam) : null,
       wheelZoom: wheelZoomParam ? parseFloat(wheelZoomParam) : null,
       wheelPrecision: wheelPrecisionParam ? parseFloat(wheelPrecisionParam) : null,
       wheelStart: wheelStartParam ? parseFloat(wheelStartParam) : null,

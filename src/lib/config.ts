@@ -8,6 +8,7 @@ import {
   PreviewEmote,
   PreviewEnv,
   PreviewOptions,
+  PreviewProjection,
   PreviewType,
   Rarity,
   RepresentationDefinition,
@@ -43,6 +44,10 @@ async function fetchWearable(urn: string, env: PreviewEnv) {
 
 function parseWearable(base64: string): WearableDefinition {
   return JSON.parse(atob(base64))
+}
+
+function isValidNumber(value: number | null | undefined): value is number {
+  return typeof value === 'number' && !isNaN(value)
 }
 
 async function fetchProfileWearables(profile: Avatar | null, env: PreviewEnv) {
@@ -248,6 +253,10 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
   if (options.camera && Object.values(PreviewCamera).includes(options.camera)) {
     camera = options.camera
   }
+  let projection = PreviewProjection.PERSPECTIVE
+  if (options.projection && Object.values(PreviewProjection).includes(options.projection)) {
+    projection = options.projection
+  }
   const autoRotateSpeed =
     typeof options.autoRotateSpeed === 'number' && !isNaN(options.autoRotateSpeed) ? options.autoRotateSpeed : 0.2
   const centerBoundingBox = !options.disableAutoCenter
@@ -271,6 +280,34 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
     background.color = options.background
   }
 
+  let cameraX = 0
+  let cameraY = 0
+  let cameraZ = 0
+  switch (type) {
+    case PreviewType.WEARABLE: {
+      cameraX = -2
+      cameraY = 2
+      cameraZ = 2
+      break
+    }
+    case PreviewType.AVATAR: {
+      cameraX = 0
+      cameraY = 1
+      cameraZ = 3.5
+      break
+    }
+  }
+
+  if (isValidNumber(options.cameraX)) {
+    cameraX = options.cameraX
+  }
+  if (isValidNumber(options.cameraY)) {
+    cameraY = options.cameraY
+  }
+  if (isValidNumber(options.cameraZ)) {
+    cameraZ = options.cameraZ
+  }
+
   return {
     wearable: wearable ?? (options.blob ? fromBlob(options.blob) : undefined),
     wearables,
@@ -283,11 +320,15 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
     face: options.disableFace !== false,
     emote,
     camera,
+    projection,
     autoRotateSpeed: options.disableAutoRotate ? 0 : autoRotateSpeed,
     centerBoundingBox,
     offsetX: options.offsetX || 0,
     offsetY: options.offsetY || 0,
     offsetZ: options.offsetZ || 0,
+    cameraX,
+    cameraY,
+    cameraZ,
     zoom: typeof options.zoom === 'number' ? options.zoom : zoom,
     wheelZoom,
     wheelPrecision,
