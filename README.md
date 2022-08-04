@@ -32,6 +32,7 @@ This webapp renders an interactive 3D preview of a wearable or an avatar. It can
 - `disableAutoCenter`: if `true` it will disable the auto-center around the bounding box.
 - `disableFace`: if `true` it will disable the facial features.
 - `disableDefaultWearables`: if `true` it will not load the default wearables (it will only load the base body shape).
+- `disableDefaultEmotes`: if `true` and `emote` is not passed, it will not load the default IDLE emote.
 - `env`: The environment to use, it can be `prod` (uses mainnet wearables and catalysts) or `dev` (uses testnet wearables and catalysts).
 
 Example: https://wearable-preview.decentraland.org?contract=0xee8ae4c668edd43b34b98934d6d2ff82e41e6488&item=5
