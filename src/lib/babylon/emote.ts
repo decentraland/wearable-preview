@@ -120,8 +120,6 @@ export async function playEmote(scene: Scene, assets: Asset[], config: PreviewCo
 
     if (config.camera === PreviewCamera.STATIC) {
       controller.stop() // we call the stop here to freeze the animation at frame 0, otherwise the avatar would be on T-pose
-    } else {
-      controller.play()
     }
 
     return controller
