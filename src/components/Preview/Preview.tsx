@@ -73,7 +73,7 @@ const Preview: React.FC = () => {
       if (isLoaded) {
         sendMessage(window.parent, PreviewMessageType.LOAD, null)
         setIsMessageSent(true)
-        if (config?.camera !== PreviewCamera.STATIC) {
+        if (config?.camera !== PreviewCamera.STATIC && config?.type === PreviewType.AVATAR) {
           controller.current?.emote.play()
         }
       } else if (error) {
@@ -81,7 +81,7 @@ const Preview: React.FC = () => {
         setIsMessageSent(true)
       }
     }
-  }, [isLoaded, error, isMessageSent, controller, config?.camera])
+  }, [isLoaded, error, isMessageSent, controller, config?.camera, config?.type])
 
   // when the config is being loaded again (because the was an update to some of the options) reset all the other loading flags
   useEffect(() => {
