@@ -32,9 +32,14 @@ export function setupMappings(config: PreviewConfig) {
     if (plugin.name === 'gltf') {
       const gltf = plugin as GLTFFileLoader
       gltf.preprocessUrlAsync = async (url: string) => {
-        const baseUrl = `/content/contents/`
-        const parts = url.split(baseUrl)
-        return parts.length > 0 && !!parts[1] ? mappings[parts[1]] : url
+        const baseUrl = `/`
+        const filename = url.split(baseUrl).pop()
+        if (!filename) {
+          return url
+        }
+        const keys = Object.keys(mappings)
+        const key = keys.find((_key) => _key.endsWith(filename))
+        return mappings[key!] || url
       }
     }
   })
