@@ -1,4 +1,4 @@
-import { Camera, Engine, Scene, Tools } from '@babylonjs/core'
+import { ArcRotateCamera, Engine, Scene, Tools } from '@babylonjs/core'
 import { ISceneController } from '@dcl/schemas'
 
 // These are textures created by the preview itself so we don't count them
@@ -11,9 +11,33 @@ const ignoreTextureList = [
   'HighlightLayerMainRTT',
 ]
 
-export function createSceneController(engine: Engine, scene: Scene, camera: Camera): ISceneController {
+export function createSceneController(engine: Engine, scene: Scene, camera: ArcRotateCamera): ISceneController {
   async function getScreenshot(width: number, height: number) {
     return Tools.CreateScreenshotUsingRenderTargetAsync(engine, camera, { width, height }, undefined, undefined, true)
+  }
+
+  async function changeZoom(delta: number) {
+    camera.inertialRadiusOffset = camera.inertialRadiusOffset + delta
+  }
+
+  async function panCamera(offset: { x?: number; y?: number; z?: number }) {
+    const { x, y, z } = offset
+    camera.target.x = x || 0
+    camera.target.y = y || 0
+    camera.target.z = z || 0
+  }
+
+  async function changeCameraPosition(position: { alpha?: number; beta?: number; radius?: number }) {
+    const { alpha, beta, radius } = position
+    if (alpha) {
+      camera.alpha = camera.alpha + alpha
+    }
+    if (beta) {
+      camera.beta = camera.beta + beta
+    }
+    if (radius) {
+      camera.radius = camera.radius + radius
+    }
   }
 
   async function getMetrics() {
@@ -39,5 +63,8 @@ export function createSceneController(engine: Engine, scene: Scene, camera: Came
   return {
     getScreenshot,
     getMetrics,
+    panCamera,
+    changeZoom,
+    changeCameraPosition,
   }
 }
