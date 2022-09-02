@@ -2,13 +2,15 @@ import { Item, NFT, PreviewEnv } from '@dcl/schemas'
 import { json } from '../json'
 
 export const nftApiByEnv: Record<PreviewEnv, string> = {
-  [PreviewEnv.DEV]: 'https://nft-api.decentraland.io',
+  [PreviewEnv.DEV]: 'https://nft-api.decentraland.zone',
   [PreviewEnv.PROD]: 'https://nft-api.decentraland.org',
 }
 
 class NFTApi {
   async fetchItem(contractAddress: string, itemId: string, env: PreviewEnv) {
-    const { data } = await json<{ data: Item[] }>(`${nftApiByEnv[env]}/v1/items?contractAddress=${contractAddress}&itemId=${itemId}`)
+    const { data } = await json<{ data: Item[] }>(
+      `${nftApiByEnv[env]}/v1/items?contractAddress=${contractAddress}&itemId=${itemId}`
+    )
     if (data.length === 0) {
       throw new Error(`Item not found for contractAddress="${contractAddress}" itemId="${itemId}"`)
     }
