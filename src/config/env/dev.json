@@ -1,0 +1,5 @@
+{
+  "NFT_SERVER_URL": "https://nft-api.decentraland.zone",
+  "PEER_URL": "https://peer.decentraland.zone",
+  "NETWORK": "mumbai"
+}

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useOverrides } from './useOverrides'
 
-import { BodyShape, PreviewCamera, PreviewEmote, PreviewEnv, PreviewOptions, PreviewProjection } from '@dcl/schemas'
+import { BodyShape, PreviewCamera, PreviewEmote, PreviewOptions, PreviewProjection } from '@dcl/schemas'
 import { parseZoom } from '../lib/zoom'
 
 export const useOptions = () => {
@@ -72,9 +72,9 @@ export const useOptions = () => {
       disableFace: params.has('disableFace'),
       disableDefaultWearables: params.has('disableDefaultWearables'),
       disableDefaultEmotes: params.has('disableDefaultEmotes'),
-      env: Object.values(PreviewEnv)
-        .filter((value): value is PreviewEnv => typeof value === 'string')
-        .reduce((selected, value) => (value === params.get('env') ? value : selected), PreviewEnv.PROD),
+      disableFadeEffect: params.has('disableFadeEffect'),
+      peerUrl: params.get('peerUrl'),
+      nftServerUrl: params.get('nftServerUrl'),
     }
     return options
   }, [search])
