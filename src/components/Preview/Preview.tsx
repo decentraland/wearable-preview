@@ -112,6 +112,7 @@ const Preview: React.FC = () => {
         'is-loaded': isLoaded,
         'is-3d': is3D && config?.camera === PreviewCamera.INTERACTIVE,
         'has-error': !!error,
+        'no-fade-effect': config && !config.fadeEffect,
       })}
       style={style}
     >

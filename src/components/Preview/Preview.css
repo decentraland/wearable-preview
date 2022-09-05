@@ -33,7 +33,7 @@
   cursor: grabbing;
 }
 
-.Preview.is-3d.has-error  {
+.Preview.is-3d.has-error {
   opacity: 1;
   cursor: default;
 }
@@ -67,4 +67,10 @@
 
 #babylonjsLoadingDiv {
   display: none !important;
+}
+
+.Preview.no-fade-effect,
+.Preview.no-fade-effect canvas,
+.Preview.no-fade-effect .thumbnail {
+  transition: none;
 }

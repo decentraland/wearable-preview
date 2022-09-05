@@ -6,7 +6,6 @@ import {
   PreviewCamera,
   PreviewConfig,
   PreviewEmote,
-  PreviewEnv,
   PreviewOptions,
   PreviewProjection,
   PreviewType,
@@ -15,6 +14,7 @@ import {
   WearableDefinition,
   WearableWithBlobs,
 } from '@dcl/schemas'
+import { config } from '../config'
 import { nftApi } from './api/nft'
 import { peerApi } from './api/peer'
 import { createMemo } from './cache'
@@ -34,8 +34,8 @@ import { getZoom } from './zoom'
 
 const DEFAULT_PROFILE = 'default'
 
-async function fetchWearable(urn: string, env: PreviewEnv) {
-  const results = await fetchURNs([urn], env)
+async function fetchWearable(urn: string, peerUrl: string) {
+  const results = await fetchURNs([urn], peerUrl)
   if (results.length !== 1) {
     throw new Error(`Could not find wearable for urn="${urn}"`)
   }
@@ -50,19 +50,19 @@ function isValidNumber(value: number | null | undefined): value is number {
   return typeof value === 'number' && !isNaN(value)
 }
 
-async function fetchProfileWearables(profile: Avatar | null, env: PreviewEnv) {
+async function fetchProfileWearables(profile: Avatar | null, peerUrl: string) {
   if (!profile) {
     return []
   }
-  const results = await fetchURNs(profile.avatar.wearables, env)
+  const results = await fetchURNs(profile.avatar.wearables, peerUrl)
   return results.filter((result) => !isEmote(result))
 }
 
-async function fetchURNs(urns: string[], env: PreviewEnv) {
+async function fetchURNs(urns: string[], peerUrl: string) {
   if (urns.length === 0) {
     return []
   }
-  return peerApi.fetchWearables(urns, env)
+  return peerApi.fetchWearables(urns, peerUrl)
 }
 
 async function fetchURLs(urls: string[]) {
@@ -79,13 +79,13 @@ async function fetchURLs(urls: string[]) {
 }
 
 export const profileMemo = createMemo<Avatar | null>()
-async function fetchProfile(profile: string, env: PreviewEnv) {
+async function fetchProfile(profile: string, peerUrl: string) {
   return profileMemo.memo(profile, async () => {
     if (profile === DEFAULT_PROFILE) {
       return null
     }
     const resp = await peerApi
-      .fetchProfile(profile, env)
+      .fetchProfile(profile, peerUrl)
       .then((profile) => (profile && profile.avatars.length > 0 ? profile.avatars[0] : null))
       .catch((error: Error) => console.log(`Failed to load profile="${profile}"`, error))
     return resp || null
@@ -96,25 +96,26 @@ async function fetchWearableFromContract(options: {
   contractAddress: string
   itemId?: string | null
   tokenId?: string | null
-  env: PreviewEnv
+  peerUrl: string
+  nftServerUrl: string
 }) {
-  const { contractAddress, itemId, tokenId, env } = options
+  const { contractAddress, itemId, tokenId, peerUrl, nftServerUrl } = options
   if (!itemId && !tokenId) {
     throw new Error(`You need to provide an itemId or a tokenId`)
   }
 
-  const network = env === PreviewEnv.PROD ? 'matic' : 'mumbai'
+  const network = config.get('NETWORK')
   let urn = `urn:decentraland:${network}:collections-v2:${contractAddress}:${itemId}`
   if (!itemId && !tokenId) {
     throw new Error(`You must provide either tokenId or itemId`)
   } else if (!itemId && tokenId) {
-    const nft = await nftApi.fetchNFT(contractAddress, tokenId, env)
+    const nft = await nftApi.fetchNFT(contractAddress, tokenId, nftServerUrl)
     urn =
       nft.network !== Network.ETHEREUM
         ? `urn:decentraland:${network}:collections-v2:${contractAddress}:${nft.itemId}`
         : nft.image.split('contents/')[1].split('/thumbnail')[0] // since the Ethereum collections have a different URN, we extract it from the image path
   }
-  return fetchWearable(urn, env)
+  return fetchWearable(urn, peerUrl)
 }
 
 async function fetchAvatar(
@@ -125,12 +126,12 @@ async function fetchAvatar(
   bodyShape: BodyShape,
   includeDefaultWearables: boolean,
   includeFacialFeatures: boolean,
-  env: PreviewEnv
+  peerUrl: string
 ) {
   // gather wearables from profile, urns, urls and base64s
   let wearables = [
-    ...(await fetchProfileWearables(profile, env)),
-    ...(await fetchURNs([bodyShape, ...urns], env)),
+    ...(await fetchProfileWearables(profile, peerUrl)),
+    ...(await fetchURNs([bodyShape, ...urns], peerUrl)),
     ...(await fetchURLs(urls)),
     ...base64s.map(parseWearable),
   ]
@@ -158,7 +159,7 @@ async function fetchAvatar(
     }
   }
   if (defaultWearableUrns.length > 0) {
-    const defaultWearables = await fetchURNs(defaultWearableUrns, env)
+    const defaultWearables = await fetchURNs(defaultWearableUrns, peerUrl)
     wearables = [...wearables, ...defaultWearables]
   }
 
@@ -167,16 +168,18 @@ async function fetchAvatar(
 
 export async function createConfig(options: PreviewOptions = {}): Promise<PreviewConfig> {
   const { contractAddress, tokenId, itemId } = options
-  const env = options.env || PreviewEnv.PROD
+
+  const peerUrl = options.peerUrl || config.get('PEER_URL')
+  const nftServerUrl = options.nftServerUrl || config.get('NFT_SERVER_URL')
 
   // load wearable to preview
   let wearablePromise: Promise<WearableDefinition | void> = Promise.resolve()
   if (contractAddress) {
-    wearablePromise = fetchWearableFromContract({ contractAddress, tokenId, itemId, env })
+    wearablePromise = fetchWearableFromContract({ contractAddress, tokenId, itemId, peerUrl, nftServerUrl })
   }
 
   // load profile
-  const profilePromise = options.profile ? fetchProfile(options.profile, env) : Promise.resolve(null)
+  const profilePromise = options.profile ? fetchProfile(options.profile, peerUrl) : Promise.resolve(null)
 
   // await promises
   const [wearable, profile] = await Promise.all([wearablePromise, profilePromise] as const)
@@ -220,7 +223,7 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
       bodyShape,
       !options.disableDefaultWearables,
       !options.disableFace,
-      env
+      peerUrl
     )
   }
 
@@ -333,6 +336,7 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
     wheelZoom,
     wheelPrecision,
     wheelStart,
+    fadeEffect: !options.disableFadeEffect,
   }
 }
 
