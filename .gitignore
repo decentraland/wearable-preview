@@ -25,3 +25,5 @@ yarn-error.log*
 .vercel
 .env
 .vscode
+
+static-local

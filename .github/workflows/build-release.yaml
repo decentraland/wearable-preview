@@ -25,9 +25,7 @@ jobs:
       - name: Install
         run: npm ci --legacy-peer-deps
       - name: Build static-local
-        run: npm run build && mv ./build ./static-local
-        env:
-          GEN_STATIC_LOCAL: true
+        run: npm run build:static-local
       - name: Build for CDN
         run: npm run build
       - name: Move static-local into main build

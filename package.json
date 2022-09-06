@@ -34,9 +34,10 @@
     "start": "react-scripts start",
     "start:debug": "REACT_APP_DEBUG=1 react-scripts start",
     "build": "CI=false && react-scripts build",
+    "build:static-local": "GEN_STATIC_LOCAL=true npm run build && mv ./build ./static-local",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "postinstall": "node ./scripts/prebuild.js"
+    "prebuild": "node ./scripts/prebuild.js"
   },
   "eslintConfig": {
     "extends": [
