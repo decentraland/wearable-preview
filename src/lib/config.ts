@@ -30,7 +30,7 @@ import {
   getFacialFeatureCategories,
   getNonFacialFeatureCategories,
 } from './wearable'
-import { getZoom } from './zoom'
+import { computeZoom, getZoom } from './zoom'
 
 const DEFAULT_PROFILE = 'default'
 
@@ -332,7 +332,7 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
     cameraX,
     cameraY,
     cameraZ,
-    zoom: typeof options.zoom === 'number' ? options.zoom : zoom,
+    zoom: typeof options.zoom === 'number' ? computeZoom(options.zoom) : zoom,
     wheelZoom,
     wheelPrecision,
     wheelStart,
