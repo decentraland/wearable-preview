@@ -1,10 +1,19 @@
 import { WearableCategory, WearableDefinition } from '@dcl/schemas'
 
+const MIN_ZOOM = 1
+const MAX_ZOOM = 2.8
+const ZOOM_RANGE = MAX_ZOOM - MIN_ZOOM
+
+export function computeZoom(value: number) {
+  const clampedValue = Math.min(Math.max(value, 0), 100)
+  const percentage = clampedValue / 100
+  const zoom = percentage * ZOOM_RANGE + MIN_ZOOM
+  return zoom
+}
+
 export function parseZoom(rawZoom: string | null) {
   const parsedZoom = rawZoom ? parseFloat(rawZoom) : null
-  const zoom =
-    parsedZoom === null || isNaN(parsedZoom) ? null : (Math.min(Math.max(parsedZoom, 0), 100) * 1.8) / 100 + 1
-  return zoom
+  return parsedZoom === null || isNaN(parsedZoom) ? null : parsedZoom
 }
 
 /**
