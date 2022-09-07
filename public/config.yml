@@ -1,0 +1,3 @@
+matches:
+  - match: "static-local/**/*"
+    ignore: true
