@@ -85,9 +85,6 @@ export async function playEmote(scene: Scene, assets: Asset[], config: PreviewCo
       const camera = scene.cameras[0] as ArcRotateCamera
       startAutoRotateBehavior(camera, config)
     }
-    if (loop) {
-      emoteAnimationGroup.play(true) // keep playing animation in loop
-    }
   }
 
   // play emote animation
@@ -175,8 +172,8 @@ function createController(animationGroup: AnimationGroup, loop: boolean): IEmote
 
   async function stop() {
     if (hasPlayed) {
-      goTo(0)
-      window.requestAnimationFrame(pause)
+      animationGroup.goToFrame(0)
+      animationGroup.stop()
     } else {
       play()
       window.requestAnimationFrame(stop)
