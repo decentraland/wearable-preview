@@ -127,7 +127,6 @@ export async function playEmote(scene: Scene, assets: Asset[], config: PreviewCo
 
 function createController(animationGroup: AnimationGroup, loop: boolean): IEmoteController {
   let startFrom = 0
-  let hasPlayed = false
 
   async function getLength() {
     // if there's no animation, it should return 0
@@ -160,7 +159,6 @@ function createController(animationGroup: AnimationGroup, loop: boolean): IEmote
       } else {
         animationGroup.play(loop)
       }
-      hasPlayed = true
     }
   }
 
@@ -171,12 +169,9 @@ function createController(animationGroup: AnimationGroup, loop: boolean): IEmote
   }
 
   async function stop() {
-    if (hasPlayed) {
+    if (await isPlaying()) {
       animationGroup.goToFrame(0)
       animationGroup.stop()
-    } else {
-      play()
-      window.requestAnimationFrame(stop)
     }
   }
 
