@@ -169,10 +169,8 @@ function createController(animationGroup: AnimationGroup, loop: boolean): IEmote
   }
 
   async function stop() {
-    if (await isPlaying()) {
-      animationGroup.goToFrame(0)
-      animationGroup.stop()
-    }
+    animationGroup.goToFrame(0)
+    animationGroup.stop()
   }
 
   const events = new EventEmitter()
