@@ -85,9 +85,6 @@ export async function playEmote(scene: Scene, assets: Asset[], config: PreviewCo
       const camera = scene.cameras[0] as ArcRotateCamera
       startAutoRotateBehavior(camera, config)
     }
-    if (loop) {
-      emoteAnimationGroup.play(true) // keep playing animation in loop
-    }
   }
 
   // play emote animation
@@ -130,7 +127,6 @@ export async function playEmote(scene: Scene, assets: Asset[], config: PreviewCo
 
 function createController(animationGroup: AnimationGroup, loop: boolean): IEmoteController {
   let startFrom = 0
-  let hasPlayed = false
 
   async function getLength() {
     // if there's no animation, it should return 0
@@ -163,7 +159,6 @@ function createController(animationGroup: AnimationGroup, loop: boolean): IEmote
       } else {
         animationGroup.play(loop)
       }
-      hasPlayed = true
     }
   }
 
@@ -174,13 +169,8 @@ function createController(animationGroup: AnimationGroup, loop: boolean): IEmote
   }
 
   async function stop() {
-    if (hasPlayed) {
-      goTo(0)
-      window.requestAnimationFrame(pause)
-    } else {
-      play()
-      window.requestAnimationFrame(stop)
-    }
+    animationGroup.goToFrame(0)
+    animationGroup.stop()
   }
 
   const events = new EventEmitter()
