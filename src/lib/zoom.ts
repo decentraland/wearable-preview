@@ -22,8 +22,8 @@ export function parseZoom(rawZoom: string | null) {
  * @param category
  * @returns
  */
-export function getZoom(wearable?: WearableDefinition | EmoteDefinition | void) {
-  const category = !wearable || isEmote(wearable) ? null : wearable?.data.category
+export function getZoom(item?: WearableDefinition | EmoteDefinition | void) {
+  const category = item && isEmote(item) ? null : item?.data.category
   switch (category) {
     case WearableCategory.UPPER_BODY:
       return 2

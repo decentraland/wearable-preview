@@ -9,7 +9,7 @@
 
 import { Color3, PBRMaterial, Scene } from '@babylonjs/core'
 import { WearableDefinition, BodyShape, RepresentationDefinition } from '@dcl/schemas'
-import { getRepresentation, isTexture, getContentUrl } from '../representation'
+import { getWearableRepresentation, isTexture, getContentUrl } from '../representation'
 import { loadAssetContainer } from './scene'
 import './toon'
 
@@ -20,7 +20,7 @@ export async function loadWearable(
   skin?: string,
   hair?: string
 ) {
-  const representation = getRepresentation(wearable, bodyShape) as RepresentationDefinition
+  const representation = getWearableRepresentation(wearable, bodyShape) as RepresentationDefinition
   if (isTexture(representation)) {
     throw new Error(`The wearable="${wearable.id}" is a texture`)
   }

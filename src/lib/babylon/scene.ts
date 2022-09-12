@@ -29,7 +29,7 @@ import {
 } from '@dcl/schemas'
 import { hexToColor } from '../color'
 import { isIOs } from '../env'
-import { getRepresentation } from '../representation'
+import { getWearableRepresentation } from '../representation'
 import { createSceneController } from '../scene'
 import { startAutoRotateBehavior } from './camera'
 
@@ -179,7 +179,7 @@ export async function loadMask(
   bodyShape: BodyShape
 ): Promise<Texture | null> {
   const name = wearable.id
-  const representation = getRepresentation(wearable, bodyShape)
+  const representation = getWearableRepresentation(wearable, bodyShape)
   const file = representation.contents.find((file) => file.key.toLowerCase().endsWith('_mask.png'))
   if (file) {
     return new Promise((resolve, reject) => {
@@ -200,7 +200,7 @@ export async function loadTexture(
   bodyShape: BodyShape
 ): Promise<Texture | null> {
   const name = wearable.id
-  const representation = getRepresentation(wearable, bodyShape)
+  const representation = getWearableRepresentation(wearable, bodyShape)
   const file = representation.contents.find(
     (file) => file.key.toLowerCase().endsWith('.png') && !file.key.toLowerCase().endsWith('_mask.png')
   )

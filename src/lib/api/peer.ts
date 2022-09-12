@@ -10,7 +10,9 @@ import {
   EmoteRepresentationDefinition,
   RepresentationDefinition,
 } from '@dcl/schemas'
+import { isEmote } from '../emote'
 import { json } from '../json'
+import { isWearable } from '../wearable'
 
 function mapEntityRepresentationToDefinition<T extends RepresentationDefinition | EmoteRepresentationDefinition>(
   entity: Entity,
@@ -60,19 +62,30 @@ function entitytoDefinition<T extends WearableDefinition | EmoteDefinition>(enti
 }
 
 class PeerApi {
-  async fetchItems(urns: string[], peerUrl: string): Promise<(WearableDefinition | EmoteDefinition)[]> {
-    if (urns.length === 0) {
+  async fetchEntities(pointers: string[], peerUrl: string) {
+    if (pointers.length === 0) {
       return []
     }
     const entities = await json<Entity[]>((fetch) =>
       fetch(`${peerUrl}/content/entities/active`, {
         method: 'post',
-        body: JSON.stringify({ pointers: urns }),
+        body: JSON.stringify({ pointers }),
         headers: { 'Content-Type': 'application/json' },
       })
     )
+    return entities
+  }
+
+  async fetchItems(urns: string[], peerUrl: string): Promise<[WearableDefinition[], EmoteDefinition[]]> {
+    if (urns.length === 0) {
+      return [[], []]
+    }
+    const pointers = urns.map((urn) => urn.toLowerCase()) // this hack is necessary for body shape urns to work, since they have upper case letter and the catalyst can't find them
+    const entities = await this.fetchEntities(pointers, peerUrl)
     const definitions = entities.map((entity) => entitytoDefinition(entity, peerUrl))
-    return definitions
+    const wearables = definitions.filter(isWearable)
+    const emotes = definitions.filter(isEmote)
+    return [wearables, emotes]
   }
 
   async fetchProfile(profile: string, peerUrl: string) {

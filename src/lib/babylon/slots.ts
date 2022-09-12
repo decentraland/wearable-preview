@@ -1,6 +1,5 @@
 import { PreviewConfig, WearableCategory, WearableDefinition } from '@dcl/schemas'
-import { hasRepresentation } from '../representation'
-import { isEmote } from '../emote'
+import { hasWearableRepresentation } from '../representation'
 import { isWearable } from '../wearable'
 
 const categoriesHiddenBySkin = [
@@ -18,41 +17,41 @@ const categoriesHiddenBySkin = [
 export function getSlots(config: PreviewConfig) {
   const slots = new Map<WearableCategory, WearableDefinition>()
 
-  let wearables = config.wearables.filter((wearable) => !isEmote(wearable)) as WearableDefinition[] // remove emotes if any
+  let wearables: WearableDefinition[] = [...config.wearables]
 
   // remove other wearables that hide the equipped wearable
-  if (config.wearable && !isEmote(config.wearable)) {
-    wearables = (config.wearables as WearableDefinition[]).filter((wearable) => {
-      if (config.wearable && isWearable(config.wearable)) {
-        const { category, hides, replaces } = config.wearable.data
-        if (wearable.data.category === 'skin') {
-          if (categoriesHiddenBySkin.includes(category)) {
-            return false
-          }
-          if (hides && hides.includes(WearableCategory.HEAD)) {
-            return false
-          }
-          if (replaces && replaces.includes(WearableCategory.HEAD)) {
-            return false
-          }
+  if (config.item && isWearable(config.item)) {
+    wearables = []
+    for (const wearable of config.wearables) {
+      const { category, hides, replaces } = config.item.data
+      if (wearable.data.category === 'skin') {
+        if (categoriesHiddenBySkin.includes(category)) {
+          continue
         }
-        if (wearable.data.hides && wearable.data.hides.includes(category)) {
-          return false
+        if (hides && hides.includes(WearableCategory.HEAD)) {
+          continue
         }
-        if (wearable.data.replaces && wearable.data.replaces.includes(category)) {
-          return false
+        if (replaces && replaces.includes(WearableCategory.HEAD)) {
+          continue
         }
       }
-      return true
-    })
+      if (wearable.data.hides && wearable.data.hides.includes(category)) {
+        continue
+      }
+      if (wearable.data.replaces && wearable.data.replaces.includes(category)) {
+        continue
+      }
+      // add wearable if not hidden or replaced
+      wearables.push(wearable)
+    }
     // add the equipped wearable at the end
-    wearables.push(config.wearable)
+    wearables.push(config.item)
   }
 
   // arrange wearbles in slots
   for (const wearable of wearables) {
     const slot = wearable.data.category
-    if (hasRepresentation(wearable, config.bodyShape)) {
+    if (hasWearableRepresentation(wearable, config.bodyShape)) {
       slots.set(slot, wearable)
     }
   }
