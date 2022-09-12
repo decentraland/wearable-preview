@@ -5,6 +5,7 @@ import {
   EmoteDefinition,
   EmoteRepresentationDefinition,
 } from '@dcl/schemas'
+import { isEmote } from './emote'
 
 export function is(representation: RepresentationDefinition | EmoteRepresentationDefinition, bodyShape: BodyShape) {
   return representation.bodyShapes.includes(bodyShape)
@@ -52,19 +53,23 @@ export function getRepresentation(wearable: WearableDefinition | EmoteDefinition
   }
 }
 
-export function getRepresentationOrDefault(wearable: WearableDefinition, shape = BodyShape.MALE) {
-  if (hasRepresentation(wearable, shape)) {
-    return getRepresentation(wearable, shape)
+export function getRepresentationOrDefault(definition: WearableDefinition | EmoteDefinition, shape = BodyShape.MALE) {
+  if (hasRepresentation(definition, shape)) {
+    return getRepresentation(definition, shape)
   }
-  if (wearable.data.representations.length > 0) {
-    return wearable.data.representations[0]
+  if (isEmote(definition)) {
+    if (definition.emoteDataADR74.representations.length > 0) {
+      return definition.emoteDataADR74.representations[0]
+    }
+  } else if (definition.data.representations.length > 0) {
+    return definition.data.representations[0]
   }
-  throw new Error(`The wearable="${wearable.id}" has no representation`)
+  throw new Error(`The wearable="${definition.id}" has no representation`)
 }
 
-export function hasRepresentation(wearable: WearableDefinition, shape = BodyShape.MALE) {
+export function hasRepresentation(definition: WearableDefinition | EmoteDefinition, shape = BodyShape.MALE) {
   try {
-    getRepresentation(wearable, shape)
+    getRepresentation(definition, shape)
     return true
   } catch (error) {
     return false

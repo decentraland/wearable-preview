@@ -1,8 +1,11 @@
 import { sleep } from './sleep'
 
-export async function json<T>(url: string, attempts = 3): Promise<T> {
+export async function json<T>(
+  url: string | ((_fetch: typeof fetch) => ReturnType<typeof fetch>),
+  attempts = 3
+): Promise<T> {
   try {
-    const resp = await fetch(url)
+    const resp = typeof url === 'string' ? await fetch(url) : await url(fetch)
     if (!resp.ok) {
       throw new Error(await resp.text())
     }

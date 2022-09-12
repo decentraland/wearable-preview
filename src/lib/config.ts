@@ -1,6 +1,7 @@
 import {
   Avatar,
   BodyShape,
+  EmoteDefinition,
   isStandard,
   Network,
   PreviewCamera,
@@ -55,14 +56,15 @@ async function fetchProfileWearables(profile: Avatar | null, peerUrl: string) {
     return []
   }
   const results = await fetchURNs(profile.avatar.wearables, peerUrl)
-  return results.filter((result) => !isEmote(result))
+  return results.filter((result) => !isEmote(result)) as WearableDefinition[]
 }
 
 async function fetchURNs(urns: string[], peerUrl: string) {
   if (urns.length === 0) {
     return []
   }
-  return peerApi.fetchWearables(urns, peerUrl)
+  const results = await peerApi.fetchItems(urns, peerUrl)
+  return results
 }
 
 async function fetchURLs(urls: string[]) {
@@ -163,7 +165,7 @@ async function fetchAvatar(
     wearables = [...wearables, ...defaultWearables]
   }
 
-  return wearables
+  return wearables as WearableDefinition[]
 }
 
 export async function createConfig(options: PreviewOptions = {}): Promise<PreviewConfig> {
@@ -173,7 +175,7 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
   const nftServerUrl = options.nftServerUrl || config.get('NFT_SERVER_URL')
 
   // load wearable to preview
-  let wearablePromise: Promise<WearableDefinition | void> = Promise.resolve()
+  let wearablePromise: Promise<WearableDefinition | EmoteDefinition | void> = Promise.resolve()
   if (contractAddress) {
     wearablePromise = fetchWearableFromContract({ contractAddress, tokenId, itemId, peerUrl, nftServerUrl })
   }
