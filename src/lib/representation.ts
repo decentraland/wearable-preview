@@ -6,6 +6,7 @@ import {
   EmoteRepresentationDefinition,
 } from '@dcl/schemas'
 import { isEmote } from './emote'
+import { isWearable } from './wearable'
 
 export function is(representation: RepresentationDefinition | EmoteRepresentationDefinition, bodyShape: BodyShape) {
   return representation.bodyShapes.includes(bodyShape)
@@ -19,34 +20,30 @@ export function isFemale(representation: RepresentationDefinition | EmoteReprese
   return is(representation, BodyShape.FEMALE)
 }
 
-export const isWearableDefinition = (
-  definition: WearableDefinition | EmoteDefinition
-): definition is WearableDefinition => !!(definition as WearableDefinition).data
-
 export function getRepresentation(wearable: WearableDefinition | EmoteDefinition, shape = BodyShape.MALE) {
-  const isWearableDef = isWearableDefinition(wearable)
+  const isWearableDefinition = isWearable(wearable)
   switch (shape) {
     case BodyShape.FEMALE: {
       if (
-        isWearableDef
+        isWearableDefinition
           ? !wearable.data.representations.some(isFemale)
           : !wearable.emoteDataADR74.representations.some(isFemale)
       ) {
         throw new Error(`Could not find a BaseFemale representation for wearable="${wearable.id}"`)
       }
-      return isWearableDef
+      return isWearableDefinition
         ? wearable.data.representations.find(isFemale)!
         : wearable.emoteDataADR74.representations.find(isFemale)!
     }
     case BodyShape.MALE: {
       if (
-        isWearableDef
+        isWearableDefinition
           ? !wearable.data.representations.some(isMale)
           : !wearable.emoteDataADR74.representations.some(isMale)
       ) {
         throw new Error(`Could not find a BaseMale representation for wearable="${wearable.id}"`)
       }
-      return isWearableDef
+      return isWearableDefinition
         ? wearable.data.representations.find(isMale)!
         : wearable.emoteDataADR74.representations.find(isMale)!
     }

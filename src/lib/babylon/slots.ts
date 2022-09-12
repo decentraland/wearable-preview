@@ -1,6 +1,7 @@
 import { PreviewConfig, WearableCategory, WearableDefinition } from '@dcl/schemas'
-import { hasRepresentation, isWearableDefinition } from '../representation'
+import { hasRepresentation } from '../representation'
 import { isEmote } from '../emote'
+import { isWearable } from '../wearable'
 
 const categoriesHiddenBySkin = [
   WearableCategory.HELMET,
@@ -22,7 +23,7 @@ export function getSlots(config: PreviewConfig) {
   // remove other wearables that hide the equipped wearable
   if (config.wearable && !isEmote(config.wearable)) {
     wearables = (config.wearables as WearableDefinition[]).filter((wearable) => {
-      if (config.wearable && isWearableDefinition(config.wearable)) {
+      if (config.wearable && isWearable(config.wearable)) {
         const { category, hides, replaces } = config.wearable.data
         if (wearable.data.category === 'skin') {
           if (categoriesHiddenBySkin.includes(category)) {
