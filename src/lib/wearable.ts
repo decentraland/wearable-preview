@@ -1,4 +1,5 @@
 import { BodyShape, EmoteDefinition, WearableCategory, WearableDefinition } from '@dcl/schemas'
+import { isEmote } from './emote'
 
 export function getWearableByCategory(wearables: WearableDefinition[], category: WearableCategory) {
   return wearables.find((wearable) => wearable.data.category === category) || null
@@ -60,7 +61,7 @@ export function getDefaultWearableUrn(category: WearableCategory, shape: BodySha
 }
 
 export function isWearable(value: WearableDefinition | EmoteDefinition | void): value is WearableDefinition {
-  return !!value && 'data' in value
+  return !!value && 'data' in value && !isEmote(value)
 }
 
 export function getBodyShape(definition: WearableDefinition): BodyShape {
