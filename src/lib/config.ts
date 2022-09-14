@@ -48,8 +48,11 @@ async function fetchItem(urn: string, peerUrl: string) {
   throw new Error(`Could not find wearable or emote for urn="${urn}"`)
 }
 
-function parseWearable(base64: string): WearableDefinition {
-  return JSON.parse(atob(base64))
+function parseBase64s(base64s: string[]): [WearableDefinition[], EmoteDefinition[]] {
+  const parsed = base64s.map((base64) => JSON.parse(atob(base64)))
+  const wearables = parsed.filter(isWearable)
+  const emotes = parsed.filter(isEmote)
+  return [wearables, emotes]
 }
 
 function isValidNumber(value: number | null | undefined): value is number {
@@ -71,14 +74,9 @@ async function fetchURNs(urns: string[], peerUrl: string): Promise<[WearableDefi
   return peerApi.fetchItems(urns, peerUrl)
 }
 
-async function fetchWearableURNs(urns: string[], peerUrl: string) {
-  const [wearables] = await fetchURNs(urns, peerUrl)
-  return wearables
-}
-
-async function fetchURLs(urls: string[]) {
+async function fetchURLs(urls: string[]): Promise<[WearableDefinition[], EmoteDefinition[]]> {
   if (urls.length === 0) {
-    return []
+    return [[], []]
   }
   const promises = urls.map((url) =>
     fetch(url)
@@ -86,7 +84,10 @@ async function fetchURLs(urls: string[]) {
       .catch()
   )
   const results = await Promise.all(promises)
-  return results.filter(isWearable)
+
+  const wearables = results.filter(isWearable)
+  const emotes = results.filter(isEmote)
+  return [wearables, emotes]
 }
 
 export const profileMemo = createMemo<Avatar | null>()
@@ -129,7 +130,7 @@ async function fetchItemFromContract(options: {
   return fetchItem(urn, peerUrl)
 }
 
-async function fetchAvatar(
+async function fetchWearablesAndEmotes(
   profile: Avatar | null,
   urns: string[],
   urls: string[],
@@ -138,14 +139,20 @@ async function fetchAvatar(
   includeDefaultWearables: boolean,
   includeFacialFeatures: boolean,
   peerUrl: string
-) {
+): Promise<[WearableDefinition[], EmoteDefinition[]]> {
   // gather wearables from profile, urns, urls and base64s
-  let wearables = [
-    ...(await fetchProfileWearables(profile, peerUrl)),
-    ...(await fetchWearableURNs([bodyShape, ...urns], peerUrl)),
-    ...(await fetchURLs(urls)),
-    ...base64s.map(parseWearable),
-  ]
+  const [wearablesFromProfile, [wearablesFromURNs, emotesFromURNs], [wearablesFromURLs, emotesFromURLs]] =
+    await Promise.all([
+      fetchProfileWearables(profile, peerUrl),
+      fetchURNs([bodyShape, ...urns], peerUrl),
+      fetchURLs(urls),
+    ])
+  const [wearablesFromBase64, emotesFromBase64] = parseBase64s(base64s)
+
+  // merge wearables and emotes from all sources
+  let wearables = [...wearablesFromProfile, ...wearablesFromURNs, ...wearablesFromURLs, ...wearablesFromBase64]
+  const emotes = [...emotesFromURNs, ...emotesFromURLs, ...emotesFromBase64]
+
   // filter out wearables that don't have a representation for the body shape
   wearables = wearables.filter((wearable) => hasWearableRepresentation(wearable, bodyShape))
   // fill default categories
@@ -170,11 +177,11 @@ async function fetchAvatar(
     }
   }
   if (defaultWearableUrns.length > 0) {
-    const defaultWearables = await fetchWearableURNs(defaultWearableUrns, peerUrl)
+    const [defaultWearables] = await fetchURNs(defaultWearableUrns, peerUrl)
     wearables = [...wearables, ...defaultWearables]
   }
 
-  return wearables as WearableDefinition[]
+  return [wearables, emotes]
 }
 
 export async function createConfig(options: PreviewOptions = {}): Promise<PreviewConfig> {
@@ -216,6 +223,7 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
   const base64s = options.base64s || []
 
   let wearables: WearableDefinition[] = []
+  let emotes: EmoteDefinition[] = []
   let zoom = 1.75
   let type = PreviewType.WEARABLE
   let background: PreviewConfig['background'] = {
@@ -226,7 +234,7 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
   // if loading multiple wearables (either from URNs or URLs), or if wearable is emote, render full avatar
   if (urns.length > 0 || urls.length > 0 || base64s.length > 0 || (item && isEmote(item)) || options.profile) {
     type = PreviewType.AVATAR
-    wearables = await fetchAvatar(
+    const [allWearables, allEmotes] = await fetchWearablesAndEmotes(
       profile,
       urns,
       urls,
@@ -236,6 +244,8 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
       !options.disableFace,
       peerUrl
     )
+    wearables = allWearables
+    emotes = allEmotes
   }
 
   if (item) {
@@ -325,7 +335,8 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
   }
 
   return {
-    item: item ?? (options.blob ? fromBlob(options.blob) : undefined),
+    // item is the most important prop, if not preset we use the blob prop, and if none, we use the last emote from the list (if any)
+    item: item ?? (options.blob ? fromBlob(options.blob) : emotes.pop()),
     wearables,
     bodyShape,
     skin,
