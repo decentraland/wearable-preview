@@ -1,4 +1,5 @@
-import { WearableCategory, WearableDefinition } from '@dcl/schemas'
+import { EmoteDefinition, WearableCategory, WearableDefinition } from '@dcl/schemas'
+import { isEmote } from './emote'
 
 const MIN_ZOOM = 1
 const MAX_ZOOM = 2.8
@@ -21,8 +22,8 @@ export function parseZoom(rawZoom: string | null) {
  * @param category
  * @returns
  */
-export function getZoom(wearable?: WearableDefinition | void) {
-  const category = wearable?.data.category
+export function getZoom(item?: WearableDefinition | EmoteDefinition | void) {
+  const category = item && isEmote(item) ? null : item?.data.category
   switch (category) {
     case WearableCategory.UPPER_BODY:
       return 2

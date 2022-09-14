@@ -1,9 +1,9 @@
 import { EventEmitter } from 'events'
 import { IEmoteController, WearableDefinition, EmoteDefinition } from '@dcl/schemas'
 
-export function isEmote(wearable: WearableDefinition | EmoteDefinition): wearable is EmoteDefinition {
-  // leaving both until the existing emotes are migrated
-  return 'emoteDataADR74' in wearable || 'emoteDataV0' in wearable
+export function isEmote(definition: WearableDefinition | EmoteDefinition | void): definition is EmoteDefinition {
+  // TODO: Remove the emoteDataV0 part after migration
+  return !!definition && ('emoteDataADR74' in definition || 'emoteDataV0' in definition)
 }
 
 export class InvalidEmoteError extends Error {

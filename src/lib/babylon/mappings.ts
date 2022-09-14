@@ -1,13 +1,15 @@
 import { SceneLoader } from '@babylonjs/core'
 import { GLTFFileLoader } from '@babylonjs/loaders'
 import { PreviewConfig, BodyShape, WearableDefinition, EmoteDefinition } from '@dcl/schemas'
-import { getRepresentation } from '../representation'
+import { isEmote } from '../emote'
+import { getEmoteRepresentation, getWearableRepresentation } from '../representation'
+import { isWearable } from '../wearable'
 
-export function createMappings(wearables: (WearableDefinition | EmoteDefinition)[], bodyShape = BodyShape.MALE) {
+export function createMappings(wearables: WearableDefinition[], emote?: EmoteDefinition, bodyShape = BodyShape.MALE) {
   const mappings: Record<string, string> = {}
   for (const wearable of wearables) {
     try {
-      const representation = getRepresentation(wearable, bodyShape)
+      const representation = getWearableRepresentation(wearable, bodyShape)
       for (const file of representation.contents) {
         mappings[file.key] = file.url
       }
@@ -18,6 +20,12 @@ export function createMappings(wearables: (WearableDefinition | EmoteDefinition)
       continue
     }
   }
+  if (emote) {
+    const representation = getEmoteRepresentation(emote, bodyShape)
+    for (const file of representation.contents) {
+      mappings[file.key] = file.url
+    }
+  }
   return mappings
 }
 
@@ -26,8 +34,9 @@ export function createMappings(wearables: (WearableDefinition | EmoteDefinition)
  * @param wearables
  */
 export function setupMappings(config: PreviewConfig) {
-  const wearables = config.wearable ? [config.wearable, ...config.wearables] : config.wearables
-  const mappings = createMappings(wearables, config.bodyShape)
+  const wearables = isWearable(config.item) ? [config.item, ...config.wearables] : config.wearables
+  const emote = isEmote(config.item) ? config.item : undefined
+  const mappings = createMappings(wearables, emote, config.bodyShape)
   SceneLoader.OnPluginActivatedObservable.add((plugin) => {
     if (plugin.name === 'gltf') {
       const gltf = plugin as GLTFFileLoader

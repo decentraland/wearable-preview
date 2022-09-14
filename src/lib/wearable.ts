@@ -1,8 +1,8 @@
 import { BodyShape, EmoteDefinition, WearableCategory, WearableDefinition } from '@dcl/schemas'
-import { isWearableDefinition } from './representation'
+import { isEmote } from './emote'
 
-export function getWearableByCategory(wearables: (WearableDefinition | EmoteDefinition)[], category: WearableCategory) {
-  return wearables.find((wearable) => isWearableDefinition(wearable) && wearable.data.category === category) || null
+export function getWearableByCategory(wearables: WearableDefinition[], category: WearableCategory) {
+  return wearables.find((wearable) => wearable.data.category === category) || null
 }
 
 export function getFacialFeatureCategories() {
@@ -60,15 +60,15 @@ export function getDefaultWearableUrn(category: WearableCategory, shape: BodySha
   }
 }
 
-export function isWearable(value: WearableDefinition | void): value is WearableDefinition {
-  return !!value
+export function isWearable(value: WearableDefinition | EmoteDefinition | void): value is WearableDefinition {
+  return !!value && 'data' in value && !isEmote(value)
 }
 
-export function getBodyShape(wearabe: WearableDefinition): BodyShape {
+export function getBodyShape(definition: WearableDefinition): BodyShape {
   const bodyShapes = [BodyShape.MALE, BodyShape.FEMALE]
   return (
     bodyShapes.find((bodyShape) =>
-      wearabe.data.representations.some((representation) => representation.bodyShapes.includes(bodyShape))
+      definition.data.representations.some((representation) => representation.bodyShapes.includes(bodyShape))
     ) || bodyShapes[0]
   )
 }

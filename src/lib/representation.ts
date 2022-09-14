@@ -1,77 +1,70 @@
-import {
-  BodyShape,
-  RepresentationDefinition,
-  WearableDefinition,
-  EmoteDefinition,
-  EmoteRepresentationDefinition,
-} from '@dcl/schemas'
+import { BodyShape, EmoteDefinition, RepresentationDefinition, WearableDefinition } from '@dcl/schemas'
 
-export function is(representation: RepresentationDefinition | EmoteRepresentationDefinition, bodyShape: BodyShape) {
+export function is(representation: RepresentationDefinition, bodyShape: BodyShape) {
   return representation.bodyShapes.includes(bodyShape)
 }
 
-export function isMale(representation: RepresentationDefinition | EmoteRepresentationDefinition) {
+export function isMale(representation: RepresentationDefinition) {
   return is(representation, BodyShape.MALE)
 }
 
-export function isFemale(representation: RepresentationDefinition | EmoteRepresentationDefinition) {
+export function isFemale(representation: RepresentationDefinition) {
   return is(representation, BodyShape.FEMALE)
 }
 
-export const isWearableDefinition = (
-  definition: WearableDefinition | EmoteDefinition
-): definition is WearableDefinition => !!(definition as WearableDefinition).data
+export function getEmoteRepresentation(emote: EmoteDefinition, bodyShape = BodyShape.MALE) {
+  // TODO: Remove the emoteDataV0 part after migration
+  if ((emote as unknown as WearableDefinition).emoteDataV0) {
+    return (emote as unknown as WearableDefinition).data.representations[0]
+  }
+  const representation = emote.emoteDataADR74.representations.find((representation) =>
+    representation.bodyShapes.includes(bodyShape)
+  )
+  if (!representation) {
+    throw new Error(`Could not find a representation of bodyShape=${bodyShape} for emote="${emote.id}"`)
+  }
+  return representation
+}
 
-export function getRepresentation(wearable: WearableDefinition | EmoteDefinition, shape = BodyShape.MALE) {
-  const isWearableDef = isWearableDefinition(wearable)
-  switch (shape) {
+export function getWearableRepresentation(wearable: WearableDefinition, bodyShape = BodyShape.MALE) {
+  switch (bodyShape) {
     case BodyShape.FEMALE: {
-      if (
-        isWearableDef
-          ? !wearable.data.representations.some(isFemale)
-          : !wearable.emoteDataADR74.representations.some(isFemale)
-      ) {
+      const female = wearable.data.representations.find(isFemale)
+      if (!female) {
         throw new Error(`Could not find a BaseFemale representation for wearable="${wearable.id}"`)
       }
-      return isWearableDef
-        ? wearable.data.representations.find(isFemale)!
-        : wearable.emoteDataADR74.representations.find(isFemale)!
+      return female
     }
     case BodyShape.MALE: {
-      if (
-        isWearableDef
-          ? !wearable.data.representations.some(isMale)
-          : !wearable.emoteDataADR74.representations.some(isMale)
-      ) {
+      const male = wearable.data.representations.find(isMale)!
+      if (!male) {
         throw new Error(`Could not find a BaseMale representation for wearable="${wearable.id}"`)
       }
-      return isWearableDef
-        ? wearable.data.representations.find(isMale)!
-        : wearable.emoteDataADR74.representations.find(isMale)!
+      return male
     }
   }
 }
 
-export function getRepresentationOrDefault(wearable: WearableDefinition, shape = BodyShape.MALE) {
-  if (hasRepresentation(wearable, shape)) {
-    return getRepresentation(wearable, shape)
+export function getWearableRepresentationOrDefault(definition: WearableDefinition, shape = BodyShape.MALE) {
+  if (hasWearableRepresentation(definition, shape)) {
+    return getWearableRepresentation(definition, shape)
   }
-  if (wearable.data.representations.length > 0) {
-    return wearable.data.representations[0]
+  if (definition.data.representations.length > 0) {
+    return definition.data.representations[0]
   }
-  throw new Error(`The wearable="${wearable.id}" has no representation`)
+  throw new Error(`The wearable="${definition.id}" has no representation`)
 }
 
-export function hasRepresentation(wearable: WearableDefinition, shape = BodyShape.MALE) {
+export function hasWearableRepresentation(definition: WearableDefinition, shape = BodyShape.MALE) {
   try {
-    getRepresentation(wearable, shape)
+    getWearableRepresentation(definition, shape)
     return true
   } catch (error) {
     return false
   }
 }
 
-export function getContentUrl(representation: RepresentationDefinition | EmoteRepresentationDefinition) {
+export function getContentUrl(representation: RepresentationDefinition) {
   const content = representation.contents.find((content) => content.key === representation.mainFile)
   if (!content) {
     throw new Error(`Could not find main file`)

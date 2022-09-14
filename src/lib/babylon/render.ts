@@ -61,7 +61,7 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
       // play emote
       emoteController = (await playEmote(scene, assets, config)) || createInvalidEmoteController() // default to invalid emote controller if there is an issue with the emote, but let the rest of the preview keep working
     } else {
-      const wearable = config.wearable
+      const wearable = config.item
       if (wearable && !isEmote(wearable)) {
         try {
           // try loading with the required body shape

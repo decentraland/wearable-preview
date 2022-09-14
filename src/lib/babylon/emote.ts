@@ -7,11 +7,12 @@ import {
   PreviewEmote,
   EmoteDefinition,
   PreviewEmoteEventType,
+  WearableDefinition,
 } from '@dcl/schemas'
 import { isEmote } from '../emote'
-import { getRepresentation } from '../representation'
 import { startAutoRotateBehavior } from './camera'
 import { Asset, loadAssetContainer } from './scene'
+import { getEmoteRepresentation } from '../representation'
 
 const loopedEmotes = [PreviewEmote.IDLE, PreviewEmote.MONEY, PreviewEmote.CLAP]
 
@@ -37,12 +38,12 @@ export async function loadEmoteFromUrl(scene: Scene, url: string) {
   return container
 }
 
-export async function loadEmoteFromWearable(scene: Scene, wearable: EmoteDefinition, config: PreviewConfig) {
-  const representation = getRepresentation(wearable, config.bodyShape)
+export async function loadEmoteFromWearable(scene: Scene, emote: EmoteDefinition, config: PreviewConfig) {
+  const representation = getEmoteRepresentation(emote, config.bodyShape)
   const content = representation.contents.find((content) => content.key === representation.mainFile)
   if (!content) {
     throw new Error(
-      `Could not find a valid content in representation for wearable=${wearable.id} and bodyShape=${config.bodyShape}`
+      `Could not find a valid content in representation for emote=${emote.id} and bodyShape=${config.bodyShape}`
     )
   }
   return loadEmoteFromUrl(scene, content.url)
@@ -53,24 +54,18 @@ export async function playEmote(scene: Scene, assets: Asset[], config: PreviewCo
   let container: AssetContainer | undefined
   let loop = !!config.emote && isLooped(config.emote)
 
-  // if target wearable is emote, play that one
-  if (config.wearable && isEmote(config.wearable)) {
+  // if target item is emote, play that one
+  if (config.item && isEmote(config.item)) {
     try {
-      container = await loadEmoteFromWearable(scene, config.wearable as EmoteDefinition, config)
-      //TODO: remove this cast that supports the old emote entity
+      container = await loadEmoteFromWearable(scene, config.item as EmoteDefinition, config)
+      // TODO: Remove the emoteDataV0 part after migration
       loop =
-        (config.wearable as any).emoteDataV0 !== undefined
-          ? !!(config.wearable as any).emoteDataV0.loop
-          : config.wearable.emoteDataADR74.loop
+        (config.item as unknown as WearableDefinition).emoteDataV0 !== undefined
+          ? !!(config.item as unknown as WearableDefinition).emoteDataV0!.loop
+          : config.item.emoteDataADR74.loop
     } catch (error) {
-      console.warn(`Could not load emote=${config.wearable.id}`)
+      console.warn(`Could not load emote=${config.item.id}`)
     }
-  } else if (config.wearables.some(isEmote)) {
-    // if there's some emote in the wearables list, play the last one
-    const emote = config.wearables.reverse().find(isEmote)!
-    container = await loadEmoteFromWearable(scene, emote as EmoteDefinition, config)
-    //TODO: remove this cast that supports the old emote entity
-    loop = (emote as any).emoteDataV0 !== undefined ? !!(emote as any).emoteDataV0.loop : !!emote.emoteDataADR74?.loop
   }
   if (!container && config.emote) {
     const emoteUrl = buildEmoteUrl(config.emote)
