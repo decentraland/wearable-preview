@@ -15,7 +15,7 @@ import { json } from '../json'
 import { isWearable } from '../wearable'
 
 /**
- * This converts representations into representation definitions. The difference is representations have contents: string[] and representation definitions have contents: { key: string, url: string}[]
+ * Converts representations into representation definitions. Representations have contents as string[] and representation definitions have contents as { key: string, url: string}[].
  * @param entity
  * @param representations
  * @param peerUrl
