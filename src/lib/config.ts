@@ -141,9 +141,12 @@ async function fetchWearablesAndEmotes(
   peerUrl: string
 ): Promise<[WearableDefinition[], EmoteDefinition[]]> {
   // gather wearables from profile, urns, urls and base64s
-  const wearablesFromProfile = await fetchProfileWearables(profile, peerUrl)
-  const [wearablesFromURNs, emotesFromURNs] = await fetchURNs([bodyShape, ...urns], peerUrl)
-  const [wearablesFromURLs, emotesFromURLs] = await fetchURLs(urls)
+  const [wearablesFromProfile, [wearablesFromURNs, emotesFromURNs], [wearablesFromURLs, emotesFromURLs]] =
+    await Promise.all([
+      fetchProfileWearables(profile, peerUrl),
+      fetchURNs([bodyShape, ...urns], peerUrl),
+      fetchURLs(urls),
+    ])
   const [wearablesFromBase64, emotesFromBase64] = parseBase64s(base64s)
 
   // merge wearables and emotes from all sources
