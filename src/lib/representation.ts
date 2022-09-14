@@ -29,16 +29,18 @@ export function getEmoteRepresentation(emote: EmoteDefinition, bodyShape = BodyS
 export function getWearableRepresentation(wearable: WearableDefinition, bodyShape = BodyShape.MALE) {
   switch (bodyShape) {
     case BodyShape.FEMALE: {
-      if (!wearable.data.representations.some(isFemale)) {
+      const female = wearable.data.representations.find(isFemale)
+      if (!female) {
         throw new Error(`Could not find a BaseFemale representation for wearable="${wearable.id}"`)
       }
-      return wearable.data.representations.find(isFemale)!
+      return female
     }
     case BodyShape.MALE: {
-      if (!wearable.data.representations.some(isMale)) {
+      const male = wearable.data.representations.find(isMale)!
+      if (!male) {
         throw new Error(`Could not find a BaseMale representation for wearable="${wearable.id}"`)
       }
-      return wearable.data.representations.find(isMale)!
+      return male
     }
   }
 }

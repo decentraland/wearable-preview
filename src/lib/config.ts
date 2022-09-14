@@ -64,12 +64,11 @@ async function fetchProfileWearables(profile: Avatar | null, peerUrl: string) {
   return wearables
 }
 
-async function fetchURNs(urns: string[], peerUrl: string) {
+async function fetchURNs(urns: string[], peerUrl: string): Promise<[WearableDefinition[], EmoteDefinition[]]> {
   if (urns.length === 0) {
-    return []
+    return [[], []]
   }
-  const results = await peerApi.fetchItems(urns, peerUrl)
-  return results
+  return peerApi.fetchItems(urns, peerUrl)
 }
 
 async function fetchWearableURNs(urns: string[], peerUrl: string) {
