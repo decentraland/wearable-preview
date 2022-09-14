@@ -94,7 +94,7 @@ class PeerApi {
   }
 
   /**
-   *
+   * Fetches the entities represented by the given urns and processes them into Wearable and Emote definitions.
    * @param urns List of urns for wearables or emotes
    * @param peerUrl The url of a Catalyst
    * @returns List of wearables and list of emotes for given urns
