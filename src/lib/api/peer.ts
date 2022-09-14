@@ -36,7 +36,7 @@ function mapEntityRepresentationToDefinition<T extends RepresentationDefinition 
 }
 
 /**
- * This converts an entity into a wearable or an emote definition
+ * Converts an entity into a wearable or an emote definition.
  * @param entity
  * @param peerUrl
  * @returns a wearable or emote definition
