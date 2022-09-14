@@ -76,6 +76,7 @@ function entityToDefinition<T extends WearableDefinition | EmoteDefinition>(enti
 
 class PeerApi {
   /**
+   * Fetches the entities that represent the given pointers.
    * @param pointers List of pointers
    * @param peerUrl The url of a catalyst
    * @returns List of active entities for given pointers
