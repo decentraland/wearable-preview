@@ -44,9 +44,14 @@ function mapEntityRepresentationToDefinition<T extends RepresentationDefinition 
 function entityToDefinition<T extends WearableDefinition | EmoteDefinition>(entity: Entity, peerUrl: string): T {
   const metadata = entity.metadata as Wearable | Emote
 
+  // this is used for the image and the thumbnail urls
+  const lambdaBaseUrl = `${peerUrl}/lambdas/collections/contents/${entity.metadata.id}`
+
   if ('emoteDataADR74' in metadata) {
     const definition: EmoteDefinition = {
       ...metadata,
+      thumbnail: `${lambdaBaseUrl}/thumbnail`,
+      image: `${lambdaBaseUrl}/image`,
       emoteDataADR74: {
         ...metadata.emoteDataADR74,
         representations: mapEntityRepresentationToDefinition<EmoteRepresentationDefinition>(
@@ -61,6 +66,8 @@ function entityToDefinition<T extends WearableDefinition | EmoteDefinition>(enti
 
   const definition: WearableDefinition = {
     ...metadata,
+    thumbnail: `${lambdaBaseUrl}/thumbnail`,
+    image: `${lambdaBaseUrl}/image`,
     data: {
       ...metadata.data,
       representations: mapEntityRepresentationToDefinition<RepresentationDefinition>(
