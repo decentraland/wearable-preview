@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import classNames from 'classnames'
-import { PreviewCamera, PreviewType, PreviewMessageType, sendMessage } from '@dcl/schemas'
+import { PreviewCamera, PreviewType, PreviewMessageType, sendMessage, PreviewEmote } from '@dcl/schemas'
 import { useWindowSize } from '../../hooks/useWindowSize'
 import { useConfig } from '../../hooks/useConfig'
 import { useReady } from '../../hooks/useReady'
@@ -73,7 +73,7 @@ const Preview: React.FC = () => {
       if (isLoaded) {
         sendMessage(window.parent, PreviewMessageType.LOAD, null)
         setIsMessageSent(true)
-        if (config?.camera !== PreviewCamera.STATIC && config?.type === PreviewType.AVATAR) {
+        if (config?.type === PreviewType.AVATAR || config?.emote !== PreviewEmote.IDLE) {
           controller.current?.emote.play()
         }
       } else if (error) {
@@ -81,7 +81,7 @@ const Preview: React.FC = () => {
         setIsMessageSent(true)
       }
     }
-  }, [isLoaded, error, isMessageSent, controller, config?.camera, config?.type])
+  }, [isLoaded, error, isMessageSent, controller, config?.type, config?.emote])
 
   // when the config is being loaded again (because the was an update to some of the options) reset all the other loading flags
   useEffect(() => {
