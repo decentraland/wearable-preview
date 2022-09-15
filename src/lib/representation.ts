@@ -1,14 +1,14 @@
-import { BodyShape, EmoteDefinition, RepresentationDefinition, WearableDefinition } from '@dcl/schemas'
+import { BodyShape, EmoteDefinition, WearableRepresentationDefinition, WearableDefinition } from '@dcl/schemas'
 
-export function is(representation: RepresentationDefinition, bodyShape: BodyShape) {
+export function is(representation: WearableRepresentationDefinition, bodyShape: BodyShape) {
   return representation.bodyShapes.includes(bodyShape)
 }
 
-export function isMale(representation: RepresentationDefinition) {
+export function isMale(representation: WearableRepresentationDefinition) {
   return is(representation, BodyShape.MALE)
 }
 
-export function isFemale(representation: RepresentationDefinition) {
+export function isFemale(representation: WearableRepresentationDefinition) {
   return is(representation, BodyShape.FEMALE)
 }
 
@@ -64,7 +64,7 @@ export function hasWearableRepresentation(definition: WearableDefinition, shape 
   }
 }
 
-export function getContentUrl(representation: RepresentationDefinition) {
+export function getContentUrl(representation: WearableRepresentationDefinition) {
   const content = representation.contents.find((content) => content.key === representation.mainFile)
   if (!content) {
     throw new Error(`Could not find main file`)
@@ -72,6 +72,6 @@ export function getContentUrl(representation: RepresentationDefinition) {
   return content.url
 }
 
-export function isTexture(representation: RepresentationDefinition) {
+export function isTexture(representation: WearableRepresentationDefinition) {
   return representation.mainFile.endsWith('png')
 }
