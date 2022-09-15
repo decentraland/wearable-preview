@@ -2,6 +2,8 @@ import {
   Avatar,
   BodyShape,
   EmoteDefinition,
+  EmoteRepresentationWithBlobs,
+  EmoteWithBlobs,
   isStandard,
   Network,
   PreviewCamera,
@@ -12,6 +14,7 @@ import {
   PreviewType,
   Rarity,
   WearableDefinition,
+  WearableRepresentationWithBlobs,
   WearableWithBlobs,
 } from '@dcl/schemas'
 import { config } from '../config'
@@ -368,18 +371,33 @@ function isNumber(value: number | null | undefined): boolean {
   return typeof value === 'number' && !isNaN(value)
 }
 
-function fromBlob(blob: WearableWithBlobs): WearableDefinition {
+function fromBlobRepresentation<T extends WearableRepresentationWithBlobs | EmoteRepresentationWithBlobs>(
+  representation: T
+) {
   return {
-    ...blob,
+    ...representation,
+    contents: representation.contents.map((content) => ({
+      key: content.key,
+      url: URL.createObjectURL(content.blob),
+    })),
+  }
+}
+
+function fromBlob(itemWithBlobs: WearableWithBlobs | EmoteWithBlobs): WearableDefinition | EmoteDefinition {
+  if ('emoteDataADR74' in itemWithBlobs) {
+    return {
+      ...itemWithBlobs,
+      emoteDataADR74: {
+        ...itemWithBlobs.emoteDataADR74,
+        representations: itemWithBlobs.emoteDataADR74.representations.map(fromBlobRepresentation),
+      },
+    }
+  }
+  return {
+    ...itemWithBlobs,
     data: {
-      ...blob.data,
-      representations: blob.data.representations.map((representation) => ({
-        ...representation,
-        contents: representation.contents.map((content) => ({
-          key: content.key,
-          url: URL.createObjectURL(content.blob),
-        })),
-      })),
+      ...itemWithBlobs.data,
+      representations: itemWithBlobs.data.representations.map(fromBlobRepresentation),
     },
   }
 }

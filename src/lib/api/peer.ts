@@ -8,7 +8,7 @@ import {
   EmoteRepresentationADR74,
   WearableRepresentation,
   EmoteRepresentationDefinition,
-  RepresentationDefinition,
+  WearableRepresentationDefinition,
 } from '@dcl/schemas'
 import { isEmote } from '../emote'
 import { json } from '../json'
@@ -21,11 +21,9 @@ import { isWearable } from '../wearable'
  * @param peerUrl
  * @returns representation definitions
  */
-function mapEntityRepresentationToDefinition<T extends RepresentationDefinition | EmoteRepresentationDefinition>(
-  entity: Entity,
-  representations: (EmoteRepresentationADR74 | WearableRepresentation)[],
-  peerUrl: string
-): T[] {
+function mapEntityRepresentationToDefinition<
+  T extends WearableRepresentationDefinition | EmoteRepresentationDefinition
+>(entity: Entity, representations: (EmoteRepresentationADR74 | WearableRepresentation)[], peerUrl: string): T[] {
   return representations.map((representation) => ({
     ...representation,
     contents: representation.contents.map((key) => ({
@@ -70,7 +68,7 @@ function entityToDefinition<T extends WearableDefinition | EmoteDefinition>(enti
     image: `${lambdaBaseUrl}/image`,
     data: {
       ...metadata.data,
-      representations: mapEntityRepresentationToDefinition<RepresentationDefinition>(
+      representations: mapEntityRepresentationToDefinition<WearableRepresentationDefinition>(
         entity,
         metadata.data.representations,
         peerUrl
