@@ -10,9 +10,11 @@ import {
   GlowLayer,
   HemisphericLight,
   Mesh,
+  MeshBuilder,
   Scene,
   SceneLoader,
   SpotLight,
+  StandardMaterial,
   Texture,
   TextureAssetTask,
   Vector3,
@@ -102,6 +104,17 @@ export async function createScene(
     : hexToColor(config.background.color).toColor4()
   root.ambientColor = new Color3(1, 1, 1)
   root.preventDefaultOnPointerDown = false
+
+  if (config.showSceneBoundaries) {
+    // create transparent cylinder to show the boundaries
+    MeshBuilder.CreateGround('ground', { width: 6, height: 6 }, root)
+    const cylinder = MeshBuilder.CreateCylinder('boundaries', { diameter: 2, height: 2 })
+    const cylinderMaterial = new StandardMaterial('boundariesMaterial', root)
+    cylinderMaterial.alpha = 0.3
+    cylinderMaterial.diffuseColor = new Color3(1.0, 0.2, 0.7)
+    cylinder.material = cylinderMaterial
+    cylinder.position.y = 1
+  }
 
   // Setup Camera
   const camera = new ArcRotateCamera('camera', 0, 0, 0, new Vector3(0, 0, 0), root)
