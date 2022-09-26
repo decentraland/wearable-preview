@@ -115,12 +115,12 @@ export async function createScene(
     groundMaterial.majorUnitFrequency = 0
     ground.material = groundMaterial
 
-    const cylinder = MeshBuilder.CreateCylinder('boundaries', { diameter: 2, height: 2 })
+    const cylinder = MeshBuilder.CreateCylinder('boundaries', { diameter: 2, height: 3 })
     const cylinderMaterial = new StandardMaterial('boundariesMaterial', root)
     cylinderMaterial.alpha = 0.3
     cylinderMaterial.diffuseColor = new Color3(1, 45/255, 85/255)
     cylinder.material = cylinderMaterial
-    cylinder.position.y = 1
+    cylinder.position.y = 1.5
   }
 
   // Setup Camera
