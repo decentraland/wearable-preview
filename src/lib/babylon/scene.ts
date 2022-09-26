@@ -20,6 +20,7 @@ import {
   Vector3,
 } from '@babylonjs/core'
 import '@babylonjs/loaders'
+import { GridMaterial } from '@babylonjs/materials'
 import {
   BodyShape,
   ISceneController,
@@ -107,8 +108,14 @@ export async function createScene(
 
   if (config.showSceneBoundaries) {
     // create transparent cylinder to show the boundaries
-    MeshBuilder.CreateGround('ground', { width: 6, height: 6 }, root)
-    const cylinder = MeshBuilder.CreateCylinder('boundaries', { diameter: 2, height: 2 })
+    const ground = MeshBuilder.CreateGround('ground', { width: 6, height: 6 }, root)
+    const groundMaterial = new GridMaterial('groundMaterial', root)
+    groundMaterial.mainColor = new Color3(1, 1, 1)
+    groundMaterial.lineColor = new Color3(0, 0, 0)
+    groundMaterial.majorUnitFrequency = 0
+    ground.material = groundMaterial
+
+    const cylinder = MeshBuilder.CreateCylinder('boundaries', { diameter: 2, height: 5 })
     const cylinderMaterial = new StandardMaterial('boundariesMaterial', root)
     cylinderMaterial.alpha = 0.3
     cylinderMaterial.diffuseColor = new Color3(1.0, 0.2, 0.7)
