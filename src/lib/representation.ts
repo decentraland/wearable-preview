@@ -13,10 +13,6 @@ export function isFemale(representation: WearableRepresentationDefinition) {
 }
 
 export function getEmoteRepresentation(emote: EmoteDefinition, bodyShape = BodyShape.MALE) {
-  // TODO: Remove the emoteDataV0 part after migration
-  if ((emote as unknown as WearableDefinition).emoteDataV0) {
-    return (emote as unknown as WearableDefinition).data.representations[0]
-  }
   const representation = emote.emoteDataADR74.representations.find((representation) =>
     representation.bodyShapes.includes(bodyShape)
   )

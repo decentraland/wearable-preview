@@ -7,7 +7,6 @@ import {
   PreviewEmote,
   EmoteDefinition,
   PreviewEmoteEventType,
-  WearableDefinition,
 } from '@dcl/schemas'
 import { isEmote } from '../emote'
 import { startAutoRotateBehavior } from './camera'
@@ -58,11 +57,7 @@ export async function playEmote(scene: Scene, assets: Asset[], config: PreviewCo
   if (config.item && isEmote(config.item)) {
     try {
       container = await loadEmoteFromWearable(scene, config.item as EmoteDefinition, config)
-      // TODO: Remove the emoteDataV0 part after migration
-      loop =
-        (config.item as unknown as WearableDefinition).emoteDataV0 !== undefined
-          ? !!(config.item as unknown as WearableDefinition).emoteDataV0!.loop
-          : config.item.emoteDataADR74.loop
+      loop = config.item.emoteDataADR74.loop
     } catch (error) {
       console.warn(`Could not load emote=${config.item.id}`)
     }
