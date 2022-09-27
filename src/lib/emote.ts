@@ -2,8 +2,7 @@ import { EventEmitter } from 'events'
 import { IEmoteController, WearableDefinition, EmoteDefinition } from '@dcl/schemas'
 
 export function isEmote(definition: WearableDefinition | EmoteDefinition | void): definition is EmoteDefinition {
-  // TODO: Remove the emoteDataV0 part after migration
-  return !!definition && ('emoteDataADR74' in definition || 'emoteDataV0' in definition)
+  return !!definition && 'emoteDataADR74' in definition
 }
 
 export class InvalidEmoteError extends Error {
