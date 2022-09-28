@@ -1,6 +1,7 @@
 import {
   ArcRotateCamera,
   AssetContainer,
+  Axis,
   BoundingInfo,
   Camera,
   Color3,
@@ -10,14 +11,17 @@ import {
   GlowLayer,
   HemisphericLight,
   Mesh,
+  MeshBuilder,
   Scene,
   SceneLoader,
   SpotLight,
+  StandardMaterial,
   Texture,
   TextureAssetTask,
   Vector3,
 } from '@babylonjs/core'
 import '@babylonjs/loaders'
+import { GridMaterial } from '@babylonjs/materials'
 import {
   BodyShape,
   ISceneController,
@@ -102,6 +106,27 @@ export async function createScene(
     : hexToColor(config.background.color).toColor4()
   root.ambientColor = new Color3(1, 1, 1)
   root.preventDefaultOnPointerDown = false
+
+  if (config.showSceneBoundaries) {
+    // create transparent cylinder to show the boundaries
+    const ground = MeshBuilder.CreateGround('ground', { width: 6, height: 6 }, root)
+    const underground = MeshBuilder.CreateGround('ground', { width: 6, height: 6 }, root)
+    underground.rotate(Axis.Z, Math.PI)
+    underground.position.y = -0.05 // to avoid cylinder and avatar clipping
+    const groundMaterial = new GridMaterial('groundMaterial', root)
+    groundMaterial.mainColor = new Color3(1, 1, 1)
+    groundMaterial.lineColor = new Color3(0, 0, 0)
+    groundMaterial.majorUnitFrequency = 0
+    ground.material = groundMaterial
+    underground.material = groundMaterial
+
+    const cylinder = MeshBuilder.CreateCylinder('boundaries', { diameter: 2, height: 3 })
+    const cylinderMaterial = new StandardMaterial('boundariesMaterial', root)
+    cylinderMaterial.alpha = 0.3
+    cylinderMaterial.diffuseColor = new Color3(1, 45 / 255, 85 / 255)
+    cylinder.material = cylinderMaterial
+    cylinder.position.y = 1.51 // to avoid clipping with the floor
+  }
 
   // Setup Camera
   const camera = new ArcRotateCamera('camera', 0, 0, 0, new Vector3(0, 0, 0), root)

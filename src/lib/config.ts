@@ -364,6 +364,7 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
     wheelPrecision,
     wheelStart,
     fadeEffect: !options.disableFadeEffect,
+    showSceneBoundaries: !!options.showSceneBoundaries,
   }
 }
 
