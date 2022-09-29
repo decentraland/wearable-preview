@@ -1,13 +1,14 @@
 import { useRef } from 'react'
 import { IPreviewController, PreviewMessagePayload, PreviewMessageType, sendMessage } from '@dcl/schemas'
 import { useMessage } from './useMessage'
+import { getParent } from '../lib/parent'
 
 function sendResult(id: string, result: any) {
-  sendMessage(window.parent, PreviewMessageType.CONTROLLER_RESPONSE, { id, ok: true, result })
+  sendMessage(getParent(), PreviewMessageType.CONTROLLER_RESPONSE, { id, ok: true, result })
 }
 
 function sendError(id: string, error: string) {
-  sendMessage(window.parent, PreviewMessageType.CONTROLLER_RESPONSE, { id, ok: false, error })
+  sendMessage(getParent(), PreviewMessageType.CONTROLLER_RESPONSE, { id, ok: false, error })
 }
 
 export const useController = () => {

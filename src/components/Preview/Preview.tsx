@@ -7,6 +7,7 @@ import { useReady } from '../../hooks/useReady'
 import { useController } from '../../hooks/useController'
 import { render } from '../../lib/babylon/render'
 import { handleEmoteEvents } from '../../lib/emote-events'
+import { getParent } from '../../lib/parent'
 import './Preview.css'
 
 const Preview: React.FC = () => {
@@ -71,13 +72,13 @@ const Preview: React.FC = () => {
   useEffect(() => {
     if (!isMessageSent) {
       if (isLoaded) {
-        sendMessage(window.parent, PreviewMessageType.LOAD, null)
+        sendMessage(getParent(), PreviewMessageType.LOAD, null)
         setIsMessageSent(true)
         if (config?.type === PreviewType.AVATAR || config?.emote !== PreviewEmote.IDLE) {
           controller.current?.emote.play()
         }
       } else if (error) {
-        sendMessage(window.parent, PreviewMessageType.ERROR, { message: error })
+        sendMessage(getParent(), PreviewMessageType.ERROR, { message: error })
         setIsMessageSent(true)
       }
     }
