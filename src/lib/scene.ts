@@ -41,9 +41,11 @@ export function createSceneController(engine: Engine, scene: Scene, camera: ArcR
   }
 
   async function getMetrics() {
-    const triangles = scene.meshes.reduce((total, mesh) => {
-      return total + Math.floor(mesh.getTotalIndices() / 3)
-    }, 0)
+    const triangles = scene.meshes
+      .filter((mesh) => !mesh.name.toLowerCase().includes('collider')) // remove colliders from metrics
+      .reduce((total, mesh) => {
+        return total + Math.floor(mesh.getTotalIndices() / 3)
+      }, 0)
     const materials = scene.materials.length
     const meshes = scene.meshes.length
     const textures = scene.textures.filter(

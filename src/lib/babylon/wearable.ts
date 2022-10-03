@@ -27,6 +27,14 @@ export async function loadWearable(
   const url = getContentUrl(representation)
   const container = await loadAssetContainer(scene, url)
 
+  // Remove colliders
+  for (const mesh of container.meshes) {
+    if (mesh.name.toLowerCase().includes('collider')) {
+      mesh.isVisible = false
+      scene.removeMesh(mesh)
+    }
+  }
+
   // Clean up
   for (const originalMaterial of container.materials) {
     if (originalMaterial instanceof PBRMaterial) {
