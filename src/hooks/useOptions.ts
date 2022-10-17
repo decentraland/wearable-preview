@@ -67,6 +67,7 @@ export const useOptions = () => {
       base64s: params.getAll('base64'),
       profile: params.get('profile'),
       showSceneBoundaries: params.has('showSceneBoundaries') || false,
+      showThumbnailBoundaries: params.has('showThumbnailBoundaries') || false,
       disableBackground: params.has('disableBackground') || transparentBackground,
       disableAutoCenter: params.has('disableAutoCenter') || !centerBoundingBox,
       disableAutoRotate: params.has('disableAutoRotate') || !centerBoundingBox,

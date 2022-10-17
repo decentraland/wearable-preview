@@ -20,6 +20,7 @@ import {
   TextureAssetTask,
   Vector3,
 } from '@babylonjs/core'
+import { AdvancedDynamicTexture, Rectangle } from '@babylonjs/gui'
 import '@babylonjs/loaders'
 import { GridMaterial } from '@babylonjs/materials'
 import {
@@ -126,6 +127,16 @@ export async function createScene(
     cylinderMaterial.diffuseColor = new Color3(1, 45 / 255, 85 / 255)
     cylinder.material = cylinderMaterial
     cylinder.position.y = 1.51 // to avoid clipping with the floor
+  }
+
+  if (config.showThumbnailBoundaries) {
+    const frameTexture = AdvancedDynamicTexture.CreateFullscreenUI('UI')
+    const thumbnailBoundaries = new Rectangle()
+    thumbnailBoundaries.width = 0.5
+    thumbnailBoundaries.height = 1
+    thumbnailBoundaries.color = '#736E7D'
+    thumbnailBoundaries.thickness = 2
+    frameTexture.addControl(thumbnailBoundaries)
   }
 
   // Setup Camera
