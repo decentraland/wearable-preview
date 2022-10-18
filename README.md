@@ -37,6 +37,7 @@ This webapp renders an interactive 3D preview of a wearable or an avatar. It can
 - `disableFadeEffect`: if `true` it will disable css transitions (the fade in / fade out effect). This is useful for automation tests.
 - `disableDefaultEmotes`: if `true` and `emote` is not passed, it will not load the default IDLE emote.
 - `showSceneBoundaries`: if `true` it will show a cylinder representing the recommended scene boundaries.
+- `showThumbnailBoundaries`: if `true` it will show a square representing the thumbnail boundaries.
 - `env`: The environment to use, it can be `prod` (uses mainnet wearables and catalysts) or `dev` (uses testnet wearables and catalysts).
 
 Example: https://wearable-preview.decentraland.org?contract=0xee8ae4c668edd43b34b98934d6d2ff82e41e6488&item=5
