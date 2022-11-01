@@ -177,7 +177,9 @@ function createController(animationGroup: AnimationGroup, loop: boolean): IEmote
     return window.setInterval(async () => {
       // Avoid emit the event when the animation is paused or using GoTo because the masterFrame returns to 0 each request
       if ((await isPlaying()) && animationGroup.animatables[0]?.masterFrame > 0) {
-        return events.emit(PreviewEmoteEventType.ANIMATION_PLAYING, animationGroup.animatables[0]?.masterFrame)
+        return events.emit(PreviewEmoteEventType.ANIMATION_PLAYING, {
+          length: animationGroup.animatables[0]?.masterFrame,
+        })
       }
     }, 10)
   }
