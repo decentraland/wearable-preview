@@ -142,6 +142,8 @@ function createController(animationGroup: AnimationGroup, loop: boolean): IEmote
       // I had to use this hack because the native goToFrame would not work as expected :/
       animationGroup.start(false, 1, seconds, seconds, false)
       startFrom = seconds
+      // Set again the fromGoTo here because the `stop` event is emitted twice
+      fromGoTo = true
     }
   }
 
@@ -175,13 +177,22 @@ function createController(animationGroup: AnimationGroup, loop: boolean): IEmote
       clearInterval(intervalId)
     }
     return window.setInterval(async () => {
-      // Avoid emit the event when the animation is paused or using GoTo because the masterFrame returns to 0 each request
-      if ((await isPlaying()) && animationGroup.animatables[0]?.masterFrame > 0) {
+      // Avoid emitting the event when the animation is paused or using GoTo because the masterFrame returns 0 for each request
+      if ((await isPlaying()) && animationGroup.animatables[0].masterFrame > 0) {
         return events.emit(PreviewEmoteEventType.ANIMATION_PLAYING, {
           length: animationGroup.animatables[0]?.masterFrame,
         })
       }
     }, 10)
+  }
+
+  const clearEmitPlayingEvent = () => {
+    clearInterval(intervalId)
+    if (!fromGoTo) {
+      events.emit(PreviewEmoteEventType.ANIMATION_PLAYING, {
+        length: animationGroup.to,
+      })
+    }
   }
 
   // forward observable events to event emitter
@@ -201,7 +212,8 @@ function createController(animationGroup: AnimationGroup, loop: boolean): IEmote
     return events.emit(PreviewEmoteEventType.ANIMATION_LOOP)
   })
   animationGroup.onAnimationGroupEndObservable.add(() => {
-    clearInterval(intervalId)
+    // Send the last frame when the animation ends and the event: end is not emitted by a goTo
+    clearEmitPlayingEvent()
     fromGoTo = false
     return events.emit(PreviewEmoteEventType.ANIMATION_END)
   })
