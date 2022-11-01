@@ -15,6 +15,8 @@ import { getEmoteRepresentation } from '../representation'
 
 const loopedEmotes = [PreviewEmote.IDLE, PreviewEmote.MONEY, PreviewEmote.CLAP]
 
+let intervalId: number | undefined
+
 function isLooped(emote: PreviewEmote) {
   return loopedEmotes.includes(emote)
 }
@@ -117,6 +119,7 @@ export async function playEmote(scene: Scene, assets: Asset[], config: PreviewCo
 
 function createController(animationGroup: AnimationGroup, loop: boolean): IEmoteController {
   let startFrom = 0
+  let fromGoTo = false
 
   async function getLength() {
     // if there's no animation, it should return 0
@@ -128,6 +131,7 @@ function createController(animationGroup: AnimationGroup, loop: boolean): IEmote
   }
 
   async function goTo(seconds: number) {
+    fromGoTo = true
     if (await isPlaying()) {
       animationGroup.pause()
       goTo(seconds)
@@ -165,11 +169,40 @@ function createController(animationGroup: AnimationGroup, loop: boolean): IEmote
 
   const events = new EventEmitter()
 
+  // Emit the PreviewEmoteEventType.ANIMATION_PLAYING event with the current playing frame
+  const emitPlayingEvent = () => {
+    if (intervalId) {
+      clearInterval(intervalId)
+    }
+    return window.setInterval(async () => {
+      // Avoid emit the event when the animation is paused or using GoTo because the masterFrame returns to 0 each request
+      if ((await isPlaying()) && animationGroup.animatables[0]?.masterFrame > 0) {
+        return events.emit(PreviewEmoteEventType.ANIMATION_PLAYING, animationGroup.animatables[0]?.masterFrame)
+      }
+    }, 10)
+  }
+
   // forward observable events to event emitter
-  animationGroup.onAnimationGroupPlayObservable.add(() => events.emit(PreviewEmoteEventType.ANIMATION_PLAY))
+  animationGroup.onAnimationGroupPlayObservable.add(() => {
+    intervalId = emitPlayingEvent()
+    return events.emit(PreviewEmoteEventType.ANIMATION_PLAY)
+  })
   animationGroup.onAnimationGroupPauseObservable.add(() => events.emit(PreviewEmoteEventType.ANIMATION_PAUSE))
-  animationGroup.onAnimationGroupLoopObservable.add(() => events.emit(PreviewEmoteEventType.ANIMATION_LOOP))
-  animationGroup.onAnimationGroupEndObservable.add(() => events.emit(PreviewEmoteEventType.ANIMATION_END))
+  animationGroup.onAnimationGroupLoopObservable.add(() => {
+    // It's required to stop and start a looping animation again from 0 when using the Go To feature,
+    // otherwise the animation will continue playing from the GoTo chosen frame
+    if (fromGoTo) {
+      stop()
+      play()
+      fromGoTo = false
+    }
+    return events.emit(PreviewEmoteEventType.ANIMATION_LOOP)
+  })
+  animationGroup.onAnimationGroupEndObservable.add(() => {
+    clearInterval(intervalId)
+    fromGoTo = false
+    return events.emit(PreviewEmoteEventType.ANIMATION_END)
+  })
 
   return {
     getLength,
