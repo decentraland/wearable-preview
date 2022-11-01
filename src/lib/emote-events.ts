@@ -4,7 +4,9 @@ import { getParent } from './parent'
 export function handleEmoteEvents(controller: IPreviewController) {
   // handle an emote event by forwarding it as a message
   function handleEvent(type: PreviewEmoteEventType) {
-    controller.emote.events.on(type, () => sendMessage(getParent(), PreviewMessageType.EMOTE_EVENT, { type }))
+    controller.emote.events.on(type, (payload?: any) =>
+      sendMessage(getParent(), PreviewMessageType.EMOTE_EVENT, { type, payload })
+    )
   }
 
   // handle all emote event types
@@ -12,4 +14,5 @@ export function handleEmoteEvents(controller: IPreviewController) {
   handleEvent(PreviewEmoteEventType.ANIMATION_PAUSE)
   handleEvent(PreviewEmoteEventType.ANIMATION_LOOP)
   handleEvent(PreviewEmoteEventType.ANIMATION_END)
+  handleEvent(PreviewEmoteEventType.ANIMATION_PLAYING)
 }
