@@ -214,7 +214,9 @@ function createController(animationGroup: AnimationGroup, loop: boolean): IEmote
   animationGroup.onAnimationGroupEndObservable.add(() => {
     // Send the last frame when the animation ends and the event: end is not emitted by a goTo
     clearEmitPlayingEvent()
-    fromGoTo = false
+    if (!loop) {
+      fromGoTo = false
+    }
     return events.emit(PreviewEmoteEventType.ANIMATION_END)
   })
 
