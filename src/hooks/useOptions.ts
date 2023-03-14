@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useOverrides } from './useOverrides'
 
-import { BodyShape, PreviewCamera, PreviewEmote, PreviewOptions, PreviewProjection } from '@dcl/schemas'
+import { BodyShape, PreviewCamera, PreviewEmote, PreviewOptions, PreviewProjection, PreviewType } from '@dcl/schemas'
 import { parseZoom } from '../lib/zoom'
 
 export const useOptions = () => {
@@ -77,6 +77,7 @@ export const useOptions = () => {
       disableFadeEffect: params.has('disableFadeEffect'),
       peerUrl: params.get('peerUrl'),
       nftServerUrl: params.get('nftServerUrl'),
+      previewType: params.get('previewType') as PreviewType | null,
     }
     return options
   }, [search])

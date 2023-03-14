@@ -225,6 +225,8 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
   // wearables passed as base64
   const base64s = options.base64s || []
 
+  const blob = options.blob ? fromBlob(options.blob) : null
+
   let wearables: WearableDefinition[] = []
   let emotes: EmoteDefinition[] = []
   let zoom = 1.75
@@ -337,15 +339,21 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
     cameraZ = options.cameraZ
   }
 
+  let customWearable
+
+  if (options?.previewType === PreviewType.WEARABLE) {
+    customWearable = wearables[1]
+  }
+
   return {
     // item is the most important prop, if not preset we use the blob prop, and if none, we use the last emote from the list (if any)
-    item: item ?? (options.blob ? fromBlob(options.blob) : emotes.pop()),
+    item: item ?? blob ?? customWearable ?? emotes.pop(),
     wearables,
     bodyShape,
     skin,
     hair,
     eyes,
-    type,
+    type: options?.previewType ?? type,
     background,
     face: options.disableFace !== false,
     emote,
