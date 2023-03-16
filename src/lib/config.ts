@@ -209,7 +209,7 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
   const bodyShape =
     options.bodyShape ||
     (profile && (profile.avatar.bodyShape as BodyShape)) ||
-    (item && isWearable(item) ? getBodyShape(item!) : BodyShape.MALE)
+    (item && isWearable(item) ? getBodyShape(item) : BodyShape.MALE)
 
   // use colors from options, default to profile, if none, use default values
   const skin = formatHex(options.skin || (profile && colorToHex(profile.avatar.skin.color)) || 'cc9b76')
@@ -224,6 +224,8 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
 
   // wearables passed as base64
   const base64s = options.base64s || []
+
+  const blob = options.blob ? fromBlob(options.blob) : null
 
   let wearables: WearableDefinition[] = []
   let emotes: EmoteDefinition[] = []
@@ -337,9 +339,21 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
     cameraZ = options.cameraZ
   }
 
+  let customWearable: WearableDefinition | null = null
+
+  /* When sending a fixed type wearable,
+   * have to verify if the user is not sending more than one custom wearable
+   * by default is fetched a baseBodyShape wearable
+   * wearables[0] = { id: "urn:...:BaseMale" }
+   */
+  if (options?.type === PreviewType.WEARABLE && wearables.length >= 2) {
+    type = options.type
+    customWearable = wearables[1]
+  }
+
   return {
     // item is the most important prop, if not preset we use the blob prop, and if none, we use the last emote from the list (if any)
-    item: item ?? (options.blob ? fromBlob(options.blob) : emotes.pop()),
+    item: item ?? blob ?? customWearable ?? emotes.pop(),
     wearables,
     bodyShape,
     skin,

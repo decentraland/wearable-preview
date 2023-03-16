@@ -74,7 +74,7 @@ const Preview: React.FC = () => {
       if (isLoaded) {
         sendMessage(getParent(), PreviewMessageType.LOAD, null)
         setIsMessageSent(true)
-        if (config?.type === PreviewType.AVATAR || config?.emote !== PreviewEmote.IDLE) {
+        if (config?.type === PreviewType.AVATAR || (config?.emote && config.emote !== PreviewEmote.IDLE)) {
           controller.current?.emote.play()
         }
       } else if (error) {
