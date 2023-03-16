@@ -346,7 +346,7 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
    * by default is fetched a baseBodyShape wearable
    * wearables[0] = { id: "urn:...:BaseMale" }
    */
-  if (options?.type === PreviewType.WEARABLE && wearables.length === 2) {
+  if (options?.type === PreviewType.WEARABLE && wearables.length >= 2) {
     type = options.type
     customWearable = wearables[1]
   }
