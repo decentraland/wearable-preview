@@ -339,7 +339,7 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
     cameraZ = options.cameraZ
   }
 
-  let customWearable: WearableDefinition[] | null = null
+  let customWearable: WearableDefinition | null = null
 
   /* When sending a fixed type wearable,
    * have to verify if the user is not sending more than one custom wearable
@@ -348,13 +348,13 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
    */
   if (options?.type === PreviewType.WEARABLE && wearables.length === 2) {
     type = options.type
-    customWearable = [wearables[1]]
+    customWearable = wearables[1]
   }
 
   return {
     // item is the most important prop, if not preset we use the blob prop, and if none, we use the last emote from the list (if any)
-    item: item ?? blob ?? emotes.pop(),
-    wearables: customWearable ?? wearables,
+    item: item ?? blob ?? customWearable ?? emotes.pop(),
+    wearables,
     bodyShape,
     skin,
     hair,
