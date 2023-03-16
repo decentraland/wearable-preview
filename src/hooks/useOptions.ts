@@ -77,7 +77,7 @@ export const useOptions = () => {
       disableFadeEffect: params.has('disableFadeEffect'),
       peerUrl: params.get('peerUrl'),
       nftServerUrl: params.get('nftServerUrl'),
-      previewType: params.get('previewType') as PreviewType | null,
+      type: params.get('type') as PreviewType | null,
     }
     return options
   }, [search])
