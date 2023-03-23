@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events'
-import { AnimationGroup, ArcRotateCamera, AssetContainer, Scene, TransformNode } from '@babylonjs/core'
+import { AnimationGroup, ArcRotateCamera, AssetContainer, Scene, TransformNode, Vector3 } from '@babylonjs/core'
 import {
   IEmoteController,
   PreviewCamera,
@@ -87,6 +87,10 @@ export async function playEmote(scene: Scene, assets: Asset[], config: PreviewCo
       const nodes = asset.container.transformNodes.reduce((map, node) => {
         const list = map.get(node.id) || []
         list.push(node)
+        // Initialize position when starting an animation to avoid wearables misplaced
+        if (container && config.emote) {
+          node.position = new Vector3(0, 0, 0)
+        }
         return map.set(node.id, list)
       }, new Map<string, TransformNode[]>())
       // apply each targeted animation from the emote asset container to the transform nodes of all the wearables
