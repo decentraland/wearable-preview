@@ -23,7 +23,12 @@ import { peerApi } from './api/peer'
 import { createMemo } from './cache'
 import { colorToHex, formatHex } from './color'
 import { isEmote } from './emote'
-import { getWearableRepresentationOrDefault, hasWearableRepresentation, isTexture } from './representation'
+import {
+  getContentUrl,
+  getWearableRepresentationOrDefault,
+  hasWearableRepresentation,
+  isTexture,
+} from './representation'
 import {
   getDefaultCategories,
   getDefaultWearableUrn,
@@ -339,21 +344,29 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
     cameraZ = options.cameraZ
   }
 
-  let customWearable: WearableDefinition | null = null
+  let customItem: WearableDefinition | null = null
 
-  /* When sending a fixed type wearable,
-   * have to verify if the user is not sending more than one custom wearable
+  /* When sending a fixed type wearable | texture,
+   * have to verify if the user is not sending more than one custom item
    * by default is fetched a baseBodyShape wearable
    * wearables[0] = { id: "urn:...:BaseMale" }
    */
-  if (options?.type === PreviewType.WEARABLE && wearables.length >= 2) {
+  if (options?.type && [PreviewType.WEARABLE, PreviewType.TEXTURE].includes(options.type) && wearables.length >= 2) {
     type = options.type
-    customWearable = wearables[1]
+    customItem = wearables[1]
+
+    if (options.type === PreviewType.TEXTURE) {
+      const representation = getWearableRepresentationOrDefault(customItem, bodyShape)
+      background = {
+        ...background,
+        image: getContentUrl(representation),
+      }
+    }
   }
 
   return {
     // item is the most important prop, if not preset we use the blob prop, and if none, we use the last emote from the list (if any)
-    item: item ?? blob ?? customWearable ?? emotes.pop(),
+    item: item ?? blob ?? customItem ?? emotes.pop(),
     wearables,
     bodyShape,
     skin,
