@@ -82,19 +82,22 @@ function handleMessage(event) {
     }
     // This message comes every time there's a native animation event, they only happen with emotes
     case PreviewMessageType.EMOTE_EVENT: {
-      const { type } = event.data.payload as PreviewMessagePayload<PreviewMessageType.EMOTE_EVENT>
+      const { type, payload } = event.data.payload as PreviewMessagePayload<PreviewMessageType.EMOTE_EVENT>
       switch (type) {
         case PreviewEmoteEventType.ANIMATION_PLAY:
-          console.error('Animation started')
+          console.log('Animation started')
           break
         case PreviewEmoteEventType.ANIMATION_PAUSE:
-          console.error('Animation paused')
+          console.log('Animation paused')
           break
         case PreviewEmoteEventType.ANIMATION_LOOP:
-          console.error('Animation looped')
+          console.log('Animation looped')
           break
         case PreviewEmoteEventType.ANIMATION_END:
-          console.error('Animation ended')
+          console.log('Animation ended')
+          break
+        case PreviewEmoteEventType.ANIMATION_PLAYING:
+          console.log('Animation playing: ', payload.length)
           break
       }
     }
@@ -122,6 +125,9 @@ The available methods are:
   - method: `goTo` params: `[seconds: number]` result: `void`
   - method: `getLength` params: `[]` result: `number`
   - method: `isPlaying` params: `[]` result: `boolean`
+  - method: `changeZoom` params: `[zoom: number]` result: `void`
+  - method: `changeCameraPosition` params: `[position: { alpha?: number, beta?: number, radius?: number }]` result: `void`
+  - method: `panCamera` params: `[offset: { x?: number, y?: number, z?: number }]` result: `void`
 
 This is an example of an RPC:
 
@@ -150,7 +156,7 @@ function sendRequest<T>(
 function handleMessage(event) {
   switch (event.data.type) {
     // handle response
-    case PreviewMessageType.REQUEST_RESPONSE: {
+    case PreviewMessageType.CONTROLLER_RESPONSE: {
       const payload = event.data.payload as PreviewMessagePayload<PreviewMessageType.CONTROLLER_RESPONSE>
       // grab promise and resolve/reject according to response
       const { id } = payload
