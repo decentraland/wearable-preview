@@ -117,8 +117,8 @@ The available methods are:
   - method: `getMetrics` params: `[]` result: `Metrics`
 - namespace: `emote`
   - method: `play` params: `[]` result: `void`
-  - method: `play` params: `[]` result: `void`
-  - method: `play` params: `[]` result: `void`
+  - method: `pause` params: `[]` result: `void`
+  - method: `stop` params: `[]` result: `void`
   - method: `goTo` params: `[seconds: number]` result: `void`
   - method: `getLength` params: `[]` result: `number`
   - method: `isPlaying` params: `[]` result: `boolean`
