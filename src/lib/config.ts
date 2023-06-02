@@ -62,6 +62,18 @@ function isValidNumber(value: number | null | undefined): value is number {
   return typeof value === 'number' && !isNaN(value)
 }
 
+function isValidAddress(address: string): boolean {
+  return /^0x[a-fA-F0-9]{40}$/g.test(address)
+}
+
+function sanitizeProfile(profile: string | null | undefined) {
+  if (profile === 'default' || (profile && isValidAddress(profile))) {
+    return profile
+  }
+
+  return null
+}
+
 async function fetchProfileWearables(profile: Avatar | null, peerUrl: string) {
   if (!profile) {
     return []
@@ -200,7 +212,8 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
   }
 
   // load profile
-  const profilePromise = options.profile ? fetchProfile(options.profile, peerUrl) : Promise.resolve(null)
+  const sanitizedProfile = sanitizeProfile(options.profile)
+  const profilePromise = sanitizedProfile ? fetchProfile(sanitizedProfile, peerUrl) : Promise.resolve(null)
 
   // await promises
   const [item, profile] = await Promise.all([itemPromise, profilePromise] as const)
