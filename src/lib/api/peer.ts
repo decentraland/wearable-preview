@@ -20,8 +20,11 @@ class PeerApi {
     return wearables
   }
   async fetchProfile(profile: string, env: PreviewEnv) {
-    const profiles = await json<Profile[]>(`${peerByEnv[env]}/lambdas/profiles?id=${profile}`)
-    return profiles.length > 0 ? profiles[0] : null
+    try {
+      return await json<Profile>(`${peerByEnv[env]}/lambdas/profiles/${profile}`)
+    } catch (error) {
+      return null
+    }
   }
 }
 
