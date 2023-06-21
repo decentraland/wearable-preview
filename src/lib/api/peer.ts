@@ -117,8 +117,12 @@ class PeerApi {
   }
 
   async fetchProfile(profile: string, peerUrl: string) {
-    const profiles = await json<Profile[]>(`${peerUrl}/lambdas/profiles?id=${profile}`)
-    return profiles.length > 0 ? profiles[0] : null
+    try {
+      return await json<Profile>(`${peerUrl}/lambdas/profiles/${profile}`)
+    } catch (error) {
+      console.error('There was an error loading the profile', error)
+      return null
+    }
   }
 }
 
