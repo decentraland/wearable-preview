@@ -9,6 +9,7 @@ class NFTApi {
     if (data.length === 0) {
       throw new Error(`Item not found for contractAddress="${contractAddress}" itemId="${itemId}"`)
     }
+    console.log({ data })
     return data[0]
   }
   async fetchNFT(contractAddress: string, tokenId: string, nftServerUrl: string) {

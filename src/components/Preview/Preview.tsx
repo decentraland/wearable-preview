@@ -45,6 +45,7 @@ const Preview: React.FC = () => {
 
       setStyle(style)
 
+
       // load model or image (for texture only wearables)
       if (config.type === PreviewType.TEXTURE) {
         setIs3D(false)

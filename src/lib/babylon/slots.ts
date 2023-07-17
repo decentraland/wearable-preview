@@ -1,6 +1,13 @@
-import { PreviewConfig, WearableCategory, WearableDefinition } from '@dcl/schemas'
+import {
+  BodyPartCategory,
+  HideableWearableCategory,
+  PreviewConfig,
+  WearableCategory,
+  WearableDefinition,
+} from '@dcl/schemas'
 import { hasWearableRepresentation } from '../representation'
 import { isWearable } from '../wearable'
+import { areWearablesCompatible, getAdditionHiddenProperties } from './utils'
 
 const categoriesHiddenBySkin = [
   WearableCategory.HELMET,
@@ -12,10 +19,12 @@ const categoriesHiddenBySkin = [
   WearableCategory.UPPER_BODY,
   WearableCategory.LOWER_BODY,
   WearableCategory.FEET,
+  WearableCategory.HANDS_WEAR,
+  BodyPartCategory.HANDS,
 ]
 
 export function getSlots(config: PreviewConfig) {
-  const slots = new Map<WearableCategory, WearableDefinition>()
+  const slots = new Map<HideableWearableCategory, WearableDefinition>()
 
   let wearables: WearableDefinition[] = [...config.wearables]
 
@@ -28,13 +37,18 @@ export function getSlots(config: PreviewConfig) {
         if (categoriesHiddenBySkin.includes(category)) {
           continue
         }
-        if (hides && hides.includes(WearableCategory.HEAD)) {
+        if (hides && hides.includes(BodyPartCategory.HEAD)) {
           continue
         }
-        if (replaces && replaces.includes(WearableCategory.HEAD)) {
+        if (replaces && replaces.includes(BodyPartCategory.HEAD)) {
           continue
         }
       }
+
+      if (!areWearablesCompatible(wearable, config.item)) {
+        continue
+      }
+
       if (wearable.data.hides && wearable.data.hides.includes(category)) {
         continue
       }
@@ -58,15 +72,19 @@ export function getSlots(config: PreviewConfig) {
   let hasSkin = false
   // grab only the wearables that ended up in the map, and process in reverse order (last wearables can hide/replace the first ones)
   wearables = wearables.filter((wearable) => slots.get(wearable.data.category) === wearable).reverse()
-  const alreadyRemoved = new Set<string>()
+  const alreadyRemoved = new Set<HideableWearableCategory>()
   for (const wearable of wearables) {
     const category = wearable.data.category
     if (alreadyRemoved.has(category)) {
       continue
     }
+
     const replaced = wearable.data.replaces || []
     const hidden = wearable.data.hides || []
-    const toRemove = Array.from(new Set([...replaced, ...hidden]))
+    const additionalHiddenProperties: WearableCategory[] = getAdditionHiddenProperties(wearable, slots)
+
+    const toRemove = Array.from(new Set([...replaced, ...hidden, ...additionalHiddenProperties]))
+
     for (const slot of toRemove) {
       if (slot !== category) {
         slots.delete(slot)
