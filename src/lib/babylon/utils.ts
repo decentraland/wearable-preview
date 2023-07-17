@@ -51,7 +51,7 @@ export function areWearablesCompatible(wearable1: WearableDefinition, wearable2:
       wearable.data.category === WearableCategory.UPPER_BODY ||
       wearable.data.hides.includes(WearableCategory.UPPER_BODY)
     const removesDefaultHiding = wearable.data.removesDefaultHiding?.includes(WearableCategory.HANDS_WEAR)
-  
+
     return isHandsWearCompatible || removesDefaultHiding || !isOrHidesUpperBody
   }
 
@@ -62,16 +62,7 @@ export function getAdditionHiddenProperties(
   wearable: WearableDefinition,
   slots: Map<HideableWearableCategory, WearableDefinition>
 ) {
-  if (wearable.data.category === WearableCategory.HANDS_WEAR) {
-    return Array.from(slots.values())
-      .filter((w) => !areWearablesCompatible(wearable, w))
-      .map((w) => w.data.category)
-  }
-
-  const handsWearable = slots.get(WearableCategory.HANDS_WEAR)
-  if (handsWearable && !areWearablesCompatible(wearable, handsWearable)) {
-    return [WearableCategory.HANDS_WEAR]
-  }
-
-  return []
+  return Array.from(slots.values())
+    .filter((w) => !areWearablesCompatible(wearable, w))
+    .map((w) => w.data.category)
 }
