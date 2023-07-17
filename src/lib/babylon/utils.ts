@@ -19,7 +19,7 @@ export function isHidden(category: HideableWearableCategory) {
 export function isHandsBodyPartHidden(assets: Asset[]) {
   return assets.some((asset) => {
     const isUpperBody = asset.wearable.data.category === WearableCategory.UPPER_BODY
-    const hidesUpperBody = asset.wearable.data.hides.includes(WearableCategory.UPPER_BODY)
+    const hidesUpperBody = asset.wearable.data.hides?.includes(WearableCategory.UPPER_BODY)
     const removesDefaultHiding = asset.wearable.data.removesDefaultHiding?.includes(BodyPartCategory.HANDS)
     return (isUpperBody || hidesUpperBody) && !removesDefaultHiding
   })
@@ -46,10 +46,10 @@ export function areWearablesCompatible(wearable1: WearableDefinition, wearable2:
     const handsWear = wearable1.data.category === WearableCategory.HANDS_WEAR ? wearable1 : wearable2
     const wearable = wearable1.data.category === WearableCategory.HANDS_WEAR ? wearable2 : wearable1
 
-    const isHandsWearCompatible = !handsWear.data.hides.includes(BodyPartCategory.HANDS)
+    const isHandsWearCompatible = !handsWear.data.hides?.includes(BodyPartCategory.HANDS)
     const isOrHidesUpperBody =
       wearable.data.category === WearableCategory.UPPER_BODY ||
-      wearable.data.hides.includes(WearableCategory.UPPER_BODY)
+      wearable.data.hides?.includes(WearableCategory.UPPER_BODY)
     const removesDefaultHiding = wearable.data.removesDefaultHiding?.includes(WearableCategory.HANDS_WEAR)
 
     return isHandsWearCompatible || removesDefaultHiding || !isOrHidesUpperBody
@@ -58,7 +58,7 @@ export function areWearablesCompatible(wearable1: WearableDefinition, wearable2:
   return true
 }
 
-export function getAdditionHiddenProperties(
+export function getAdditionalHiddenProperties(
   wearable: WearableDefinition,
   slots: Map<HideableWearableCategory, WearableDefinition>
 ) {
