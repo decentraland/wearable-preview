@@ -50,7 +50,7 @@ export function areWearablesCompatible(wearable1: WearableDefinition, wearable2:
     const isOrHidesUpperBody =
       wearable.data.category === WearableCategory.UPPER_BODY ||
       wearable.data.hides?.includes(WearableCategory.UPPER_BODY)
-    const removesDefaultHiding = wearable.data.removesDefaultHiding?.includes(WearableCategory.HANDS_WEAR)
+    const removesDefaultHiding = wearable.data.removesDefaultHiding?.includes(BodyPartCategory.HANDS)
 
     return isHandsWearCompatible || removesDefaultHiding || !isOrHidesUpperBody
   }
