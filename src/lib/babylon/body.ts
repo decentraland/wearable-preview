@@ -18,7 +18,6 @@ export function getBodyShape(assets: Asset[]) {
 
   for (const mesh of bodyShape.container.meshes) {
     const name = mesh.name.toLowerCase()
-    console.log({ mesh, name, hideHands })
     if (name.endsWith('ubody_basemesh') && hideUpperBody) {
       mesh.setEnabled(false)
     }
