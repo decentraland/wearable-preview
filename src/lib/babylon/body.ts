@@ -1,6 +1,6 @@
-import { WearableCategory } from '@dcl/schemas'
+import { BodyPartCategory, WearableCategory } from '@dcl/schemas'
 import { Asset } from './scene'
-import { isHidden } from './utils'
+import { isHandsBodyPartHidden, isHidden } from './utils'
 
 export function getBodyShape(assets: Asset[]) {
   const bodyShape = assets.find((part) => part.wearable.data.category === WearableCategory.BODY_SHAPE)
@@ -13,7 +13,8 @@ export function getBodyShape(assets: Asset[]) {
   const hideUpperBody = hasSkin || assets.some(isHidden(WearableCategory.UPPER_BODY))
   const hideLowerBody = hasSkin || assets.some(isHidden(WearableCategory.LOWER_BODY))
   const hideFeet = hasSkin || assets.some(isHidden(WearableCategory.FEET))
-  const hideHead = hasSkin || assets.some(isHidden(WearableCategory.HEAD))
+  const hideHead = hasSkin || assets.some(isHidden(BodyPartCategory.HEAD))
+  const hideHands = hasSkin || assets.some(isHidden(BodyPartCategory.HANDS)) || isHandsBodyPartHidden(assets)
 
   for (const mesh of bodyShape.container.meshes) {
     const name = mesh.name.toLowerCase()
@@ -39,6 +40,9 @@ export function getBodyShape(assets: Asset[]) {
       mesh.setEnabled(false)
     }
     if (name.endsWith('mask_mouth') && hideHead) {
+      mesh.setEnabled(false)
+    }
+    if (name.endsWith('hands_basemesh') && hideHands) {
       mesh.setEnabled(false)
     }
   }
