@@ -7,7 +7,6 @@ import {
 } from '@dcl/schemas'
 import { hasWearableRepresentation } from '../representation'
 import { isWearable } from '../wearable'
-import { areWearablesCompatible, getAdditionalHiddenProperties } from './utils'
 
 const categoriesHiddenBySkin = [
   WearableCategory.HELMET,
@@ -44,11 +43,6 @@ export function getSlots(config: PreviewConfig) {
           continue
         }
       }
-
-      if (!areWearablesCompatible(wearable, config.item)) {
-        continue
-      }
-
       if (wearable.data.hides && wearable.data.hides.includes(category)) {
         continue
       }
@@ -78,13 +72,9 @@ export function getSlots(config: PreviewConfig) {
     if (alreadyRemoved.has(category)) {
       continue
     }
-
     const replaced = wearable.data.replaces || []
     const hidden = wearable.data.hides || []
-    const additionalHiddenProperties: WearableCategory[] = getAdditionalHiddenProperties(wearable, slots)
-
-    const toRemove = Array.from(new Set([...replaced, ...hidden, ...additionalHiddenProperties]))
-
+    const toRemove = Array.from(new Set([...replaced, ...hidden]))
     for (const slot of toRemove) {
       if (slot !== category) {
         slots.delete(slot)

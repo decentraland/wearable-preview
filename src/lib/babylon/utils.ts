@@ -37,32 +37,3 @@ export function isModel(wearable: WearableDefinition): boolean {
 export function isFacialFeature(wearable: WearableDefinition): boolean {
   return !isModel(wearable)
 }
-
-export function areWearablesCompatible(wearable1: WearableDefinition, wearable2: WearableDefinition) {
-  if (
-    wearable1.data.category === WearableCategory.HANDS_WEAR ||
-    wearable2.data.category === WearableCategory.HANDS_WEAR
-  ) {
-    const handsWear = wearable1.data.category === WearableCategory.HANDS_WEAR ? wearable1 : wearable2
-    const wearable = wearable1.data.category === WearableCategory.HANDS_WEAR ? wearable2 : wearable1
-
-    const isHandsWearCompatible = !handsWear.data.hides?.includes(BodyPartCategory.HANDS)
-    const isOrHidesUpperBody =
-      wearable.data.category === WearableCategory.UPPER_BODY ||
-      wearable.data.hides?.includes(WearableCategory.UPPER_BODY)
-    const removesDefaultHiding = wearable.data.removesDefaultHiding?.includes(BodyPartCategory.HANDS)
-
-    return isHandsWearCompatible || removesDefaultHiding || !isOrHidesUpperBody
-  }
-
-  return true
-}
-
-export function getAdditionalHiddenProperties(
-  wearable: WearableDefinition,
-  slots: Map<HideableWearableCategory, WearableDefinition>
-) {
-  return Array.from(slots.values())
-    .filter((w) => !areWearablesCompatible(wearable, w))
-    .map((w) => w.data.category)
-}
