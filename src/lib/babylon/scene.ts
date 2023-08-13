@@ -177,6 +177,29 @@ export async function createScene(
     camera.lowerRadiusLimit + ((camera.upperRadiusLimit - camera.lowerRadiusLimit) * config.wheelStart) / 100
   camera.wheelPrecision = config.wheelPrecision
 
+  // Disable panning by setting the sensibility to 0
+  if (!config.panning) {
+    camera.panningSensibility = 0
+  }
+
+  // Set the lower and upper beta bounds to the current beta to avoid the camera to move up and down
+  if (config.lockBeta) {
+    camera.lowerBetaLimit = camera.beta
+    camera.upperBetaLimit = camera.beta
+  }
+
+  // Set the lower and upper alpha bounds to the current alpha to avoid the camera to move left and right
+  if (config.lockAlpha) {
+    camera.lowerAlphaLimit = camera.alpha
+    camera.upperAlphaLimit = camera.alpha
+  }
+
+  // Set the lower and upper radius bounds to the current radius to avoid the camera to zoom in and out
+  if (config.lockRadius) {
+    camera.lowerRadiusLimit = camera.radius
+    camera.upperRadiusLimit = camera.radius
+  }
+
   // Setup lights
   if (config.type === PreviewType.WEARABLE) {
     const directional = new DirectionalLight('directional', new Vector3(0, 0, 1), root)

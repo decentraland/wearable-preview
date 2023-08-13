@@ -20,6 +20,10 @@ export const useOptions = () => {
     const wheelPrecisionParam = params.get('wheelPrecision') as string | null
     const wheelStartParam = params.get('wheelStart') as string | null
     const bodyShapeParam = params.get('bodyShape')
+    const panning = params.get('panning')
+    const lockAlpha = params.get('lockAlpha')
+    const lockBeta = params.get('lockBeta')
+    const lockRadius = params.get('lockRadius')
 
     const transparentBackground = params.has('transparentBackground')
     if (transparentBackground) {
@@ -78,6 +82,10 @@ export const useOptions = () => {
       peerUrl: params.get('peerUrl'),
       nftServerUrl: params.get('nftServerUrl'),
       type: params.get('type') as PreviewType | null,
+      panning: panning === 'true' || panning === null,
+      lockAlpha: lockAlpha === 'true',
+      lockBeta: lockBeta === 'true',
+      lockRadius: lockRadius === 'true',
     }
     return options
   }, [search])
