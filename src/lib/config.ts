@@ -364,8 +364,6 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
     customWearable = wearables[1]
   }
 
-  console.log('Returning panning', !!options.panning)
-
   return {
     // item is the most important prop, if not preset we use the blob prop, and if none, we use the last emote from the list (if any)
     item: item ?? blob ?? customWearable ?? emotes.pop(),
