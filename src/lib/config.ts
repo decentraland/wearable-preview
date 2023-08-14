@@ -393,6 +393,10 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
     fadeEffect: !options.disableFadeEffect,
     showSceneBoundaries: !!options.showSceneBoundaries,
     showThumbnailBoundaries: !!options.showThumbnailBoundaries,
+    panning: !!options.panning,
+    lockAlpha: !!options.lockAlpha,
+    lockBeta: !!options.lockBeta,
+    lockRadius: !!options.lockRadius,
   }
 }
 
