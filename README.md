@@ -39,6 +39,10 @@ This webapp renders an interactive 3D preview of a wearable or an avatar. It can
 - `disableDefaultEmotes`: if `true` and `emote` is not passed, it will not load the default IDLE emote.
 - `showSceneBoundaries`: if `true` it will show a cylinder representing the recommended scene boundaries.
 - `showThumbnailBoundaries`: if `true` it will show a square representing the thumbnail boundaries.
+- `panning`: If `true`, enables the panning capability. By default it's `true`.
+- `lockAlpha`: If `true`, locks the alpha rotation, preventing the users from rotating the camera around alpha (in simpler terms, "horizontally").
+- `lockBeta`: If `true`, locks the beta rotation, preventing the users from rotating the camera around beta (in simpler terms, "vertically").
+- `lockRadius`: If `true`, locks the radius rotation, preventing the users from rotating the camera around radius (in simpler terms, "how far or close it is").
 - `env`: The environment to use, it can be `prod` (uses mainnet wearables and catalysts) or `dev` (uses testnet wearables and catalysts).
 
 Example: https://wearable-preview.decentraland.org?contract=0xee8ae4c668edd43b34b98934d6d2ff82e41e6488&item=5
