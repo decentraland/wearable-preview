@@ -8,7 +8,7 @@
     "@babylonjs/inspector": "^4.2.0",
     "@babylonjs/loaders": "^4.2.0",
     "@babylonjs/materials": "^4.2.0",
-    "@dcl/schemas": "^9.2.0",
+    "@dcl/schemas": "^9.4.1",
     "@dcl/ui-env": "^1.2.0",
     "@testing-library/jest-dom": "^5.15.0",
     "@testing-library/react": "^11.2.7",

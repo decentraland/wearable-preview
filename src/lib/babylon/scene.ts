@@ -2,6 +2,7 @@ import {
   ArcRotateCamera,
   AssetContainer,
   Axis,
+  BinaryFileAssetTask,
   BoundingInfo,
   Camera,
   Color3,
@@ -14,6 +15,7 @@ import {
   MeshBuilder,
   Scene,
   SceneLoader,
+  Sound,
   SpotLight,
   StandardMaterial,
   Texture,
@@ -25,6 +27,7 @@ import '@babylonjs/loaders'
 import { GridMaterial } from '@babylonjs/materials'
 import {
   BodyShape,
+  EmoteRepresentationDefinition,
   ISceneController,
   PreviewCamera,
   PreviewConfig,
@@ -274,6 +277,28 @@ export async function loadTexture(
     })
   }
   return null
+}
+
+export function loadSound(scene: Scene, representation: EmoteRepresentationDefinition): Promise<Sound | null> {
+  return new Promise((resolve, reject) => {
+    const soundUrl = representation.contents.find(
+      (content) => content.key.toLowerCase().endsWith('.mp3') || content.key.toLowerCase().endsWith('ogg')
+    )?.url
+
+    if (!soundUrl) {
+      return resolve(null)
+    }
+
+    const task = new BinaryFileAssetTask('Sound task', soundUrl)
+    const onSuccess = () =>
+      resolve(
+        new Sound('music', task.data, scene, null, {
+          spatialSound: true,
+        })
+      )
+    const onError = (message?: string) => reject(message)
+    task.run(scene, onSuccess, onError)
+  })
 }
 
 export async function loadAssetContainer(scene: Scene, url: string) {

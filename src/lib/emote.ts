@@ -31,6 +31,15 @@ export function createInvalidEmoteController(): IEmoteController {
     stop() {
       throw new InvalidEmoteError()
     },
-    events: new EventEmitter(),
+    enableSound() {
+      throw new InvalidEmoteError()
+    },
+    disableSound() {
+      throw new InvalidEmoteError()
+    },
+    hasSound() {
+      throw new InvalidEmoteError()
+    },
+    events: new EventEmitter()
   }
 }
