@@ -158,6 +158,10 @@ function createController(animationGroup: AnimationGroup, loop: boolean, sound: 
     return animationGroup.isPlaying
   }
 
+  async function hasSound() {
+    return !!sound
+  }
+
   async function goTo(seconds: number) {
     fromGoTo = true
     if (await isPlaying()) {
@@ -207,6 +211,7 @@ function createController(animationGroup: AnimationGroup, loop: boolean, sound: 
     if (!sound) return
     Engine.audioEngine.unlock()
     Engine.audioEngine.setGlobalVolume(1)
+    sound.stop()
     sound.play(undefined, animationGroup.targetedAnimations[0].animation.runtimeAnimations[0].currentFrame)
   }
 
@@ -279,7 +284,7 @@ function createController(animationGroup: AnimationGroup, loop: boolean, sound: 
     stop,
     enableSound,
     disableSound,
+    hasSound,
     events,
-    hasSound: !!sound,
   }
 }
