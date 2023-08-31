@@ -281,7 +281,9 @@ export async function loadTexture(
 
 export function loadSound(scene: Scene, representation: EmoteRepresentationDefinition): Promise<Sound | null> {
   return new Promise((resolve, reject) => {
-    const soundUrl = representation.contents.find((content) => content.key.endsWith('.mp3'))?.url
+    const soundUrl = representation.contents.find(
+      (content) => content.key.toLowerCase().endsWith('.mp3') || content.key.toLowerCase().endsWith('ogg')
+    )?.url
 
     if (!soundUrl) {
       return resolve(null)
