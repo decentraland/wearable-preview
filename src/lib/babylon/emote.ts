@@ -211,8 +211,10 @@ function createController(animationGroup: AnimationGroup, loop: boolean, sound: 
     if (!sound) return
     Engine.audioEngine.unlock()
     Engine.audioEngine.setGlobalVolume(1)
-    sound.stop()
-    sound.play(undefined, animationGroup.targetedAnimations[0].animation.runtimeAnimations[0].currentFrame)
+    if (animationGroup.isPlaying) {
+      sound.stop()
+      sound.play(undefined, animationGroup.targetedAnimations[0].animation.runtimeAnimations[0].currentFrame)
+    }
   }
 
   async function disableSound() {
