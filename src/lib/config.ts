@@ -337,7 +337,7 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
     case PreviewType.AVATAR: {
       cameraX = 0
       cameraY = 1
-      cameraZ = 5
+      cameraZ = 3.5
       break
     }
   }
