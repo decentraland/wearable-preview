@@ -77,7 +77,7 @@ export async function playEmote(scene: Scene, assets: Asset[], config: PreviewCo
   if (config.item && isEmote(config.item)) {
     try {
       container = await loadEmoteFromWearable(scene, config.item as EmoteDefinition, config)
-      loop = config.item.emoteDataADR74.loop || true
+      loop = config.item.emoteDataADR74.loop
       sound = await loadEmoteSound(scene, config.item as EmoteDefinition, config)
     } catch (error) {
       console.warn(`Could not load emote=${config.item.id}`)
@@ -174,7 +174,7 @@ function createController(animationGroup: AnimationGroup, loop: boolean, sound: 
       animationGroup.stop()
       // I had to use this hack because the native goToFrame would not work as expected :/
       animationGroup.start(false, 1, seconds, seconds, false)
-      sound?.play(undefined, seconds)
+      sound?.stop()
       startFrom = seconds
       // Set again the fromGoTo here because the `stop` event is emitted twice
       fromGoTo = true
