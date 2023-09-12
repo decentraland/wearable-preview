@@ -65,9 +65,6 @@ export function loadEmoteSound(scene: Scene, emote: EmoteDefinition, config: Pre
 }
 
 export async function playEmote(scene: Scene, assets: Asset[], config: PreviewConfig) {
-  Engine.audioEngine.useCustomUnlockedButton = true
-  Engine.audioEngine.setGlobalVolume(0)
-
   // load asset container for emote
   let container: AssetContainer | undefined
   let loop = !!config.emote && isLooped(config.emote)
@@ -147,8 +144,11 @@ export async function playEmote(scene: Scene, assets: Asset[], config: PreviewCo
 }
 
 function createController(animationGroup: AnimationGroup, loop: boolean, sound: Sound | null): IEmoteController {
-  let startFrom = 0
+  Engine.audioEngine.useCustomUnlockedButton = true
+  Engine.audioEngine.setGlobalVolume(0)
+  let fromSecond: number | undefined = undefined
   let fromGoTo = false
+
   async function getLength() {
     // if there's no animation, it should return 0
     return Math.max(animationGroup.to, 0)
@@ -164,29 +164,35 @@ function createController(animationGroup: AnimationGroup, loop: boolean, sound: 
 
   async function goTo(seconds: number) {
     fromGoTo = true
-    if (await isPlaying()) {
+    const playing = await isPlaying()
+    if (playing) {
       animationGroup.pause()
-      sound?.pause()
-      goTo(seconds)
-      window.requestAnimationFrame(play)
-    } else {
-      // for some reason the start() method doesn't work as expected if playing, so I need to stop it first
-      animationGroup.stop()
-      // I had to use this hack because the native goToFrame would not work as expected :/
-      animationGroup.start(false, 1, seconds, seconds, false)
-      sound?.stop()
-      startFrom = seconds
-      // Set again the fromGoTo here because the `stop` event is emitted twice
-      fromGoTo = true
+    }
+    // for some reason the start() method doesn't work as expected if playing, so I need to stop it first
+    animationGroup.stop()
+    // I had to use this hack because the native goToFrame would not work as expected :/
+    animationGroup.start(false, 1, seconds, seconds, false)
+    fromSecond = seconds
+    // Set again the fromGoTo here because the `stop` event is emitted twice
+    fromGoTo = true
+
+    if (playing) {
+      play()
     }
   }
 
   async function play() {
     if (!(await isPlaying())) {
-      if (startFrom) {
-        animationGroup.start(loop, 1, startFrom, await getLength(), false)
-        sound?.play(undefined, startFrom)
-        startFrom = 0
+      if (fromSecond) {
+        animationGroup.start(loop, 1, fromSecond, await getLength(), false)
+        if (sound) {
+          sound.stop()
+          // This is a hack to solve a bug in babylonjs version. This was finally fixed in Babylon PR: #13455.
+          // TODO: update babylon major version
+          sound['_startOffset'] = fromSecond
+          sound.play()
+        }
+        fromSecond = 0
       } else {
         animationGroup.play(loop)
         sound?.play()
@@ -211,8 +217,7 @@ function createController(animationGroup: AnimationGroup, loop: boolean, sound: 
     if (!sound) return
     Engine.audioEngine.unlock()
     Engine.audioEngine.setGlobalVolume(1)
-    if (animationGroup.isPlaying) {
-      sound.stop()
+    if (animationGroup.isPlaying && !sound.isPlaying) {
       sound.play(undefined, animationGroup.targetedAnimations[0].animation.runtimeAnimations[0].currentFrame)
     }
   }
