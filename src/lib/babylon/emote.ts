@@ -172,7 +172,6 @@ function createController(animationGroup: AnimationGroup, loop: boolean, sound: 
     animationGroup.stop()
     // I had to use this hack because the native goToFrame would not work as expected :/
     animationGroup.start(false, 1, seconds, seconds, false)
-    // sound?.stop()
     fromSecond = seconds
     // Set again the fromGoTo here because the `stop` event is emitted twice
     fromGoTo = true
@@ -188,6 +187,8 @@ function createController(animationGroup: AnimationGroup, loop: boolean, sound: 
         animationGroup.start(loop, 1, fromSecond, await getLength(), false)
         if (sound) {
           sound.stop()
+          // This is a hack to solve a bug in babylonjs version. This was finally fixed in Babylon PR: #13455.
+          // TODO: update babylon major version
           sound['_startOffset'] = fromSecond
           sound.play()
         }
