@@ -92,6 +92,8 @@ export async function playEmote(scene: Scene, assets: Asset[], config: PreviewCo
 
   if (container && container.animationGroups.length > 1) {
     container.addAllToScene()
+    // In some cases, the prop animation will start playing on loop when laoded, event though the avatar
+    // animation is not running. This is to stop all possible animations before creating emote animation group
     scene.stopAllAnimations()
   }
 
