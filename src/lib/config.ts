@@ -369,6 +369,7 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
     item: item ?? blob ?? customWearable ?? emotes.pop(),
     wearables,
     bodyShape,
+    forceRender: profile?.avatar.forceRender || [],
     skin,
     hair,
     eyes,
