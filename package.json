@@ -10,7 +10,7 @@
     "@babylonjs/loaders": "^6.21.0",
     "@babylonjs/materials": "^6.21.0",
     "@babylonjs/serializers": "^6.21.0",
-    "@dcl/schemas": "^9.4.1",
+    "@dcl/schemas": "^9.7.0",
     "@dcl/ui-env": "^1.2.0",
     "@testing-library/jest-dom": "^5.15.0",
     "@testing-library/react": "^11.2.7",
