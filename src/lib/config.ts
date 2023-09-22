@@ -258,7 +258,7 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
       urls,
       base64s,
       bodyShape,
-      !options.disableDefaultWearables,
+      !options.disableDefaultWearables && !profile?.avatar,
       !options.disableFace,
       peerUrl
     )
