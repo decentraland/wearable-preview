@@ -26,6 +26,8 @@ jobs:
         run: npm ci --legacy-peer-deps
       - name: Build static-local
         run: npm run build:static-local
+        env: 
+          NODE_OPTIONS: --max_old_space_size=8192
       - name: Build for CDN
         run: npm run build
       - name: Move static-local into main build
@@ -41,4 +43,3 @@ jobs:
           gitlab-pipeline-url: ${{ secrets.GITLAB_CDN_DEPLOYER_URL }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NODE_OPTIONS: --max_old_space_size=8192
