@@ -41,3 +41,4 @@ jobs:
           gitlab-pipeline-url: ${{ secrets.GITLAB_CDN_DEPLOYER_URL }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_OPTIONS: --max_old_space_size=8192
