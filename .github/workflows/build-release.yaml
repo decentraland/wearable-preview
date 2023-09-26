@@ -30,6 +30,8 @@ jobs:
           NODE_OPTIONS: --max_old_space_size=8192
       - name: Build for CDN
         run: npm run build
+        env:
+          NODE_OPTIONS: --max_old_space_size=8192
       - name: Move static-local into main build
         run: mv ./static-local ./build/static-local
       - name: Publish
