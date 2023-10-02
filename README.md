@@ -181,7 +181,6 @@ window.addEventListener('message', handleMessage)
 ```
 
 Now you can use it like this:
-
 ```ts
 const screenshot = await sendRequest('scene', 'getScreenshot', [512, 512]) // "data:image/png;base64..."
 ```
