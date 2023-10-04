@@ -8,7 +8,6 @@ import {
   Vector3,
   Sound,
   Engine,
-  AudioEngine,
 } from '@babylonjs/core'
 import {
   IEmoteController,
@@ -29,10 +28,6 @@ let intervalId: number | undefined
 
 function isLooped(emote: PreviewEmote) {
   return loopedEmotes.includes(emote)
-}
-
-function getFramesPerSecond(animationGroup: AnimationGroup) {
-  return animationGroup.targetedAnimations[0].animation.framePerSecond
 }
 
 export function buildEmoteUrl(emote: PreviewEmote) {
@@ -152,15 +147,14 @@ export async function playEmote(scene: Scene, assets: Asset[], config: PreviewCo
 }
 
 function createController(animationGroup: AnimationGroup, loop: boolean, sound: Sound | null): IEmoteController {
-  const audioEngine = Engine.audioEngine || new AudioEngine()
+  Engine.audioEngine.useCustomUnlockedButton = true
+  Engine.audioEngine.setGlobalVolume(0)
+  let fromSecond: number | undefined = undefined
+  let fromGoTo = false
 
-  audioEngine.useCustomUnlockedButton = true
-  audioEngine.setGlobalVolume(0)
-  let from: number | null = null
   async function getLength() {
-    const framesPerSecond = getFramesPerSecond(animationGroup)
     // if there's no animation, it should return 0
-    return Math.max(animationGroup.to / framesPerSecond, 0)
+    return Math.max(animationGroup.to, 0)
   }
 
   async function isPlaying() {
@@ -172,19 +166,38 @@ function createController(animationGroup: AnimationGroup, loop: boolean, sound: 
   }
 
   async function goTo(seconds: number) {
-    const frame = seconds * getFramesPerSecond(animationGroup)
-    animationGroup.goToFrame(frame)
-    from = seconds
+    fromGoTo = true
+    const playing = await isPlaying()
+    if (playing) {
+      animationGroup.pause()
+    }
+    // for some reason the start() method doesn't work as expected if playing, so I need to stop it first
+    animationGroup.stop()
+    // I had to use this hack because the native goToFrame would not work as expected :/
+    animationGroup.start(false, 1, seconds, seconds, false)
+    fromSecond = seconds
+    // Set again the fromGoTo here because the `stop` event is emitted twice
+    fromGoTo = true
+
+    if (playing) {
+      play()
+    }
   }
 
   async function play() {
     if (!(await isPlaying())) {
-      animationGroup.play(loop)
-      if (from !== null) {
-        sound?.stop()
-        sound?.play(undefined, from, 0)
-        from = null
+      if (fromSecond) {
+        animationGroup.start(loop, 1, fromSecond, await getLength(), false)
+        if (sound) {
+          sound.stop()
+          // This is a hack to solve a bug in babylonjs version. This was finally fixed in Babylon PR: #13455.
+          // TODO: update babylon major version
+          sound['_startOffset'] = fromSecond
+          sound.play()
+        }
+        fromSecond = 0
       } else {
+        animationGroup.play(loop)
         sound?.play()
       }
     }
@@ -205,17 +218,16 @@ function createController(animationGroup: AnimationGroup, loop: boolean, sound: 
 
   async function enableSound() {
     if (!sound) return
-    audioEngine.unlock()
-    audioEngine.setGlobalVolume(1)
+    Engine.audioEngine.unlock()
+    Engine.audioEngine.setGlobalVolume(1)
     if (animationGroup.isPlaying && !sound.isPlaying) {
-      const framesPerSecond = getFramesPerSecond(animationGroup)
-      sound.play(undefined, animationGroup.animatables[0].masterFrame / framesPerSecond)
+      sound.play(undefined, animationGroup.targetedAnimations[0].animation.runtimeAnimations[0].currentFrame)
     }
   }
 
   async function disableSound() {
     if (!sound) return
-    audioEngine.setGlobalVolume(0)
+    Engine.audioEngine.setGlobalVolume(0)
   }
 
   const events = new EventEmitter()
@@ -228,10 +240,8 @@ function createController(animationGroup: AnimationGroup, loop: boolean, sound: 
     return window.setInterval(async () => {
       // Avoid emitting the event when the animation is paused or using GoTo because the masterFrame returns 0 for each request
       if ((await isPlaying()) && animationGroup.animatables[0].masterFrame > 0) {
-        const frame = animationGroup.targetedAnimations[0].animation.runtimeAnimations[0].currentFrame
-        const framesPerSecond = getFramesPerSecond(animationGroup)
         return events.emit(PreviewEmoteEventType.ANIMATION_PLAYING, {
-          length: frame / framesPerSecond,
+          length: animationGroup.animatables[0]?.masterFrame,
         })
       }
     }, 10)
@@ -239,9 +249,11 @@ function createController(animationGroup: AnimationGroup, loop: boolean, sound: 
 
   const clearEmitPlayingEvent = () => {
     clearInterval(intervalId)
-    events.emit(PreviewEmoteEventType.ANIMATION_PLAYING, {
-      length: animationGroup.to,
-    })
+    if (!fromGoTo) {
+      events.emit(PreviewEmoteEventType.ANIMATION_PLAYING, {
+        length: animationGroup.to,
+      })
+    }
   }
 
   // forward observable events to event emitter
@@ -250,20 +262,26 @@ function createController(animationGroup: AnimationGroup, loop: boolean, sound: 
     return events.emit(PreviewEmoteEventType.ANIMATION_PLAY)
   })
   animationGroup.onAnimationGroupPauseObservable.add(() => {
-    sound?.pause()
     events.emit(PreviewEmoteEventType.ANIMATION_PAUSE)
   })
   animationGroup.onAnimationGroupLoopObservable.add(() => {
-    from = null
     sound?.stop()
     sound?.play()
+    // It's required to stop and start a looping animation again from 0 when using the Go To feature,
+    // otherwise the animation will continue playing from the GoTo chosen frame
+    if (fromGoTo) {
+      stop()
+      play()
+      fromGoTo = false
+    }
     return events.emit(PreviewEmoteEventType.ANIMATION_LOOP)
   })
   animationGroup.onAnimationGroupEndObservable.add(() => {
-    from = null
-    sound?.stop()
     // Send the last frame when the animation ends and the event: end is not emitted by a goTo
     clearEmitPlayingEvent()
+    if (!loop) {
+      fromGoTo = false
+    }
     return events.emit(PreviewEmoteEventType.ANIMATION_END)
   })
 

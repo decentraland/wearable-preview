@@ -75,7 +75,7 @@ export function getSlots(config: PreviewConfig) {
     const replaced = wearable.data.replaces || []
     const hidden = wearable.data.hides || []
     const toRemove = Array.from(new Set([...replaced, ...hidden])).filter(
-      (category) => !config.forceRender.includes(category)
+      (category) => !config.forceRender?.includes(category)
     )
     for (const slot of toRemove) {
       if (slot !== category) {
