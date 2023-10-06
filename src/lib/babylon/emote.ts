@@ -122,7 +122,7 @@ export async function playEmote(scene: Scene, assets: Asset[], config: PreviewCo
           for (const targetedAnimation of animationGroup.targetedAnimations) {
             const animation = targetedAnimation.animation
             const target = targetedAnimation.target as TransformNode
-            if (animationGroup.name.includes('Avatar') || container.animationGroups.length === 1) {
+            if (animationGroup.name.toLowerCase().includes('avatar') || container.animationGroups.length === 1) {
               const newTargets = nodes.get(target.id)
               if (newTargets && newTargets.length > 0) {
                 for (const newTarget of newTargets) {
