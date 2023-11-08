@@ -364,6 +364,10 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
     customWearable = wearables[1]
   }
 
+  // the zoom scale values is used to achieve extra zoom. It was implemented as a separate option to don't break the behavior of the zoom property. By default is 1 and it makes no change to the regular zoom.
+  const zoomScale =
+    typeof options.zoomScale !== 'number' || isNaN(options.zoomScale) || options.zoomScale <= 0 ? 1 : options.zoomScale
+
   return {
     // item is the most important prop, if not preset we use the blob prop, and if none, we use the last emote from the list (if any)
     item: item ?? blob ?? customWearable ?? emotes.pop(),
@@ -387,7 +391,7 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
     cameraX,
     cameraY,
     cameraZ,
-    zoom: typeof options.zoom === 'number' ? computeZoom(options.zoom) : zoom,
+    zoom: (typeof options.zoom === 'number' ? computeZoom(options.zoom) : zoom) * zoomScale,
     wheelZoom,
     wheelPrecision,
     wheelStart,
