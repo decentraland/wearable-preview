@@ -16,6 +16,7 @@ export const useOptions = () => {
     const cameraXParam = params.get('cameraX') as string | null
     const cameraYParam = params.get('cameraY') as string | null
     const cameraZParam = params.get('cameraZ') as string | null
+    const zoomScaleParam = params.get('zoomScale') as string | null
     const wheelZoomParam = params.get('wheelZoom') as string | null
     const wheelPrecisionParam = params.get('wheelPrecision') as string | null
     const wheelStartParam = params.get('wheelStart') as string | null
@@ -60,6 +61,7 @@ export const useOptions = () => {
       wheelPrecision: wheelPrecisionParam ? parseFloat(wheelPrecisionParam) : null,
       wheelStart: wheelStartParam ? parseFloat(wheelStartParam) : null,
       zoom: parseZoom(params.get('zoom')),
+      zoomScale: zoomScaleParam ? parseFloat(zoomScaleParam) : null,
       bodyShape:
         bodyShapeParam === 'female' || bodyShapeParam === BodyShape.FEMALE
           ? BodyShape.FEMALE

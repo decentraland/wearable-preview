@@ -15,6 +15,7 @@ This webapp renders an interactive 3D preview of a wearable or an avatar. It can
 - `bodyShape`: which body shape to use, possible values are `urn:decentraland:off-chain:base-avatars:BaseMale` or `urn:decentraland:off-chain:base-avatars:BaseFemale`.
 - `emote`: the emote that the avatar will play. Default value is `idle`, other possible values are: `clap`, `dab`, `dance`, `fashion`, `fashion-2`, `fashion-3`,`fashion-4`, `love`, `money`, `fist-pump` and `head-explode`.
 - `zoom`: the level of zoom, it must be a number between 1 and 100.
+- `zoomScale`: a multiplier for the zoom level. By default is `1` but it can be increased to get extra zoom.
 - `camera`: which camera type to use, either `interactive` or `static`. By default it uses the `interactive` one.
 - `projection`: which projection type to use, either `orthographic` or `perspective`. By default it uses the `perspective` one.
 - `offsetX`: apply an offset in the X position of the scene. By default is `0`.
@@ -181,6 +182,7 @@ window.addEventListener('message', handleMessage)
 ```
 
 Now you can use it like this:
+
 ```ts
 const screenshot = await sendRequest('scene', 'getScreenshot', [512, 512]) // "data:image/png;base64..."
 ```

@@ -145,6 +145,7 @@ export async function createScene(
   // Setup Camera
   const camera = new ArcRotateCamera('camera', 0, 0, 0, new Vector3(0, 0, 0), root)
   camera.position = new Vector3(config.cameraX, config.cameraY, config.cameraZ)
+  camera.minZ = 0.1
 
   switch (config.projection) {
     case PreviewProjection.PERSPECTIVE: {
