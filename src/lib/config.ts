@@ -36,6 +36,15 @@ import {
 import { computeZoom, getZoom } from './zoom'
 
 const DEFAULT_PROFILE = 'default'
+const QUANTITY_OF_PARTS_ON_SHORTENED_ITEMS_URN = 6
+
+function getTokenIdAndAssetUrn(completeUrn: string): { assetUrn: string; tokenId: string | undefined } {
+  const lastIndex = completeUrn.lastIndexOf(':')
+
+  return lastIndex !== -1 && completeUrn.split(':').length > QUANTITY_OF_PARTS_ON_SHORTENED_ITEMS_URN
+    ? { assetUrn: completeUrn.substring(0, lastIndex), tokenId: completeUrn.substring(lastIndex + 1) }
+    : { assetUrn: completeUrn, tokenId: undefined }
+}
 
 async function fetchItem(urn: string, peerUrl: string) {
   const [wearables, emotes] = await fetchURNs([urn], peerUrl)
@@ -86,7 +95,10 @@ async function fetchURNs(urns: string[], peerUrl: string): Promise<[WearableDefi
   if (urns.length === 0) {
     return [[], []]
   }
-  return peerApi.fetchItems(urns, peerUrl)
+
+  const sanitizedAssetUrns = urns.map((urn: string) => getTokenIdAndAssetUrn(urn).assetUrn)
+
+  return peerApi.fetchItems(sanitizedAssetUrns, peerUrl)
 }
 
 async function fetchURLs(urls: string[]): Promise<[WearableDefinition[], EmoteDefinition[]]> {
