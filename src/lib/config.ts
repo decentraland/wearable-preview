@@ -76,7 +76,20 @@ function isValidAddress(address: string): boolean {
 }
 
 function sanitizeProfile(profile: string | null | undefined) {
-  if (profile === 'default' || (profile && isValidAddress(profile))) {
+  if (!profile) {
+    return null
+  }
+
+  if (profile === DEFAULT_PROFILE) {
+    return profile
+  }
+
+  // Accept numbered default profiles. Eg: default1, default2, etc
+  if (profile.startsWith(DEFAULT_PROFILE)) {
+    return isNaN(Number(profile.replace(DEFAULT_PROFILE, ''))) ? null : profile
+  }
+
+  if (isValidAddress(profile)) {
     return profile
   }
 
