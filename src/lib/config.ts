@@ -37,6 +37,7 @@ import { computeZoom, getZoom } from './zoom'
 
 const DEFAULT_PROFILE = 'default'
 const QUANTITY_OF_PARTS_ON_SHORTENED_ITEMS_URN = 6
+const OLD_BASE_AVATAR_PREFIX = 'dcl://base-avatars/'
 
 function getTokenIdAndAssetUrn(completeUrn: string): { assetUrn: string; tokenId: string | undefined } {
   const lastIndex = completeUrn.lastIndexOf(':')
@@ -109,7 +110,13 @@ async function fetchURNs(urns: string[], peerUrl: string): Promise<[WearableDefi
     return [[], []]
   }
 
-  const sanitizedAssetUrns = urns.map((urn: string) => getTokenIdAndAssetUrn(urn).assetUrn)
+  const sanitizedAssetUrns = urns
+    .map((urn: string) =>
+      urn.startsWith(OLD_BASE_AVATAR_PREFIX)
+        ? urn.replace(OLD_BASE_AVATAR_PREFIX, 'urn:decentraland:off-chain:base-avatars:')
+        : urn
+    )
+    .map((urn: string) => getTokenIdAndAssetUrn(urn).assetUrn)
 
   return peerApi.fetchItems(sanitizedAssetUrns, peerUrl)
 }
