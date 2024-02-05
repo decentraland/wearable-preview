@@ -22,7 +22,7 @@ import { startAutoRotateBehavior } from './camera'
 import { Asset, loadAssetContainer, loadSound } from './scene'
 import { getEmoteRepresentation } from '../representation'
 
-const loopedEmotes = [PreviewEmote.IDLE, PreviewEmote.MONEY, PreviewEmote.CLAP]
+const loopedEmotes = [PreviewEmote.IDLE, PreviewEmote.MONEY, PreviewEmote.CLAP, PreviewEmote.WALK, PreviewEmote.RUN, PreviewEmote.JUMP]
 
 let intervalId: number | undefined
 
