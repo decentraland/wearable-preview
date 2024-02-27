@@ -10,13 +10,15 @@ on:
 
 jobs:
   build-release:
+    permissions:
+      id-token: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
-      - name: Use Node.js 16.x
-        uses: actions/setup-node@v1
+      - name: Use Node.js 18.x
+        uses: actions/setup-node@v4.0.1
         with:
-          node-version: 16.x
+          node-version: 18.x
       - name: set package.json version
         uses: menduz/oddish-action@master
         with:
@@ -26,7 +28,7 @@ jobs:
         run: npm ci --legacy-peer-deps
       - name: Build static-local
         run: npm run build:static-local
-        env: 
+        env:
           NODE_OPTIONS: --max_old_space_size=8192
       - name: Build for CDN
         run: npm run build
