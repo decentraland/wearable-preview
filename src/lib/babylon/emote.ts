@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events'
+import mitt from 'mitt'
 import {
   AnimationGroup,
   ArcRotateCamera,
@@ -22,7 +22,14 @@ import { startAutoRotateBehavior } from './camera'
 import { Asset, loadAssetContainer, loadSound } from './scene'
 import { getEmoteRepresentation } from '../representation'
 
-const loopedEmotes = [PreviewEmote.IDLE, PreviewEmote.MONEY, PreviewEmote.CLAP, PreviewEmote.WALK, PreviewEmote.RUN, PreviewEmote.JUMP]
+const loopedEmotes = [
+  PreviewEmote.IDLE,
+  PreviewEmote.MONEY,
+  PreviewEmote.CLAP,
+  PreviewEmote.WALK,
+  PreviewEmote.RUN,
+  PreviewEmote.JUMP,
+]
 
 let intervalId: number | undefined
 
@@ -64,7 +71,11 @@ export function loadEmoteSound(scene: Scene, emote: EmoteDefinition, config: Pre
   return loadSound(scene, representation)
 }
 
-export async function playEmote(scene: Scene, assets: Asset[], config: PreviewConfig) {
+export async function playEmote(
+  scene: Scene,
+  assets: Asset[],
+  config: PreviewConfig
+): Promise<IEmoteController | undefined> {
   // load asset container for emote
   let container: AssetContainer | undefined
   let loop = !!config.emote && isLooped(config.emote)
@@ -234,7 +245,16 @@ function createController(animationGroup: AnimationGroup, loop: boolean, sound: 
     Engine.audioEngine.setGlobalVolume(0)
   }
 
-  const events = new EventEmitter()
+  // Temporary typed events.
+  type Events = {
+    [PreviewEmoteEventType.ANIMATION_PLAY]: void
+    [PreviewEmoteEventType.ANIMATION_PAUSE]: void
+    [PreviewEmoteEventType.ANIMATION_LOOP]: void
+    [PreviewEmoteEventType.ANIMATION_END]: void
+    [PreviewEmoteEventType.ANIMATION_PLAYING]: { length: number }
+  }
+
+  const events = mitt<Events>()
 
   // Emit the PreviewEmoteEventType.ANIMATION_PLAYING event with the current playing frame
   const emitPlayingEvent = () => {
