@@ -1,4 +1,4 @@
-import EventEmitter from '@foxify/events'
+import mitt from 'mitt'
 import {
   AnimationGroup,
   ArcRotateCamera,
@@ -247,14 +247,14 @@ function createController(animationGroup: AnimationGroup, loop: boolean, sound: 
 
   // Temporary typed events.
   type Events = {
-    [PreviewEmoteEventType.ANIMATION_PLAY]: () => unknown
-    [PreviewEmoteEventType.ANIMATION_PAUSE]: () => unknown
-    [PreviewEmoteEventType.ANIMATION_LOOP]: () => unknown
-    [PreviewEmoteEventType.ANIMATION_END]: () => unknown
-    [PreviewEmoteEventType.ANIMATION_PLAYING]: ({ length }: { length: number }) => unknown
+    [PreviewEmoteEventType.ANIMATION_PLAY]: void
+    [PreviewEmoteEventType.ANIMATION_PAUSE]: void
+    [PreviewEmoteEventType.ANIMATION_LOOP]: void
+    [PreviewEmoteEventType.ANIMATION_END]: void
+    [PreviewEmoteEventType.ANIMATION_PLAYING]: { length: number }
   }
 
-  const events = new EventEmitter<Events>()
+  const events = mitt<Events>()
 
   // Emit the PreviewEmoteEventType.ANIMATION_PLAYING event with the current playing frame
   const emitPlayingEvent = () => {

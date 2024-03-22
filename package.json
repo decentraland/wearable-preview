@@ -22,6 +22,7 @@
     "decentraland-ui": "^3.49.0",
     "deep-equal": "^2.0.5",
     "fp-future": "^1.0.1",
+    "mitt": "^3.0.1",
     "prettier": "^2.4.1",
     "raw-loader": "^4.0.2",
     "react": "^17.0.2",
@@ -65,8 +66,5 @@
     "singleQuote": true,
     "printWidth": 120
   },
-  "homepage": "",
-  "devDependencies": {
-    "@foxify/events": "^2.1.0"
-  }
+  "homepage": ""
 }
