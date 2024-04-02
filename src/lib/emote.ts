@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events'
+import mitt from 'mitt'
 import { IEmoteController, WearableDefinition, EmoteDefinition } from '@dcl/schemas'
 
 export function isEmote(definition: WearableDefinition | EmoteDefinition | void): definition is EmoteDefinition {
@@ -40,6 +40,6 @@ export function createInvalidEmoteController(): IEmoteController {
     hasSound() {
       throw new InvalidEmoteError()
     },
-    events: new EventEmitter()
+    events: mitt(),
   }
 }

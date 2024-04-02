@@ -30,6 +30,7 @@ const Preview: React.FC = () => {
   const showCanvas = is3D && !isLoading
 
   useEffect(() => {
+    let removeEmoteEvents: () => unknown = () => {}
     if (canvasRef.current && config) {
       let style: React.CSSProperties = { opacity: 1 } // fade in effect
 
@@ -57,7 +58,7 @@ const Preview: React.FC = () => {
             // set new controller as current one
             controller.current = newController
             // handle emote events and forward them as messages
-            handleEmoteEvents(controller.current)
+            removeEmoteEvents = handleEmoteEvents(controller.current)
           })
           .catch((error) => setPreviewError(error.message))
           .finally(() => {
@@ -65,6 +66,10 @@ const Preview: React.FC = () => {
             setIsLoaded(true)
           })
       }
+    }
+
+    return () => {
+      removeEmoteEvents()
     }
   }, [canvasRef.current, config]) // eslint-disable-line
 
