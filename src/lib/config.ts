@@ -37,11 +37,12 @@ import { computeZoom, getZoom } from './zoom'
 
 const DEFAULT_PROFILE = 'default'
 const QUANTITY_OF_PARTS_ON_SHORTENED_ITEMS_URN = 6
+const THIRD_PARTY_URN_ID = "collections-thirdparty"
 
 function getTokenIdAndAssetUrn(completeUrn: string): { assetUrn: string; tokenId: string | undefined } {
   const lastIndex = completeUrn.lastIndexOf(':')
 
-  return lastIndex !== -1 && completeUrn.split(':').length > QUANTITY_OF_PARTS_ON_SHORTENED_ITEMS_URN
+  return lastIndex !== -1 && completeUrn.split(':').length > QUANTITY_OF_PARTS_ON_SHORTENED_ITEMS_URN && !completeUrn.includes(THIRD_PARTY_URN_ID)
     ? { assetUrn: completeUrn.substring(0, lastIndex), tokenId: completeUrn.substring(lastIndex + 1) }
     : { assetUrn: completeUrn, tokenId: undefined }
 }
