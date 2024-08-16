@@ -64,7 +64,7 @@ function getTokenIdAndAssetUrn(completeUrn: string): URNData {
       network: urnProperties[7],
     }
   } else if (urnPropertiesLength > QUANTITY_OF_PARTS_ON_SHORTENED_ITEMS_URN) {
-    result = { assetUrn: urnProperties.slice(0, -1).join(':'), tokenId: urnProperties[urnProperties.length - 1] }
+    result = { assetUrn: urnProperties.slice(0, -1).join(':'), tokenId: urnProperties[urnPropertiesLength - 1] }
   }
 
   return result ?? { assetUrn: completeUrn, tokenId: undefined }
