@@ -37,14 +37,40 @@ import { computeZoom, getZoom } from './zoom'
 
 const DEFAULT_PROFILE = 'default'
 const QUANTITY_OF_PARTS_ON_SHORTENED_ITEMS_URN = 6
-const THIRD_PARTY_URN_ID = "collections-thirdparty"
+const THIRD_PARTY_URN_ID = 'collections-thirdparty'
+const MAPPED_THIRD_PARTY_ITEM_FULL_URN_PROPERTIES_LENGTH = 10
 
-function getTokenIdAndAssetUrn(completeUrn: string): { assetUrn: string; tokenId: string | undefined } {
-  const lastIndex = completeUrn.lastIndexOf(':')
+type URNData = {
+  assetUrn: string
+  tokenId?: string
+  network?: string
+  contractAddress?: string
+}
 
-  return lastIndex !== -1 && completeUrn.split(':').length > QUANTITY_OF_PARTS_ON_SHORTENED_ITEMS_URN && !completeUrn.includes(THIRD_PARTY_URN_ID)
-    ? { assetUrn: completeUrn.substring(0, lastIndex), tokenId: completeUrn.substring(lastIndex + 1) }
-    : { assetUrn: completeUrn, tokenId: undefined }
+function getTokenIdAndAssetUrn(completeUrn: string): URNData {
+  const urnProperties = completeUrn.split(':')
+  const urnPropertiesLength = urnProperties.length
+
+  let result: URNData | undefined
+
+  if (
+    completeUrn.includes(THIRD_PARTY_URN_ID) &&
+    urnPropertiesLength === MAPPED_THIRD_PARTY_ITEM_FULL_URN_PROPERTIES_LENGTH
+  ) {
+    result = {
+      assetUrn: urnProperties.slice(0, 7).join(':'),
+      tokenId: urnProperties[9],
+      contractAddress: urnProperties[8],
+      network: urnProperties[7],
+    }
+  } else if (
+    !completeUrn.includes(THIRD_PARTY_URN_ID) &&
+    urnPropertiesLength > QUANTITY_OF_PARTS_ON_SHORTENED_ITEMS_URN
+  ) {
+    result = { assetUrn: urnProperties.slice(0, -1).join(':'), tokenId: urnProperties[urnPropertiesLength - 1] }
+  }
+
+  return result ?? { assetUrn: completeUrn, tokenId: undefined }
 }
 
 async function fetchItem(urn: string, peerUrl: string) {
