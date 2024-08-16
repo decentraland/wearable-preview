@@ -67,7 +67,7 @@ function getTokenIdAndAssetUrn(completeUrn: string): URNData {
     !completeUrn.includes(THIRD_PARTY_URN_ID) &&
     urnPropertiesLength > QUANTITY_OF_PARTS_ON_SHORTENED_ITEMS_URN
   ) {
-    result = { assetUrn: urnProperties.slice(0, -1).join(':'), tokenId: urnProperties[urnProperties.length - 1] }
+    result = { assetUrn: urnProperties.slice(0, -1).join(':'), tokenId: urnProperties[urnPropertiesLength - 1] }
   }
 
   return result ?? { assetUrn: completeUrn, tokenId: undefined }
