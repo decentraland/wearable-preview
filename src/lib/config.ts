@@ -133,11 +133,9 @@ async function fetchURNs(urns: string[], peerUrl: string): Promise<[WearableDefi
     return [[], []]
   }
 
-  console.log('All URNs', urns)
   const sanitizedAssetUrns = urns
     .map((urn: string) => urn.replace(/^dcl:\/\/base-avatars\//, 'urn:decentraland:off-chain:base-avatars:'))
     .map((urn: string) => getTokenIdAndAssetUrn(urn).assetUrn)
-  console.log('Sanitized asset urns', sanitizedAssetUrns)
 
   return peerApi.fetchItems(sanitizedAssetUrns, peerUrl)
 }
