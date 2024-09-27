@@ -44,6 +44,18 @@ const categoriesPriority = [
   WearableCategory.BODY_SHAPE
 ]
 
+function getHides(wearable: WearableDefinition) {    
+  const category = wearable.data.category 
+  const replaced = wearable.data.replaces || []
+  const hidden = wearable.data.hides || []
+  if (category === WearableCategory.SKIN) {
+    hidden.push(...categoriesHiddenBySkin)
+  }
+  return Array.from(new Set([...replaced, ...hidden])).filter(
+    ($) => $ !== category
+  )
+}
+
 export function getSlots(config: PreviewConfig) {
   const slots = new Map<HideableWearableCategory, WearableDefinition>()
 
@@ -85,6 +97,7 @@ export function getSlots(config: PreviewConfig) {
       slots.set(slot, wearable)
     }
   }
+  const forceRender = config.forceRender || []
   const alreadyRemoved = new Set<HideableWearableCategory>()
   for (const category of categoriesPriority) {
     const wearable = slots.get(category)
@@ -96,20 +109,14 @@ export function getSlots(config: PreviewConfig) {
       continue
     }
     
-    const replaced = wearable.data.replaces || []
-    const hidden = wearable.data.hides || []
-    if (category === WearableCategory.SKIN) {
-      hidden.push(...categoriesHiddenBySkin)
+    for (const slot of getHides(wearable)) {
+      alreadyRemoved.add(slot)
     }
-    const toRemove = Array.from(new Set([...replaced, ...hidden])).filter(
-      (category) => !config.forceRender?.includes(category)
-    )
-    for (const slot of toRemove) {
-      if (slot !== category) {
-        slots.delete(slot)
-        alreadyRemoved.add(slot)
-      }
-    }
+  }
+
+  const toHide = Array.from(alreadyRemoved).filter(category => !forceRender.includes(category))
+  for (const category of toHide) {
+    slots.delete(category)
   }
 
   return slots
