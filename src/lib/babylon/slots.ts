@@ -22,6 +22,28 @@ const categoriesHiddenBySkin = [
   BodyPartCategory.HANDS,
 ]
 
+// based on https://adr.decentraland.org/adr/ADR-239
+const categoriesPriority = [
+  WearableCategory.SKIN,
+  WearableCategory.UPPER_BODY,
+  WearableCategory.HANDS_WEAR,
+  WearableCategory.LOWER_BODY,
+  WearableCategory.FEET,
+  WearableCategory.HELMET,
+  WearableCategory.HAT,
+  WearableCategory.TOP_HEAD,
+  WearableCategory.MASK,
+  WearableCategory.EYEWEAR,
+  WearableCategory.EARRING,
+  WearableCategory.TIARA,
+  WearableCategory.HAIR,
+  WearableCategory.EYEBROWS,
+  WearableCategory.EYES,
+  WearableCategory.MOUTH,
+  WearableCategory.FACIAL_HAIR,
+  WearableCategory.BODY_SHAPE
+]
+
 export function getSlots(config: PreviewConfig) {
   const slots = new Map<HideableWearableCategory, WearableDefinition>()
 
@@ -63,17 +85,22 @@ export function getSlots(config: PreviewConfig) {
       slots.set(slot, wearable)
     }
   }
-  let hasSkin = false
-  // grab only the wearables that ended up in the map, and process in reverse order (last wearables can hide/replace the first ones)
-  wearables = wearables.filter((wearable) => slots.get(wearable.data.category) === wearable).reverse()
   const alreadyRemoved = new Set<HideableWearableCategory>()
-  for (const wearable of wearables) {
-    const category = wearable.data.category
+  for (const category of categoriesPriority) {
+    const wearable = slots.get(category)
+    if (!wearable) {
+      continue
+    }
+
     if (alreadyRemoved.has(category)) {
       continue
     }
+    
     const replaced = wearable.data.replaces || []
     const hidden = wearable.data.hides || []
+    if (category === WearableCategory.SKIN) {
+      hidden.push(...categoriesHiddenBySkin)
+    }
     const toRemove = Array.from(new Set([...replaced, ...hidden])).filter(
       (category) => !config.forceRender?.includes(category)
     )
@@ -82,15 +109,6 @@ export function getSlots(config: PreviewConfig) {
         slots.delete(slot)
         alreadyRemoved.add(slot)
       }
-    }
-    if (wearable.data.category === WearableCategory.SKIN) {
-      hasSkin = true
-    }
-  }
-  // skins hide all the following slots
-  if (hasSkin) {
-    for (const category of categoriesHiddenBySkin) {
-      slots.delete(category)
     }
   }
 
