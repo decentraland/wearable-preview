@@ -102,22 +102,34 @@ function isValidAddress(address: string): boolean {
   return /^0x[a-fA-F0-9]{40}$/g.test(address)
 }
 
-function sanitizeProfile(profile: string | null | undefined) {
+function isValidCIDv1(entity: string): boolean {
+  return /^baf[a-z2-7]{56}$/.test(entity)
+}
+
+function sanitizeProfile(profile: string | null | undefined): {
+  type: 'address' | 'entity',
+  value: string
+} | null {
   if (!profile) {
     return null
   }
 
   if (profile === DEFAULT_PROFILE) {
-    return profile
+    return { type: 'address', value: profile }
   }
 
   // Accept numbered default profiles. Eg: default1, default2, etc
   if (profile.startsWith(DEFAULT_PROFILE)) {
-    return isNaN(Number(profile.replace(DEFAULT_PROFILE, ''))) ? null : profile
+    return isNaN(Number(profile.replace(DEFAULT_PROFILE, ''))) ? null : { type: 'address', value: profile }
   }
 
   if (isValidAddress(profile)) {
-    return profile
+    return { type: 'address', value: profile }
+  }
+
+  // for now it only supports CIDv1
+  if (isValidCIDv1(profile)) {
+    return { type: 'entity', value: profile }
   }
 
   return null
@@ -167,6 +179,16 @@ async function fetchProfile(profile: string, peerUrl: string) {
     }
     const resp = await peerApi
       .fetchProfile(profile, peerUrl)
+      .then((profile) => (profile && profile.avatars.length > 0 ? profile.avatars[0] : null))
+      .catch((error: Error) => console.log(`Failed to load profile="${profile}"`, error))
+    return resp || null
+  })
+}
+
+async function fetchProfileEntity(profile: string, peerUrl: string) {
+  return profileMemo.memo(profile, async () => {
+    const resp = await peerApi
+      .fetchProfileEntity(profile, peerUrl)
       .then((profile) => (profile && profile.avatars.length > 0 ? profile.avatars[0] : null))
       .catch((error: Error) => console.log(`Failed to load profile="${profile}"`, error))
     return resp || null
@@ -267,7 +289,11 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
 
   // load profile
   const sanitizedProfile = sanitizeProfile(options.profile)
-  const profilePromise = sanitizedProfile ? fetchProfile(sanitizedProfile, peerUrl) : Promise.resolve(null)
+  const profilePromise = sanitizedProfile ? 
+      sanitizedProfile.type === 'address' ? 
+        fetchProfile(sanitizedProfile.value, peerUrl) : 
+        fetchProfileEntity(sanitizedProfile.value, peerUrl) 
+      : Promise.resolve(null)
 
   // await promises
   const [item, profile] = await Promise.all([itemPromise, profilePromise] as const)

@@ -124,6 +124,20 @@ class PeerApi {
       return null
     }
   }
+
+  async fetchProfileEntity(content: string, peerUrl: string) {
+    try {
+      const entity = await json<Entity>(`${peerUrl}/content/contents/${content}`)
+      if (entity.type !== 'profile') {
+        throw new Error('The content is not a profile')
+      }
+
+      return entity.metadata as Profile
+    } catch (error) {
+      console.error('There was an error loading the profile', error)
+      return null
+    }
+  }
 }
 
 export const peerApi = new PeerApi()
