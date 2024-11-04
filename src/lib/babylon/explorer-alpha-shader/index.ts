@@ -1,6 +1,6 @@
 import { ShaderMaterial, ShaderLanguage, Scene, ShaderStore } from '@babylonjs/core'
 import { customFragmentShader } from './fragment'
-import { customVertexShader } from './vetex'
+import { customVertexShader } from './vertex'
 
 export function createShader(scene: Scene) {
   ShaderStore.ShadersStore['customVertexShader'] = customVertexShader
