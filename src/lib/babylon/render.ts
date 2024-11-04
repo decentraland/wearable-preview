@@ -89,6 +89,17 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
       center(scene)
     }
 
+    // shader
+    const shaderMaterial = scene.materials.find((material) => material.name === 'shader')
+    if (shaderMaterial) {
+      for (const mesh of scene.meshes) {
+        mesh.material = shaderMaterial
+      }
+      console.log(`Shader material applied to ${scene.meshes.length} meshes`)
+    } else {
+      throw new Error('Shader not found')
+    }
+
     // return preview controller
     const controller: IPreviewController = {
       scene: sceneController,
