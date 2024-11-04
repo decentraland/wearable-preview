@@ -11,7 +11,6 @@ import { Color3, PBRMaterial, Scene } from '@babylonjs/core'
 import { WearableDefinition, BodyShape } from '@dcl/schemas'
 import { getWearableRepresentation, isTexture, getContentUrl } from '../representation'
 import { loadAssetContainer } from './scene'
-import './toon'
 
 export async function loadWearable(
   scene: Scene,
