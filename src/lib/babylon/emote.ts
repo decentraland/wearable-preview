@@ -162,8 +162,10 @@ export async function playEmote(
 }
 
 function createController(animationGroup: AnimationGroup, loop: boolean, sound: Sound | null): IEmoteController {
-  Engine.audioEngine.useCustomUnlockedButton = true
-  Engine.audioEngine.setGlobalVolume(0)
+  if (Engine.audioEngine) {
+    Engine.audioEngine.useCustomUnlockedButton = true
+    Engine.audioEngine.setGlobalVolume(0)
+  }
   let fromSecond: number | undefined = undefined
   let fromGoTo = false
 
@@ -205,9 +207,6 @@ function createController(animationGroup: AnimationGroup, loop: boolean, sound: 
         animationGroup.start(loop, 1, fromSecond, await getLength(), false)
         if (sound) {
           sound.stop()
-          // This is a hack to solve a bug in babylonjs version. This was finally fixed in Babylon PR: #13455.
-          // TODO: update babylon major version
-          sound['_startOffset'] = fromSecond
           sound.play()
         }
         fromSecond = 0
@@ -233,8 +232,10 @@ function createController(animationGroup: AnimationGroup, loop: boolean, sound: 
 
   async function enableSound() {
     if (!sound) return
-    Engine.audioEngine.unlock()
-    Engine.audioEngine.setGlobalVolume(1)
+    if (Engine.audioEngine) {
+      Engine.audioEngine.unlock()
+      Engine.audioEngine.setGlobalVolume(1)
+    }
     if (animationGroup.isPlaying && !sound.isPlaying) {
       sound.play(undefined, animationGroup.targetedAnimations[0].animation.runtimeAnimations[0].currentFrame)
     }
@@ -242,7 +243,9 @@ function createController(animationGroup: AnimationGroup, loop: boolean, sound: 
 
   async function disableSound() {
     if (!sound) return
-    Engine.audioEngine.setGlobalVolume(0)
+    if (Engine.audioEngine) {
+      Engine.audioEngine.setGlobalVolume(0)
+    }
   }
 
   // Temporary typed events.
