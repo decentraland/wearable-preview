@@ -38,87 +38,88 @@ in vec3 vNormalW;
 in vec2 vUV;
 
 // Refs
-uniform float _AlphaToMaskAvailable;
-uniform float _Clipping_Level;
-uniform float _Unlit_Intensity;
-uniform float _Is_BLD;
-uniform float _Offset_X_Axis_BLD;
-uniform float _Offset_Y_Axis_BLD;
-uniform float _Inverse_Z_Axis_BLD;
-uniform float _Is_Filter_LightColor;
-uniform float _Is_LightColor_Base;
-uniform vec3 _Color;
-uniform vec3 _1st_ShadeColor;
-uniform vec3 _2nd_ShadeColor;
-uniform float _Use_BaseAs1st;
-uniform float _Is_LightColor_1st_Shade;
-uniform float _Use_1stAs2nd;
-uniform float _Is_LightColor_2nd_Shade;
-uniform float _Is_NormalMapToBase;
-uniform float _Tweak_SystemShadowsLevel;
-uniform float _Set_SystemShadowsToBase;
-uniform float _BaseColor_Step;
-uniform float _BaseShade_Feather;
-uniform vec3 _ShadeColor_Step;
-uniform vec3 _1st2nd_Shades_Feather;
-uniform float _Is_NormalMapToHighColor;
-uniform float _Tweak_HighColorMaskLevel;
-uniform float _HighColor_Power;
-uniform float _Is_SpecularToHighColor;
-uniform vec3 _HighColor;
-uniform float _Is_LightColor_HighColor;
-uniform float _Is_BlendAddToHiColor;
-uniform float _TweakHighColorOnShadow;
-uniform float _Is_UseTweakHighColorOnShadow;
-uniform vec3 _RimLightColor;
-uniform float _Is_LightColor_RimLight;
-uniform float _Is_NormalMapToRimLight;
-uniform float _RimLight_Power;
-uniform float _RimLight_InsideMask;
-uniform float _RimLight_FeatherOff;
-uniform float _Tweak_LightDirection_MaskLevel;
-uniform float _LightDirection_MaskOn;
-uniform float _Ap_RimLight_Power;
-uniform float _Tweak_RimLightMaskLevel;
-uniform vec3 _Ap_RimLightColor;
-uniform float _Is_LightColor_Ap_RimLight;
-uniform float _Ap_RimLight_FeatherOff;
-uniform float _Add_Antipodean_RimLight;
-uniform float _RimLight;
-uniform float _Rotate_MatCapUV;
-uniform float _CameraRolling_Stabilizer;
-uniform float _Rotate_NormalMapForMatCapUV;
-uniform float _BumpScaleMatcap;
-uniform float _Is_NormalMapForMatCap;
-uniform float _Is_Ortho;
-uniform float _Tweak_MatCapUV;
-uniform float _Inverse_MatcapMask;
-uniform float _Tweak_MatcapMaskLevel;
-uniform vec4 _MatCapColor;
-uniform float _Is_LightColor_MatCap;
-uniform float _TweakMatCapOnShadow;
-uniform float _Is_BlendAddToMatCap;
-uniform float _Is_UseTweakMatCapOnShadow;
-uniform float _MatCap;
-uniform vec4 _Emissive_Color;
-uniform float _GI_Intensity;
-uniform vec4 emissive;
-uniform float _BlurLevelMatcap;
-uniform vec4 _BaseColor;
-uniform float _Cutoff;
-uniform float _Smoothness;
-uniform half _BumpScale;
-uniform vec4 _EmissionColor;
-uniform vec4 _GlossyEnvironmentColor;
+float _AlphaToMaskAvailable	= 1.00f;
+float _Clipping_Level = 0.00f;
+float _Unlit_Intensity = 4.00f;
+float _Is_BLD = 0.00f;
+float _Offset_X_Axis_BLD = -0.05f;
+float _Offset_Y_Axis_BLD = 0.09f;
+float _Inverse_Z_Axis_BLD = 1.00f;
+float _Is_Filter_LightColor = 1.00f;
+float _Is_LightColor_Base = 1.00f;
+vec3 _Color = vec3(-4.48876f, 0.00f, 0.00f);
+vec3 _1st_ShadeColor = vec3(0.88792f, 0.88792f, 0.88792f);
+vec3 _2nd_ShadeColor = vec3(0.60383f, 0.60383f, 0.60383f);
+float _Use_BaseAs1st = 1.00f;
+float _Is_LightColor_1st_Shade = 1.00f;
+float _Use_1stAs2nd = 1.00f;
+float _Is_LightColor_2nd_Shade = 1.00f;
+float _Is_NormalMapToBase = 0.00f;
+float _Tweak_SystemShadowsLevel = 0.00f;
+float _Set_SystemShadowsToBase = 1.00f;
+float _BaseColor_Step = 0.20f;
+float _BaseShade_Feather = 0.02f;
+vec3 _ShadeColor_Step = vec3(0.20f, 0.20f, 0.20f);
+vec3 _1st2nd_Shades_Feather = vec3(0.05f, 0.05f, 0.05f);
+float _Is_NormalMapToHighColor = 1.00f;
+float _Tweak_HighColorMaskLevel = -1.00f;
+float _HighColor_Power = 0.70f;
+float _Is_SpecularToHighColor = 0.00f;
+vec3 _HighColor = vec3(1.00f, 1.00f, 1.00f);
+float _Is_LightColor_HighColor = 1.00f;
+float _Is_BlendAddToHiColor = 1.00f;
+float _TweakHighColorOnShadow = 0.00f;
+float _Is_UseTweakHighColorOnShadow = 0.00f;
+vec3 _RimLightColor = vec3(1.00f, 1.00f, 1.00f);
+float _Is_LightColor_RimLight = 1.00f;
+float _Is_NormalMapToRimLight = 1.00f;
+float _RimLight_Power = 0.30f;
+float _RimLight_InsideMask = 0.15f;
+float _RimLight_FeatherOff = 0.00f;
+float _Tweak_LightDirection_MaskLevel = 0.00f;
+float _LightDirection_MaskOn = 0.00f;
+float _Ap_RimLight_Power = 0.10f;
+float _Tweak_RimLightMaskLevel = -0.90f;
+vec3 _Ap_RimLightColor = vec3(1.00f, 1.00f, 1.00f);
+float _Is_LightColor_Ap_RimLight = 1.00f;
+float _Ap_RimLight_FeatherOff = 0.00f;
+float _Add_Antipodean_RimLight = 0.00f;
+float _RimLight = 1.00f;
+float _Rotate_MatCapUV = 4.59037E-41f;
+float _CameraRolling_Stabilizer = 3.23322E-41f;
+float _Rotate_NormalMapForMatCapUV = 5.60519E-45f;
+float _BumpScaleMatcap = 2.32616E-43f;
+float _Is_NormalMapForMatCap = 1.79366E-43f;
+float _Is_Ortho = 9.38870E-43f;
+float _Tweak_MatCapUV = -2.41782E+15f;
+float _Inverse_MatcapMask = 0.00f;
+float _Tweak_MatcapMaskLevel = 0.00f;
+vec4 _MatCapColor = vec4(1.00f, 1.00f, 1.00f, 1.00f);
+float _Is_LightColor_MatCap = 1.00f;
+float _TweakMatCapOnShadow = 0.00f;
+float _Is_BlendAddToMatCap = 1.00f;
+float _Is_UseTweakMatCapOnShadow = 0.00f;
+float _MatCap = 0.00f;
+float _GI_Intensity = 0.00f;
+vec4 emissive = vec4(1.07760E-42f, 0.00f, 0.00f, 0.0f);
+float _BlurLevelMatcap = 0.00f;
+vec4 _BaseColor = vec4(0.88792f, 0.53948f, 0.37626f, 1.00f);
+float _Cutoff = 0.0f;
+float _Smoothness = 0.50f;
+half _BumpScale = 1.00f;
+vec4 _EmissionColor = vec4(0.00f, 0.00f, -3.77099E+15f, 4.59037E-41f);
+vec4 _GlossyEnvironmentColor = vec4(0.00f, 0.00f, 0.00f, 0.00f);
+
+uniform vec4 _Emissive_Color; // 0.00, 0.00, 0.00, 1.00
 
 // SH block feature
-uniform real4 unity_SHAr;
-uniform real4 unity_SHAg;
-uniform real4 unity_SHAb;
-uniform real4 unity_SHBr;
-uniform real4 unity_SHBg;
-uniform real4 unity_SHBb;
-uniform real4 unity_SHC;
+real4 unity_SHAr = vec4( 0.00f, -0.00973f, 0.00f, 0.41196f );
+real4 unity_SHAg = vec4( 0.00f, 0.10704f, 0.00f, 0.30608f );
+real4 unity_SHAb = vec4( 0.00f, 0.12774f, 0.00f, 0.44097f );
+real4 unity_SHBr = vec4( 0.00f, 0.00f, 0.0337f, 0.00f );
+real4 unity_SHBg = vec4( 0.00f, 0.00f, 0.02523f, 0.00f );
+real4 unity_SHBb = vec4( 0.00f, 0.00f, 0.05021f, 0.00f );
+real4 unity_SHC = vec4( 0.0337f, 0.02523f, 0.05021f, 1.00f );
 
 uniform vec4 _WorldSpaceCameraPos;
 uniform mat4 world;
@@ -768,33 +769,33 @@ half3 GlossyEnvironmentReflection(half3 reflectVector, half perceptualRoughness,
 // Computes the specular term for EnvironmentBRDF
 half3 EnvironmentBRDFSpecular(BRDFData brdfData, half fresnelTerm)
 {
-    // float surfaceReduction = 1.0 / (brdfData.roughness2 + 1.0);
-    // return half3(surfaceReduction * lerp(brdfData.specular, vec3(brdfData.grazingTerm), fresnelTerm));
-    return half3(0.0);
+    float surfaceReduction = 1.0 / (brdfData.roughness2 + 1.0);
+    return half3(surfaceReduction * lerp(brdfData.specular, vec3(brdfData.grazingTerm), fresnelTerm));
+    //return half3(0.0);
 }
 
 half3 EnvironmentBRDF(BRDFData brdfData, half3 indirectDiffuse, half3 indirectSpecular, half fresnelTerm)
 {
-    // half3 c = indirectDiffuse * brdfData.diffuse;
-    // c += indirectSpecular * EnvironmentBRDFSpecular(brdfData, fresnelTerm);
-    // return c;
-    return half3(0.0);
+    half3 c = indirectDiffuse * brdfData.diffuse;
+    c += indirectSpecular * EnvironmentBRDFSpecular(brdfData, fresnelTerm);
+    return c;
+    //return half3(0.0);
 }
 
 half3 GlobalIlluminationUTS(BRDFData brdfData, half3 bakedGI, half occlusion, half3 normalWS, half3 viewDirectionWS, float3 positionWS, float2 normalizedScreenSpaceUV)
 {
-    // half3 reflectVector = reflect(-viewDirectionWS, normalWS);
-    // half fresnelTerm = Pow4(1.0 - saturate(dot(normalWS, viewDirectionWS)));
+    half3 reflectVector = reflect(-viewDirectionWS, normalWS);
+    half fresnelTerm = Pow4(1.0 - saturate(dot(normalWS, viewDirectionWS)));
 
-    // half3 indirectDiffuse = bakedGI * occlusion;
-    // // #if USE_FORWARD_PLUS
-    // //     half3 irradiance = CalculateIrradianceFromReflectionProbes(reflectVector, positionWS, brdfData.perceptualRoughness, normalizedScreenSpaceUV);
-    // //     half3 indirectSpecular = irradiance * occlusion;
-    // // #else
-    //     half3 indirectSpecular = GlossyEnvironmentReflection(reflectVector, brdfData.perceptualRoughness, occlusion);
-    // //#endif
-    // return EnvironmentBRDF(brdfData, indirectDiffuse, indirectSpecular, fresnelTerm);
-    return half3(0.0);
+    half3 indirectDiffuse = bakedGI * occlusion;
+    // #if USE_FORWARD_PLUS
+    //     half3 irradiance = CalculateIrradianceFromReflectionProbes(reflectVector, positionWS, brdfData.perceptualRoughness, normalizedScreenSpaceUV);
+    //     half3 indirectSpecular = irradiance * occlusion;
+    // #else
+        half3 indirectSpecular = GlossyEnvironmentReflection(reflectVector, brdfData.perceptualRoughness, occlusion);
+    //#endif
+    return EnvironmentBRDF(brdfData, indirectDiffuse, indirectSpecular, fresnelTerm);
+    //return half3(0.0);
 }
 
 
