@@ -40,7 +40,6 @@ import { isIOs } from '../env'
 import { getWearableRepresentation } from '../representation'
 import { createSceneController } from '../scene'
 import { startAutoRotateBehavior } from './camera'
-import { createShader } from './explorer-alpha-shader'
 
 // needed for debugging
 const showInspector = process.env.REACT_APP_DEBUG
@@ -233,10 +232,6 @@ export async function createScene(
   if (showInspector) {
     root.debugLayer.show({ showExplorer: true, embedMode: true })
   }
-
-  // Shader
-  createShader(root)
-  console.log('shader created')
 
   return [root, createSceneController(engine, root, camera)]
 }

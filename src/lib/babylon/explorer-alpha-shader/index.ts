@@ -14,8 +14,11 @@ export function createShader(scene: Scene) {
     },
     {
       attributes: ['position', 'normal', 'uv'],
-      uniforms: ['world', 'worldView', 'worldViewProjection', 'view', 'projection'],
+      uniforms: ['world', 'worldView', 'worldViewProjection', 'view', 'projection','time','direction'],
       uniformBuffers: undefined,
+      samplers: ['textureSampler'],
+      defines: ['MyDefine'],
+      needAlphaBlending: true,
       shaderLanguage: ShaderLanguage.GLSL,
     }
   )
