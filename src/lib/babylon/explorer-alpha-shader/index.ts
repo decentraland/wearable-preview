@@ -1,12 +1,12 @@
-import { ShaderMaterial, ShaderLanguage, Scene, ShaderStore } from '@babylonjs/core'
+import { ShaderMaterial, ShaderLanguage, Scene, Effect } from '@babylonjs/core'
 import { customFragmentShader } from './fragment'
 import { customVertexShader } from './vertex'
 
-export function createShader(scene: Scene) {
-  ShaderStore.ShadersStore['customVertexShader'] = customVertexShader
-  ShaderStore.ShadersStore['customFragmentShader'] = customFragmentShader
+export function createShader(scene: Scene, shaderId: string) {
+  Effect.ShadersStore['customVertexShader'] = customVertexShader
+  Effect.ShadersStore['customFragmentShader'] = customFragmentShader
   return new ShaderMaterial(
-    'shader',
+    shaderId,
     scene,
     {
       vertex: 'custom',
@@ -14,11 +14,15 @@ export function createShader(scene: Scene) {
     },
     {
       attributes: ['position', 'normal', 'uv'],
-      uniforms: ['world', 'worldView', 'worldViewProjection', 'view', 'projection','time','direction'],
+      uniforms: ['world', 'worldView', 'worldViewProjection', 'view', 'projection', 'time', 'direction'],
       uniformBuffers: undefined,
-      samplers: ['textureSampler'],
-      defines: ['MyDefine'],
-      needAlphaBlending: true,
+      samplers: [
+        'sampler_MainTex',
+        'sampler_NormalMap',
+        'sampler_Emissive_Tex',
+        'MAINTEX',
+      ],
+      defines: [],
       shaderLanguage: ShaderLanguage.GLSL,
     }
   )

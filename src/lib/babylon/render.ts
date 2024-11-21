@@ -1,4 +1,4 @@
-import { Color3, Color4, Texture } from '@babylonjs/core'
+import { Color4, HighlightLayer, Texture } from '@babylonjs/core'
 import { PreviewConfig, PreviewType, BodyShape, IPreviewController, IEmoteController } from '@dcl/schemas'
 import { createInvalidEmoteController, isEmote } from '../emote'
 import { getBodyShape } from './body'
@@ -21,14 +21,13 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
   // create the root scene
   const [scene, sceneController] = await createScene(canvas, config)
 
-  // create Shader
-  const shaderMaterial = createShader(scene)
-  const mainTexture = new Texture('logo.png', scene)
+  // create shaders - feet , hands , body , pants , hairs
+  const hairShaderMaterial = createShader(scene, 'hair')
+  const upperBodyShaderMaterial = createShader(scene, 'hoodie')
+  const lowerBodyShaderMaterial = createShader(scene, 'pants')
+  const feetShaderMaterial = createShader(scene, 'shoes')
 
-  // Add Texture to the Shader
-  if (shaderMaterial) {
-    shaderMaterial?.setTexture('textureSampler', mainTexture)
-  }
+  const hl = new HighlightLayer('hl1', scene)
 
   try {
     // setup the mappings for all the contents
@@ -53,11 +52,44 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
         })
         promises.push(promise)
       }
+
       const assets = (await Promise.all(promises)).filter(isSuccesful)
 
-      // add all assets to scene
+      // add all assets to  scene and create shaderMaterial based on bodyPart
       for (const asset of assets) {
         asset.container.addAllToScene()
+
+        // Dynamically create a texture for the asset
+        const texture = new Texture(asset.wearable.thumbnail, scene)
+
+        texture.onLoadObservable.add(() => {
+          console.log(`${'asset name'} texture loaded successfully.`)
+        })
+
+        switch (asset.wearable.name) {
+          case 'body_shape':
+            break
+
+          case 'hair':
+            hairShaderMaterial.setTexture('sampler_MainTex', texture)
+            break
+
+          case 'upper_body':
+            upperBodyShaderMaterial.setTexture('sampler_MainTex',texture)
+            break
+
+          case 'lower_body':
+            lowerBodyShaderMaterial.setTexture('sampler_MainTex', texture)
+            break
+
+          case 'feet':
+            feetShaderMaterial.setTexture('sampler_MainTex', texture)
+            break
+
+          default:
+            console.warn(`Unknown asset type: ${asset.wearable.name}`)
+            break
+        }
       }
 
       // build avatar
@@ -95,22 +127,39 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
       emoteController = createInvalidEmoteController()
     }
 
+    scene.getOutlineRenderer()
+
     // Apply Shader
-    if (shaderMaterial) {
-      for (const mesh of scene.meshes) {
-        if (mesh.material !== shaderMaterial) {
-          // Dispose of the existing material if it exists
-          mesh.material?.dispose();
+    for (const mesh of scene.meshes) {
+      switch (mesh?.id) {
+        case 'M_Hair_Standard_01':
+          mesh.material = hairShaderMaterial
+          break
+        case 'M_uBody_Hoodie_01':
+          mesh.material = upperBodyShaderMaterial
+          break
+        case 'M_uBody_Hoodie_02':
+          mesh.material = upperBodyShaderMaterial
+          break
+        case 'M_lBody_LongPants_01_primitive0':
+          mesh.material = lowerBodyShaderMaterial
+          break
+        case 'M_lBody_LongPants_01_primitive1':
+          mesh.material = lowerBodyShaderMaterial
+          break
+        case 'M_Feet_Sneakers_01_primitive0':
+          mesh.material = feetShaderMaterial
+          break
+        case 'M_Feet_Sneakers_02':
+          mesh.material = feetShaderMaterial
+          break
 
-          // Assign the new shader material
-          mesh.material = shaderMaterial;
-        }
-
-        mesh.material = shaderMaterial;
-        mesh.computeBonesUsingShaders = false;
-        // mesh.renderOutline = true;
-        mesh.outlineColor = new Color3(0.95, 0.95, 0.95) // Set the outline color to red
+        default:
+          // Optional: Handle cases where no match is found
+          break
       }
+      hl.innerGlow = false
+      mesh.computeBonesUsingShaders = false
     }
 
     // center the root scene into the camera
@@ -118,11 +167,6 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
       center(scene)
     }
 
-    scene.registerBeforeRender(() => {
-      scene.meshes.forEach((mesh) => {
-        mesh.rotation.y += 0.01 // Adjust rotation speed as needed
-      })
-    })
     // return preview controller
     const controller: IPreviewController = {
       scene: sceneController,
