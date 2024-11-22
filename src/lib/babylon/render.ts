@@ -147,55 +147,64 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
       center(scene)
     }
 
+    // options could be avatar, outline, both
+    const renderMode: any = "avatar";
+
     engine.runRenderLoop(() => {
-      // First Pass: Render Outline Shader
-      outlineShaderMaterial.backFaceCulling = false
-      // Provide the base color
-      outlineShaderMaterial.setColor4('_BaseColor', new Color4(1, 0.75, 0.8, 1))
+   
 
-      for (const mesh of scene.meshes) {
-        if (meshIDsToOutline?.includes(mesh?.id)) {
-          mesh.material = outlineShaderMaterial // Assign the outline shader material
-        }
+      switch (renderMode) {
+        case 'outline':
+          outlineShaderMaterial.backFaceCulling = false
+          outlineShaderMaterial.setColor4('_BaseColor', new Color4(1, 0.75, 0.8, 1))
+          for (const mesh of scene.meshes) {
+            if (meshIDsToOutline?.includes(mesh?.id)) {
+              mesh.material = outlineShaderMaterial // Assign the outline shader material
+            }
+          }
+          engine.clear(scene.clearColor, true, true)
+          scene.render()
+          break
+        case 'avatar':
+          for (const mesh of scene.meshes) {
+            switch (mesh?.id) {
+              case 'M_Hair_Standard_01':
+                mesh.material = hairShaderMaterial
+                break
+              case 'M_uBody_Hoodie_01':
+                mesh.material = upperBodyShaderMaterial
+                break
+              case 'M_uBody_Hoodie_02':
+                mesh.material = upperBodyShaderMaterial
+                break
+              case 'M_lBody_LongPants_01_primitive0':
+                mesh.material = lowerBodyShaderMaterial
+                break
+              case 'M_lBody_LongPants_01_primitive1':
+                mesh.material = lowerBodyShaderMaterial
+                break
+              case 'M_Feet_Sneakers_01_primitive0':
+                mesh.material = feetShaderMaterial
+                break
+              case 'M_Feet_Sneakers_02':
+                mesh.material = feetShaderMaterial
+                break
+
+              default:
+                // Optional: Handle cases where no match is found
+                break
+            }
+            hl.innerGlow = false
+            mesh.computeBonesUsingShaders = false
+          }
+          scene.render()
+          break
+        case 'both':
+          break
+        default:
+          console.warn(`Unknown render mode: ${renderMode}`)
+          break
       }
-
-      engine.clear(scene.clearColor, true, true)
-      scene.render()
-
-      // Apply ShaderMaterials
-      for (const mesh of scene.meshes) {
-        switch (mesh?.id) {
-          case 'M_Hair_Standard_01':
-            mesh.material = hairShaderMaterial
-            break
-          case 'M_uBody_Hoodie_01':
-            mesh.material = upperBodyShaderMaterial
-            break
-          case 'M_uBody_Hoodie_02':
-            mesh.material = upperBodyShaderMaterial
-            break
-          case 'M_lBody_LongPants_01_primitive0':
-            mesh.material = lowerBodyShaderMaterial
-            break
-          case 'M_lBody_LongPants_01_primitive1':
-            mesh.material = lowerBodyShaderMaterial
-            break
-          case 'M_Feet_Sneakers_01_primitive0':
-            mesh.material = feetShaderMaterial
-            break
-          case 'M_Feet_Sneakers_02':
-            mesh.material = feetShaderMaterial
-            break
-
-          default:
-            // Optional: Handle cases where no match is found
-            break
-        }
-        hl.innerGlow = false
-        mesh.computeBonesUsingShaders = false
-      }
-      engine.clear(undefined, true, true)
-      scene.render()
     })
 
     // return preview controller
