@@ -31,13 +31,61 @@ precision highp float;
 #define INT_MAX  0x7FFFFFFF
 #define rsqrt 1.0/sqrt
 
-
 // Lights
 in vec3 vPositionW;
 in vec3 vNormalW;
 in vec2 vUV;
+//in vec3 normalDir;
+//in vec3 tangentDir;
+//in vec3 bitangentDir;
+//in float mirrorFlag;
+//in vec4 positionCS;
 
-// Refs
+// Babylon Defaults
+uniform vec4 _WorldSpaceCameraPos;
+uniform mat4 world;
+uniform mat4 worldView;
+#define unity_ObjectToWorld world
+#define UNITY_MATRIX_V worldView
+
+// Decentraland Material Specific
+uniform vec4 _Emissive_Color; // 0.00, 0.00, 0.00, 1.00
+
+// Decentraland Scene Specific
+uniform vec4 _LightDirection; // Distance Attenuation in the final w slot
+uniform vec4 _LightColor;
+
+// Texture sampler inputs
+uniform sampler2D textureSampler;
+uniform sampler2D sampler_BaseMap;
+uniform sampler2D sampler_BumpMap;
+uniform sampler2D sampler_EmissionMap;
+uniform sampler2D sampler_MainTex;
+uniform sampler2D sampler_1st_ShadeMap;
+uniform sampler2D sampler_2nd_ShadeMap;
+uniform sampler2D sampler_NormalMap;
+uniform sampler2D sampler_ClippingMask;
+uniform sampler2D sampler_OcclusionMap;
+uniform sampler2D sampler_MetallicGlossMap;
+uniform sampler2D sampler_Set_1st_ShadePosition;
+uniform sampler2D sampler_Set_2nd_ShadePosition;
+uniform sampler2D sampler_ShadingGradeMap;
+uniform sampler2D sampler_HighColor_Tex;
+uniform sampler2D sampler_Set_HighColorMask;
+uniform sampler2D sampler_Set_RimLightMask;
+uniform sampler2D sampler_MatCap_Sampler;
+uniform sampler2D sampler_NormalMapForMatCap;
+uniform sampler2D sampler_Set_MatcapMask;
+uniform sampler2D sampler_Emissive_Tex;
+uniform sampler2D sampler_AngelRing_Sampler;
+uniform sampler2D sampler_Outline_Sampler;
+uniform sampler2D sampler_OutlineTex;
+uniform sampler2D sampler_BakedNormal;
+
+// Output
+out vec4 fragColor;
+
+// Unity Material and Scene Inputs - Hardcoded for ease
 float _AlphaToMaskAvailable = 1.0;
 float _Clipping_Level = 0.0;
 float _Unlit_Intensity = 4.0;
@@ -110,8 +158,6 @@ float _BumpScale = 1.0;
 vec4 _EmissionColor = vec4(0.0, 0.0, -3.77099e+15, 4.59037e-41);
 vec4 _GlossyEnvironmentColor = vec4(0.0, 0.0, 0.0, 0.0);
 
-uniform vec4 _Emissive_Color; // 0.00, 0.00, 0.00, 1.00
-
 // SH block feature
 real4 unity_SHAr = vec4( 0.00f, -0.00973f, 0.00f, 0.41196f );
 real4 unity_SHAg = vec4( 0.00f, 0.10704f, 0.00f, 0.30608f );
@@ -120,54 +166,6 @@ real4 unity_SHBr = vec4( 0.00f, 0.00f, 0.0337f, 0.00f );
 real4 unity_SHBg = vec4( 0.00f, 0.00f, 0.02523f, 0.00f );
 real4 unity_SHBb = vec4( 0.00f, 0.00f, 0.05021f, 0.00f );
 real4 unity_SHC = vec4( 0.0337f, 0.02523f, 0.05021f, 1.00f );
-
-uniform vec4 _WorldSpaceCameraPos;
-uniform mat4 world;
-uniform mat4 worldView;
-#define UNITY_MATRIX_V worldView
-
-uniform sampler2D textureSampler;
-uniform sampler2D sampler_BaseMap;
-uniform sampler2D sampler_BumpMap;
-uniform sampler2D sampler_EmissionMap;
-uniform sampler2D sampler_MainTex;
-uniform sampler2D sampler_1st_ShadeMap;
-uniform sampler2D sampler_2nd_ShadeMap;
-uniform sampler2D sampler_NormalMap;
-uniform sampler2D sampler_ClippingMask;
-uniform sampler2D sampler_OcclusionMap;
-uniform sampler2D sampler_MetallicGlossMap;
-uniform sampler2D sampler_Set_1st_ShadePosition;
-uniform sampler2D sampler_Set_2nd_ShadePosition;
-uniform sampler2D sampler_ShadingGradeMap;
-uniform sampler2D sampler_HighColor_Tex;
-uniform sampler2D sampler_Set_HighColorMask;
-uniform sampler2D sampler_Set_RimLightMask;
-uniform sampler2D sampler_MatCap_Sampler;
-uniform sampler2D sampler_NormalMapForMatCap;
-uniform sampler2D sampler_Set_MatcapMask;
-uniform sampler2D sampler_Emissive_Tex;
-uniform sampler2D sampler_AngelRing_Sampler;
-uniform sampler2D sampler_Outline_Sampler;
-uniform sampler2D sampler_OutlineTex;
-uniform sampler2D sampler_BakedNormal;
-
-out vec4 fragColor;
-
-//in vec2 vUV;
-//in vec4 posWorld;
-//in vec3 normalDir;
-//in vec3 tangentDir;
-//in vec3 bitangentDir;
-//in float mirrorFlag;
-//in vec4 positionCS;
-
-//uniform sampler2D textureSampler;
-
-//out vec4 fragColor;
-
-
-
 
 #define SAMPLE_BASEMAP(uv,texArrayID)                   texture(sampler_BaseMap, uv)
 #define SAMPLE_BUMPMAP(uv,texArrayID)                   texture(sampler_BumpMap, uv)
@@ -196,7 +194,6 @@ out vec4 fragColor;
 
 //#define TRANSFORM_TEX(tex, name) ((tex.xy) * name##_ST.xy + name##_ST.zw)
 #define TRANSFORM_TEX(tex, name) tex.xy
-#define unity_ObjectToWorld world
 
 int _MainTexArr_ID = 0;
 int _1st_ShadeMapArr_ID = 0;
@@ -303,8 +300,6 @@ struct InputData
     half3x3 tangentToWorld;
 };
 
-
-
 bool anyPos(vec3 _v)
 {
     return length(_v) > 0.0;
@@ -341,7 +336,6 @@ void clip(float _clip)
         discard;
 }
 
-
 // When AlphaToMask is available:     Returns a modified alpha value that should be exported from the shader so it can be combined with the sample mask
 // When AlphaToMask is not available: Terminates the current invocation if the alpha value is below the cutoff and returns the input alpha value otherwise
 
@@ -368,10 +362,6 @@ half AlphaClip(half alpha, half cutoff)
 
     return alpha;
 }
-
-
-
-
 
 bool IsAlphaDiscardEnabled()
 {
@@ -404,8 +394,6 @@ half Alpha(half albedoAlpha, half4 color, half cutoff)
 
     return alpha;
 }
-
-
 
 half4 SampleMetallicSpecGloss(float2 uv, half albedoAlpha)
 {
@@ -461,8 +449,6 @@ half3 SampleEmission(float2 uv, half3 emissionColor)
     #endif
 }
 
-
-
 void InitializeStandardLitSurfaceDataUTS(float2 uv, out SurfaceData outSurfaceData)
 {
     //outSurfaceData = (SurfaceData)0;
@@ -488,8 +474,6 @@ void InitializeStandardLitSurfaceDataUTS(float2 uv, out SurfaceData outSurfaceDa
     outSurfaceData.emission = SampleEmission(uv, _EmissionColor.rgb);
 }
 
-
-
 float3 GetCameraPositionWS()
 {
     return vec3(worldView[3][0], worldView[3][1], worldView[3][2]);
@@ -501,8 +485,6 @@ half3 GetWorldSpaceNormalizeViewDir(float3 positionWS)
     float3 V = GetCameraPositionWS() - positionWS;
     return half3(normalize(V));
 }
-
-
 
 // Normalize that account for vectors with zero length
 real3 SafeNormalize(float3 inVec)
@@ -602,8 +584,6 @@ void InitializeInputData(Varyings varyings_input, half3 normalTS, out InputData 
     //inputData.shadowMask = SAMPLE_SHADOWMASK(varyings_input.staticLightmapUV);
 }
 
-
-
 real PerceptualSmoothnessToPerceptualRoughness(real perceptualSmoothness)
 {
     return (1.0 - perceptualSmoothness);
@@ -671,8 +651,6 @@ void InitializeBRDFData(half3 albedo, half metallic, half3 specular, half smooth
 
     InitializeBRDFDataDirect(albedo, brdfDiffuse, brdfSpecular, reflectivity, oneMinusReflectivity, smoothness, alpha, outBRDFData);
 }
-
-
 
 real3 UnpackNormalAG(real4 packedNormal, real scale)
 {
@@ -748,8 +726,6 @@ float Pow4(float x)
 //     return (decodeInstructions.x * PositivePow(alpha, decodeInstructions.y)) * encodedIrradiance.rgb;
 // }
 
-
-
 half3 GlossyEnvironmentReflection(half3 reflectVector, half perceptualRoughness, half occlusion)
 {
 // #if !defined(_ENVIRONMENTREFLECTIONS_OFF)
@@ -795,8 +771,6 @@ half3 GlobalIlluminationUTS(BRDFData brdfData, half3 bakedGI, half occlusion, ha
     return EnvironmentBRDF(brdfData, indirectDiffuse, indirectSpecular, fresnelTerm);
     //return half3(0.0);
 }
-
-
 
 half3 LinearToGammaSpace (half3 linRGB)
 {
@@ -862,7 +836,6 @@ half3 GetLightColor(UtsLight light)
 {
     return light.color * light.distanceAttenuation;
 }
-
 
 float4 fragDoubleShadeFeather(VertexOutput i)
 {
@@ -931,9 +904,9 @@ float4 fragDoubleShadeFeather(VertexOutput i)
     envColor *= 1.8f;
 
     UtsLight mainLight;// = GetMainUtsLightByID(i.mainLightID, i.posWorld.xyz, inputData.shadowCoord, i.positionCS);
-    mainLight.direction = float3(0.0, 0.0, 0.0);
-    mainLight.color = float3(0.0, 0.0, 0.0);
-    mainLight.distanceAttenuation = 1.0f;
+    mainLight.direction = _LightDirection.xyz;
+    mainLight.color = _LightColor.xyz;
+    mainLight.distanceAttenuation = _LightDirection.w;
     mainLight.shadowAttenuation = 1.0f;
     mainLight.type = int(0);
 
@@ -1144,7 +1117,6 @@ float4 fragDoubleShadeFeather(VertexOutput i)
     #endif
     return finalRGBA;
 }
-
 
 void main(void)
 {
