@@ -10,6 +10,7 @@ import { Asset, center, createScene } from './scene'
 import { isFacialFeature, isModel, isSuccesful } from './utils'
 import { loadWearable } from './wearable'
 import { createShader } from './explorer-alpha-shader'
+import { createOutlineShader } from './explorer-alpha-shader/OutlineShader'
 
 /**
  * Initializes Babylon, creates the scene and loads a list of wearables in it
@@ -19,13 +20,15 @@ import { createShader } from './explorer-alpha-shader'
  */
 export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): Promise<IPreviewController> {
   // create the root scene
-  const [scene, sceneController] = await createScene(canvas, config)
+  const [scene, sceneController, engine] = await createScene(canvas, config)
 
   // create shaders - feet , hands , body , pants , hairs
   const hairShaderMaterial = createShader(scene, 'hair')
   const upperBodyShaderMaterial = createShader(scene, 'hoodie')
   const lowerBodyShaderMaterial = createShader(scene, 'pants')
   const feetShaderMaterial = createShader(scene, 'shoes')
+
+  const outlineShaderMaterial = createOutlineShader(scene, 'outlinedadada')
 
   const hl = new HighlightLayer('hl1', scene)
 
@@ -66,7 +69,7 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
           console.log(`${'asset name'} texture loaded successfully.`)
         })
 
-        switch (asset.wearable.name) {
+        switch (asset?.wearable?.data?.category) {
           case 'body_shape':
             break
 
@@ -75,7 +78,7 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
             break
 
           case 'upper_body':
-            upperBodyShaderMaterial.setTexture('sampler_MainTex',texture)
+            upperBodyShaderMaterial.setTexture('sampler_MainTex', texture)
             break
 
           case 'lower_body':
@@ -129,43 +132,71 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
 
     scene.getOutlineRenderer()
 
-    // Apply Shader
-    for (const mesh of scene.meshes) {
-      switch (mesh?.id) {
-        case 'M_Hair_Standard_01':
-          mesh.material = hairShaderMaterial
-          break
-        case 'M_uBody_Hoodie_01':
-          mesh.material = upperBodyShaderMaterial
-          break
-        case 'M_uBody_Hoodie_02':
-          mesh.material = upperBodyShaderMaterial
-          break
-        case 'M_lBody_LongPants_01_primitive0':
-          mesh.material = lowerBodyShaderMaterial
-          break
-        case 'M_lBody_LongPants_01_primitive1':
-          mesh.material = lowerBodyShaderMaterial
-          break
-        case 'M_Feet_Sneakers_01_primitive0':
-          mesh.material = feetShaderMaterial
-          break
-        case 'M_Feet_Sneakers_02':
-          mesh.material = feetShaderMaterial
-          break
-
-        default:
-          // Optional: Handle cases where no match is found
-          break
-      }
-      hl.innerGlow = false
-      mesh.computeBonesUsingShaders = false
-    }
+    const meshIDsToOutline = [
+      'M_Hair_Standard_01',
+      'M_uBody_Hoodie_01',
+      'M_uBody_Hoodie_02',
+      'M_lBody_LongPants_01_primitive0',
+      'M_lBody_LongPants_01_primitive1',
+      'M_Feet_Sneakers_01_primitive0',
+      'M_Feet_Sneakers_02',
+    ]
 
     // center the root scene into the camera
     if (config.centerBoundingBox) {
       center(scene)
     }
+
+    engine.runRenderLoop(() => {
+      // First Pass: Render Outline Shader
+      outlineShaderMaterial.backFaceCulling = false
+      // Provide the base color
+      outlineShaderMaterial.setColor4('_BaseColor', new Color4(1, 0.75, 0.8, 1))
+
+      for (const mesh of scene.meshes) {
+        if (meshIDsToOutline?.includes(mesh?.id)) {
+          mesh.material = outlineShaderMaterial // Assign the outline shader material
+        }
+      }
+
+      engine.clear(scene.clearColor, true, true)
+      scene.render()
+
+      // Apply ShaderMaterials
+      for (const mesh of scene.meshes) {
+        switch (mesh?.id) {
+          case 'M_Hair_Standard_01':
+            mesh.material = hairShaderMaterial
+            break
+          case 'M_uBody_Hoodie_01':
+            mesh.material = upperBodyShaderMaterial
+            break
+          case 'M_uBody_Hoodie_02':
+            mesh.material = upperBodyShaderMaterial
+            break
+          case 'M_lBody_LongPants_01_primitive0':
+            mesh.material = lowerBodyShaderMaterial
+            break
+          case 'M_lBody_LongPants_01_primitive1':
+            mesh.material = lowerBodyShaderMaterial
+            break
+          case 'M_Feet_Sneakers_01_primitive0':
+            mesh.material = feetShaderMaterial
+            break
+          case 'M_Feet_Sneakers_02':
+            mesh.material = feetShaderMaterial
+            break
+
+          default:
+            // Optional: Handle cases where no match is found
+            break
+        }
+        hl.innerGlow = false
+        mesh.computeBonesUsingShaders = false
+      }
+      engine.clear(undefined, true, true)
+      scene.render()
+    })
 
     // return preview controller
     const controller: IPreviewController = {

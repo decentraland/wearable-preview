@@ -91,7 +91,7 @@ let engine: Engine
 export async function createScene(
   canvas: HTMLCanvasElement,
   config: PreviewConfig
-): Promise<[Scene, ISceneController]> {
+): Promise<[Scene, ISceneController, any]> {
   // Create engine
   if (engine) {
     engine.dispose()
@@ -223,17 +223,12 @@ export async function createScene(
     glowLayer.intensity = 2.0
   }
 
-  // Render loop
-  engine.runRenderLoop(() => {
-    root.render()
-  })
-
   // Dev tools
   if (showInspector) {
     root.debugLayer.show({ showExplorer: true, embedMode: true })
   }
 
-  return [root, createSceneController(engine, root, camera)]
+  return [root, createSceneController(engine, root, camera), engine]
 }
 
 export async function loadMask(
