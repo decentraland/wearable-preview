@@ -14,14 +14,19 @@ export function createShader(scene: Scene, shaderId: string) {
     },
     {
       attributes: ['position', 'normal', 'uv'],
-      uniforms: ['world', 'worldView', 'worldViewProjection', 'view', 'projection', 'time', 'direction'],
-      uniformBuffers: undefined,
-      samplers: [
+      uniforms: [
+        'world',
+        'worldView',
+        'worldViewProjection',
+        'view',
+        'projection',
+        'time',
+        'direction',
         'sampler_MainTex',
         'sampler_NormalMap',
         'sampler_Emissive_Tex',
-        'MAINTEX',
       ],
+      samplers: ['sampler_MainTex', 'sampler_NormalMap', 'sampler_Emissive_Tex'],
       defines: [],
       shaderLanguage: ShaderLanguage.GLSL,
     }
