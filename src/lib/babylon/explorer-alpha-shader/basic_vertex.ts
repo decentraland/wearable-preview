@@ -1,14 +1,11 @@
 export const customBasicVertexShader = `#version 300 es
 precision highp float;
 
-// Attributes
 in vec3 position;
 in vec2 uv;
 
-// Uniforms
 uniform mat4 worldViewProjection;
 
-// Varying
 out vec2 vUV;
 
 void main(void) {

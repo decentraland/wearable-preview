@@ -1,4 +1,4 @@
-import { Color4, DynamicTexture, HighlightLayer, Texture } from '@babylonjs/core'
+import { Color3, Color4, DynamicTexture, HemisphericLight, HighlightLayer, Texture, Vector3 } from '@babylonjs/core'
 import { PreviewConfig, PreviewType, BodyShape, IPreviewController, IEmoteController } from '@dcl/schemas'
 import { createInvalidEmoteController, isEmote } from '../emote'
 import { getBodyShape } from './body'
@@ -25,6 +25,7 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
   // create shaders - feet , hands , body , pants , hairs
   const hairShaderMaterial = createShader(scene, 'hair')
   const upperBodyShaderMaterial = createShader(scene, 'hoodie')
+  const skinShaderMaterial = createShader(scene, 'skin');
   const lowerBodyShaderMaterial = createShader(scene, 'pants')
   const feetShaderMaterial = createShader(scene, 'shoes')
 
@@ -37,7 +38,7 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
   const mainTex = new DynamicTexture('mainTex', { width: 512, height: 512 }, scene)
   const mainCtx = mainTex.getContext()
 
-  const mainTex2 = new DynamicTexture('mainTex', { width: 512, height: 512 }, scene)
+  const mainTex2 = new DynamicTexture('mainTex2', { width: 512, height: 512 }, scene)
   const mainCtx2 = mainTex2.getContext()
 
   mainCtx.fillStyle = '#8B4513'
@@ -65,6 +66,19 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
   emissiveTex.update()
   
   const albedoTexture = new Texture('pink.jpg', scene)
+  const skinColor = Color3.FromHexString('#cc9b76').toLinearSpace()
+  mainCtx.fillStyle = `rgba(${Math.floor(skinColor.r * 255)}, ${Math.floor(skinColor.g * 255)}, ${Math.floor(
+    skinColor.b * 255
+  )}, 1)`
+  mainCtx.fillRect(0, 0, 512, 512)
+  
+  // Pass other uniforms like alpha
+  skinShaderMaterial.setFloat('alpha', 0.55)
+  skinShaderMaterial.setTexture('sampler_MainTex', mainTex)
+
+
+  const light = new HemisphericLight('light', new Vector3(0, 1, 0), scene)
+  light.intensity = 1.0
 
   try {
     // setup the mappings for all the contents
@@ -84,20 +98,17 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
       const wearables = Array.from(slots.values())
 
       for (const wearable of wearables.filter(isModel)) {
-        // if (
-        //   wearable?.data?.category !== 'upper_body' &&
-        //   wearable?.data?.category !== 'lower_body' &&
-        //   wearable?.data?.category !== 'hair'
-        // ) {
-        //   const promise = loadWearable(scene, wearable, config.bodyShape, config.skin, config.hair).catch((error) => {
-        //     console.warn(error.message)
-        //   })
-        //   avatarPromises?.push(promise)
-        // }
-        const promise = loadWearable(scene, wearable, config.bodyShape, config.skin, config.hair).catch((error) => {
-          console.warn(error.message)
-        })
-        avatarPromises?.push(promise)
+        if (
+          wearable?.data?.category !== 'lower_body' &&
+          wearable?.data?.category !== 'hair' &&
+          wearable?.data?.category !== 'feet' &&
+          wearable?.data?.category !== 'upper_body'
+        ) {
+          const promise = loadWearable(scene, wearable, config.bodyShape, config.skin, config.hair).catch((error) => {
+            console.warn(error.message)
+          })
+          avatarPromises?.push(promise)
+        }
       }
 
       const assets = (await Promise.all(avatarPromises)).filter(isSuccesful)
@@ -126,13 +137,10 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
             break
 
           case 'upper_body':
-            upperBodyShaderMaterial.setTexture('sampler_MainTex', mainTex2)
-            upperBodyShaderMaterial.setTexture('sampler_NormalMap', normalMap)
-            upperBodyShaderMaterial.setTexture('sampler_Emissive_Tex', emissiveTex)
             break
 
           case 'lower_body':
-            lowerBodyShaderMaterial.setTexture('sampler_MainTex', mainTex)
+            lowerBodyShaderMaterial.setTexture('sampler_MainTex', albedoTexture)
             lowerBodyShaderMaterial.setTexture('sampler_NormalMap', normalMap)
             lowerBodyShaderMaterial.setTexture('sampler_Emissive_Tex', emissiveTex)
             break
@@ -198,6 +206,46 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
 
     // options could be new-avatar, outline, both, old
     const renderMode: any = 'new-avatar'
+
+    for (const mesh of scene.meshes) {
+      const name = mesh.name.toLowerCase()
+      if (name.endsWith('ubody_basemesh')) {
+        mesh.setEnabled(true)
+        mesh.material = skinShaderMaterial
+      }
+      if (name.endsWith('lbody_basemesh')) {
+        mesh.setEnabled(true)
+        mesh.material = skinShaderMaterial
+      }
+      if (name.endsWith('feet_basemesh')) {
+        mesh.setEnabled(true)
+        mesh.material = skinShaderMaterial
+      }
+      if (name.endsWith('head')) {
+        mesh.setEnabled(true)
+        mesh.material = skinShaderMaterial
+      }
+      if (name.endsWith('head_basemesh')) {
+        mesh.setEnabled(true)
+        mesh.material = skinShaderMaterial
+      }
+      if (name.endsWith('mask_eyes')) {
+        mesh.setEnabled(true)
+        mesh.material = skinShaderMaterial
+      }
+      if (name.endsWith('mask_eyebrows')) {
+        mesh.setEnabled(true)
+        mesh.material = skinShaderMaterial
+      }
+      if (name.endsWith('mask_mouth')) {
+        mesh.setEnabled(true)
+        mesh.material = skinShaderMaterial
+      }
+      if (name.endsWith('hands_basemesh')) {
+        mesh.setEnabled(true)
+        mesh.material = skinShaderMaterial
+      }
+    }
 
     engine.runRenderLoop(() => {
       switch (renderMode) {
