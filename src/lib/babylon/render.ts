@@ -109,7 +109,52 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
           })
           avatarPromises?.push(promise)
         }
+        // const promise = loadWearable(scene, wearable, config.bodyShape, config.skin, config.hair).catch((error) => {
+        //   console.warn(error.message)
+        // })
+        // avatarPromises?.push(promise)
       }
+
+       for (const mesh of scene.meshes) {
+         const name = mesh.name.toLowerCase()
+         if (name.endsWith('ubody_basemesh')) {
+           mesh.setEnabled(true)
+           mesh.material = skinShaderMaterial
+         }
+         if (name.endsWith('lbody_basemesh')) {
+           mesh.setEnabled(true)
+           mesh.material = skinShaderMaterial
+         }
+         if (name.endsWith('feet_basemesh')) {
+           mesh.setEnabled(true)
+           mesh.material = skinShaderMaterial
+         }
+         if (name.endsWith('head')) {
+           mesh.setEnabled(true)
+           mesh.material = skinShaderMaterial
+         }
+         if (name.endsWith('head_basemesh')) {
+           mesh.setEnabled(true)
+           mesh.material = skinShaderMaterial
+         }
+         if (name.endsWith('mask_eyes')) {
+           mesh.setEnabled(true)
+           mesh.material = skinShaderMaterial
+         }
+         if (name.endsWith('mask_eyebrows')) {
+           mesh.setEnabled(true)
+           mesh.material = skinShaderMaterial
+         }
+         if (name.endsWith('mask_mouth')) {
+           mesh.setEnabled(true)
+           mesh.material = skinShaderMaterial
+         }
+         if (name.endsWith('hands_basemesh')) {
+           mesh.setEnabled(true)
+           mesh.material = skinShaderMaterial
+         }
+       }
+
 
       const assets = (await Promise.all(avatarPromises)).filter(isSuccesful)
 
@@ -207,46 +252,7 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
     // options could be new-avatar, outline, both, old
     const renderMode: any = 'new-avatar'
 
-    for (const mesh of scene.meshes) {
-      const name = mesh.name.toLowerCase()
-      if (name.endsWith('ubody_basemesh')) {
-        mesh.setEnabled(true)
-        mesh.material = skinShaderMaterial
-      }
-      if (name.endsWith('lbody_basemesh')) {
-        mesh.setEnabled(true)
-        mesh.material = skinShaderMaterial
-      }
-      if (name.endsWith('feet_basemesh')) {
-        mesh.setEnabled(true)
-        mesh.material = skinShaderMaterial
-      }
-      if (name.endsWith('head')) {
-        mesh.setEnabled(true)
-        mesh.material = skinShaderMaterial
-      }
-      if (name.endsWith('head_basemesh')) {
-        mesh.setEnabled(true)
-        mesh.material = skinShaderMaterial
-      }
-      if (name.endsWith('mask_eyes')) {
-        mesh.setEnabled(true)
-        mesh.material = skinShaderMaterial
-      }
-      if (name.endsWith('mask_eyebrows')) {
-        mesh.setEnabled(true)
-        mesh.material = skinShaderMaterial
-      }
-      if (name.endsWith('mask_mouth')) {
-        mesh.setEnabled(true)
-        mesh.material = skinShaderMaterial
-      }
-      if (name.endsWith('hands_basemesh')) {
-        mesh.setEnabled(true)
-        mesh.material = skinShaderMaterial
-      }
-    }
-
+   
     engine.runRenderLoop(() => {
       switch (renderMode) {
         case 'outline':
