@@ -32,8 +32,7 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
 
   const hl = new HighlightLayer('hl1', scene)
 
-
-  // working on the texture 
+  // working on the texture
 
   const mainTex = new DynamicTexture('mainTex', { width: 512, height: 512 }, scene)
   const mainCtx = mainTex.getContext()
@@ -41,43 +40,31 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
   const mainTex2 = new DynamicTexture('mainTex', { width: 512, height: 512 }, scene)
   const mainCtx2 = mainTex2.getContext()
 
-  mainCtx.fillStyle = '#8B4513' 
-  mainCtx.fillRect(0, 0, 512, 512) 
+  mainCtx.fillStyle = '#8B4513'
+  mainCtx.fillRect(0, 0, 512, 512)
   mainTex.update()
 
-  mainCtx2.fillStyle = '#FFC0CB' 
+  mainCtx2.fillStyle = '#00FF00' // Green color
   mainCtx2.fillRect(0, 0, 512, 512)
   mainTex2.update()
 
   const normalMap = new DynamicTexture('normalMap', { width: 512, height: 512 }, scene)
   const normalCtx = normalMap.getContext()
 
-  normalCtx.fillStyle = '#0000FF'
+  // Normal map remains blue
+  normalCtx.fillStyle = '#FFC0CB' // Blue color for the normal map
   normalCtx.fillRect(0, 0, 512, 512)
   normalMap.update()
 
   const emissiveTex = new DynamicTexture('emissiveTex', { width: 512, height: 512 }, scene)
   const emissiveCtx = emissiveTex.getContext()
 
-  emissiveCtx.fillStyle = '#00FF00' 
+  // Emissive texture with white color
+  emissiveCtx.fillStyle = '#000000' // White color
   emissiveCtx.fillRect(0, 0, 512, 512)
   emissiveTex.update()
-
-  // lower
-  lowerBodyShaderMaterial.setTexture('sampler_MainTex', mainTex)
-  lowerBodyShaderMaterial.setTexture('sampler_NormalMap', normalMap)
-  lowerBodyShaderMaterial.setTexture('sampler_Emissive_Tex', emissiveTex)
-
-  // upper
-  upperBodyShaderMaterial.setTexture('sampler_MainTex', mainTex2)
-  upperBodyShaderMaterial.setTexture('sampler_NormalMap', normalMap)
-  upperBodyShaderMaterial.setTexture('sampler_Emissive_Tex', emissiveTex)
-
-  // feat
-
-  feetShaderMaterial.setTexture('sampler_MainTex', mainTex2)
-  feetShaderMaterial.setTexture('sampler_NormalMap', normalMap)
-  feetShaderMaterial.setTexture('sampler_Emissive_Tex', emissiveTex)
+  
+  const albedoTexture = new Texture('pink.jpg', scene)
 
   try {
     // setup the mappings for all the contents
@@ -97,6 +84,16 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
       const wearables = Array.from(slots.values())
 
       for (const wearable of wearables.filter(isModel)) {
+        // if (
+        //   wearable?.data?.category !== 'upper_body' &&
+        //   wearable?.data?.category !== 'lower_body' &&
+        //   wearable?.data?.category !== 'hair'
+        // ) {
+        //   const promise = loadWearable(scene, wearable, config.bodyShape, config.skin, config.hair).catch((error) => {
+        //     console.warn(error.message)
+        //   })
+        //   avatarPromises?.push(promise)
+        // }
         const promise = loadWearable(scene, wearable, config.bodyShape, config.skin, config.hair).catch((error) => {
           console.warn(error.message)
         })
@@ -104,6 +101,8 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
       }
 
       const assets = (await Promise.all(avatarPromises)).filter(isSuccesful)
+
+      console.log('assets', assets)
 
       const mainTexture = new Texture('logo.png', scene)
 
@@ -127,15 +126,21 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
             break
 
           case 'upper_body':
-            // upperBodyShaderMaterial.setTexture('sampler_MainTex', mainTexture)
+            upperBodyShaderMaterial.setTexture('sampler_MainTex', mainTex2)
+            upperBodyShaderMaterial.setTexture('sampler_NormalMap', normalMap)
+            upperBodyShaderMaterial.setTexture('sampler_Emissive_Tex', emissiveTex)
             break
 
           case 'lower_body':
-            // lowerBodyShaderMaterial.setTexture('sampler_MainTex', mainTexture)
+            lowerBodyShaderMaterial.setTexture('sampler_MainTex', mainTex)
+            lowerBodyShaderMaterial.setTexture('sampler_NormalMap', normalMap)
+            lowerBodyShaderMaterial.setTexture('sampler_Emissive_Tex', emissiveTex)
             break
 
           case 'feet':
-            // feetShaderMaterial.setTexture('sampler_MainTex', mainTexture)
+            feetShaderMaterial.setTexture('sampler_MainTex', albedoTexture)
+            feetShaderMaterial.setTexture('sampler_NormalMap', normalMap)
+            feetShaderMaterial.setTexture('sampler_Emissive_Tex', emissiveTex)
             break
 
           default:
@@ -192,7 +197,7 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
     ]
 
     // options could be new-avatar, outline, both, old
-    const renderMode: any = 'old'
+    const renderMode: any = 'new-avatar'
 
     engine.runRenderLoop(() => {
       switch (renderMode) {
@@ -209,33 +214,36 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
           break
         case 'new-avatar':
           for (const mesh of scene.meshes) {
-              switch (mesh?.id) {
-                case 'M_Hair_Standard_01':
-                  mesh.material = hairShaderMaterial
-                  break
-                case 'M_uBody_Hoodie_01':
-                  mesh.material = upperBodyShaderMaterial
-                  break
-                case 'M_uBody_Hoodie_02':
-                  mesh.material = upperBodyShaderMaterial
-                  break
-                case 'M_lBody_LongPants_01_primitive0':
-                  mesh.material = lowerBodyShaderMaterial
-                  break
-                case 'M_lBody_LongPants_01_primitive1':
-                  mesh.material = lowerBodyShaderMaterial
-                  break
-                case 'M_Feet_Sneakers_01_primitive0':
-                  mesh.material = feetShaderMaterial
-                  break
-                case 'M_Feet_Sneakers_02':
-                  mesh.material = feetShaderMaterial
-                  break
+            switch (mesh?.id) {
+              case 'M_Hair_Standard_01':
+                mesh.material = hairShaderMaterial
+                break
+              case 'M_uBody_Hoodie_01':
+                mesh.material = upperBodyShaderMaterial
+                break
+              case 'M_uBody_Hoodie_02':
+                mesh.material = upperBodyShaderMaterial
+                break
+              case 'M_lBody_LongPants_01_primitive0':
+                mesh.material = lowerBodyShaderMaterial
+                break
+              case 'M_lBody_LongPants_01_primitive1':
+                mesh.material = lowerBodyShaderMaterial
+                break
+              case 'M_Feet_Sneakers_01_primitive0':
+                mesh.material = feetShaderMaterial
+                break
+              case 'M_Feet_Sneakers_02':
+                mesh.material = feetShaderMaterial
+                break
+              // case 'ShapeB_Head_BaseMesh':
+              //   mesh.material = upperBodyShaderMaterial
+              //   break;
 
-                default:
-                  // Optional: Handle cases where no match is found
-                  break
-              }
+              default:
+                // Optional: Handle cases where no match is found
+                break
+            }
             hl.innerGlow = false
             mesh.computeBonesUsingShaders = false
           }
