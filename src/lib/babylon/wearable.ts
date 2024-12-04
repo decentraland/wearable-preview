@@ -7,7 +7,7 @@
  * @param hair
  */
 
-import { Color3, PBRMaterial, Scene } from '@babylonjs/core'
+import { Scene } from '@babylonjs/core'
 import { WearableDefinition, BodyShape } from '@dcl/schemas'
 import { getWearableRepresentation, isTexture, getContentUrl } from '../representation'
 import { loadAssetContainer } from './scene'
@@ -26,48 +26,40 @@ export async function loadWearable(
   const url = getContentUrl(representation)
   const container = await loadAssetContainer(scene, url)
 
-  // Remove colliders
-  for (const mesh of container.meshes) {
-    if (mesh.name.toLowerCase().includes('collider')) {
-      mesh.isVisible = false
-      scene.removeMesh(mesh)
-    }
-  }
-
   // Clean up
-  for (const originalMaterial of container.materials) {
-    if (originalMaterial instanceof PBRMaterial) {
-      const newMaterial = originalMaterial as PBRMaterial
+  // for (const originalMaterial of container.materials) {
+  //   if (originalMaterial instanceof PBRMaterial) {
+  //     const newMaterial = originalMaterial as PBRMaterial
 
-      // remove metallic effect
-      newMaterial.specularIntensity = 0
-      if (newMaterial.metallic) {
-        newMaterial.metallic = 0
-        newMaterial.metallicF0Factor = 0
-      }
+  //     // remove metallic effect
+  //     newMaterial.specularIntensity = 0
+  //     if (newMaterial.metallic) {
+  //       newMaterial.metallic = 0
+  //       newMaterial.metallicF0Factor = 0
+  //     }
 
-      if (newMaterial.name.toLowerCase().includes('hair')) {
-        if (hair) {
-          newMaterial.albedoColor = Color3.FromHexString(hair).toLinearSpace()
-          newMaterial.specularIntensity = 0
-          newMaterial.alpha = 1
-        } else {
-          newMaterial.alpha = 0
-          scene.removeMaterial(newMaterial)
-        }
-      }
-      if (newMaterial.name.toLowerCase().includes('skin')) {
-        if (skin) {
-          newMaterial.albedoColor = Color3.FromHexString(skin).toLinearSpace()
-          newMaterial.specularIntensity = 0
-          newMaterial.alpha = 1
-        } else {
-          newMaterial.alpha = 0
-          scene.removeMaterial(newMaterial)
-        }
-      }
-    }
-  }
+  //     if (newMaterial.name.toLowerCase().includes('hair')) {
+  //       if (hair) {
+  //         newMaterial.albedoColor = Color3.FromHexString(hair).toLinearSpace()
+  //         newMaterial.specularIntensity = 0
+  //         newMaterial.alpha = 1
+  //       } else {
+  //         newMaterial.alpha = 0
+  //         scene.removeMaterial(newMaterial)
+  //       }
+  //     }
+  //     if (newMaterial.name.toLowerCase().includes('skin')) {
+  //       if (skin) {
+  //         newMaterial.albedoColor = Color3.FromHexString(skin).toLinearSpace()
+  //         newMaterial.specularIntensity = 0
+  //         newMaterial.alpha = 1
+  //       } else {
+  //         newMaterial.alpha = 0
+  //         scene.removeMaterial(newMaterial)
+  //       }
+  //     }
+  //   }
+  // }
 
   // Stop any animations
   for (const animationGroup of container.animationGroups) {
