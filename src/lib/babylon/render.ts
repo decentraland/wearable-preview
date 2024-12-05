@@ -54,11 +54,14 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
   const mainCtx = mainTexture.getContext()
   mainCtx.fillStyle = `rgba(${Math.floor(skinColor.r * 255)}, ${Math.floor(skinColor.g * 255)}, ${Math.floor(
     skinColor.b * 255
-  )}, 1)`
+  )}, 0.1)`
+
   mainCtx.fillRect(0, 0, 512, 512)
   mainTexture.update()
 
   // Pass other uniforms like alpha
+  skinShaderMaterial.alphaMode = 1;
+  skinShaderMaterial.backFaceCulling = false
   skinShaderMaterial.setTexture('sampler_MainTex', mainTexture)
   // skinShaderMaterial.setTexture('sampler_NormalMap', normalMap)
   // skinShaderMaterial.setFloat('sampler_NormalMap', 0.0)
