@@ -32,21 +32,6 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
 
   const outlineShaderMaterial = createOutlineShader(scene, 'outline')
 
-  const normalMap = new DynamicTexture('normalMap', { width: 512, height: 512 }, scene)
-  const normalCtx = normalMap.getContext()
-
-  // Normal map remains blue
-  normalCtx.fillStyle = '#FFC0CB' // Blue color for the normal map
-  normalCtx.fillRect(0, 0, 512, 512)
-  normalMap.update()
-
-  const emissiveTex = new DynamicTexture('emissiveTex', { width: 512, height: 512 }, scene)
-  const emissiveCtx = emissiveTex.getContext()
-
-  // Emissive texture with white color
-  emissiveCtx.fillStyle = '#000000' // White color
-  emissiveCtx.fillRect(0, 0, 512, 512)
-  emissiveTex.update()
 
   // skin color
   const skinColor = Color3.FromHexString(config.skin).toLinearSpace()
