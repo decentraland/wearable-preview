@@ -1,11 +1,12 @@
 import { ShaderMaterial, ShaderLanguage, Scene, Effect } from '@babylonjs/core'
 import { customFragmentShader } from './fragment'
 import { customVertexShader } from './vertex'
+import { customBasicFragmentShader } from './basic_fragment'
 // import { customFragmentShader } from './fragmentTest'
 
 export function createShader(scene: Scene, shaderId: string) {
   Effect.ShadersStore['customVertexShader'] = customVertexShader
-  Effect.ShadersStore['customFragmentShader'] = customFragmentShader
+  Effect.ShadersStore['customFragmentShader'] = customBasicFragmentShader
   return new ShaderMaterial(
     shaderId,
     scene,
@@ -26,10 +27,10 @@ export function createShader(scene: Scene, shaderId: string) {
         'sampler_MainTex',
         'sampler_NormalMap',
         'sampler_Emissive_Tex',
+        'textureSampler',
       ],
-      samplers: ['sampler_MainTex', 'sampler_NormalMap', 'sampler_Emissive_Tex'],
+      samplers: ['sampler_MainTex', 'sampler_NormalMap', 'sampler_Emissive_Tex', 'textureSampler'],
       defines: [],
-      // needAlphaBlending: true,
       shaderLanguage: ShaderLanguage.GLSL,
     }
   )

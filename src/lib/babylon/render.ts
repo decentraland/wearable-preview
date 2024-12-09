@@ -35,7 +35,7 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
   // upperBody
   const upperMainTexture = new Texture('/upper-MainTex', scene)
   // const upperNormalTexture = new Texture('/pants-normal', scene)
-  upperBodyShaderMaterial.setTexture('sampler_MainTex', upperMainTexture)
+  upperBodyShaderMaterial.setTexture('textureSampler', upperMainTexture)
   upperBodyShaderMaterial.setTexture('sampler_Emissive_Tex', upperMainTexture)
 
   // Lower Body
@@ -72,27 +72,29 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
       const wearables = Array.from(slots.values())
 
       for (const wearable of wearables.filter(isModel)) {
-        // if (
-        //   wearable?.data?.category !== 'lower_body' &&
-        //   wearable?.data?.category !== 'hair' &&
-        //   wearable?.data?.category !== 'upper_body'
-        // ) {
-        //   const promise = loadWearable(scene, wearable, config.bodyShape, config.skin, config.hair).catch((error) => {
-        //     console.warn(error.message)
-        //   })
-        //   avatarPromises?.push(promise)
-        // }
-        const promise = loadWearable(scene, wearable, config.bodyShape, config.skin, config.hair).catch((error) => {
-          console.warn(error.message)
-        })
-        avatarPromises?.push(promise)
+        console.log('wearable?.data?.category', wearable?.data?.category);
+        if (
+          wearable?.data?.category !== 'lower_body' &&
+          wearable?.data?.category !== 'hair' &&
+          wearable?.data?.category !== 'feet' 
+        ) {
+          const promise = loadWearable(scene, wearable, config.bodyShape, config.skin, config.hair).catch((error) => {
+            console.warn(error.message)
+          })
+          avatarPromises?.push(promise)
+        }
+        // const promise = loadWearable(scene, wearable, config.bodyShape, config.skin, config.hair).catch((error) => {
+        //   console.warn(error.message)
+        // })
+        // avatarPromises?.push(promise)
       }
 
       const assets = (await Promise.all(avatarPromises)).filter(isSuccesful)
 
       // add all assets to  scene and create shaderMaterial based on bodyPart
       for (const asset of assets) {
-        asset.container.addAllToScene()
+        console.log('assets', asset);
+          asset.container.addAllToScene()
       }
 
       for (const mesh of scene.meshes) {
@@ -102,38 +104,38 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
           mesh.setEnabled(false)
           mesh.material = skinShaderMaterial
         }
-        if (name.endsWith('lbody_basemesh')) {
-          mesh.setEnabled(false)
-          mesh.material = skinShaderMaterial
-        }
-        if (name.endsWith('feet_basemesh')) {
-          mesh.setEnabled(false)
-          mesh.material = skinShaderMaterial
-        }
-        if (name.endsWith('head')) {
-          mesh.setEnabled(true)
-          mesh.material = skinShaderMaterial
-        }
-        if (name.endsWith('head_basemesh')) {
-          mesh.setEnabled(true)
-          mesh.material = skinShaderMaterial
-        }
-        if (name.endsWith('mask_eyes')) {
-          mesh.setEnabled(true)
-          mesh.material = skinShaderMaterial
-        }
-        if (name.endsWith('mask_eyebrows')) {
-          mesh.setEnabled(true)
-          mesh.material = skinShaderMaterial
-        }
-        if (name.endsWith('mask_mouth')) {
-          mesh.setEnabled(true)
-          mesh.material = skinShaderMaterial
-        }
-        if (name.endsWith('hands_basemesh')) {
-          mesh.setEnabled(true)
-          mesh.material = skinShaderMaterial
-        }
+        // if (name.endsWith('lbody_basemesh')) {
+        //   mesh.setEnabled(false)
+        //   mesh.material = skinShaderMaterial
+        // }
+        // if (name.endsWith('feet_basemesh')) {
+        //   mesh.setEnabled(false)
+        //   mesh.material = skinShaderMaterial
+        // }
+        // if (name.endsWith('head')) {
+        //   mesh.setEnabled(true)
+        //   mesh.material = skinShaderMaterial
+        // }
+        // if (name.endsWith('head_basemesh')) {
+        //   mesh.setEnabled(true)
+        //   mesh.material = skinShaderMaterial
+        // }
+        // if (name.endsWith('mask_eyes')) {
+        //   mesh.setEnabled(true)
+        //   mesh.material = skinShaderMaterial
+        // }
+        // if (name.endsWith('mask_eyebrows')) {
+        //   mesh.setEnabled(true)
+        //   mesh.material = skinShaderMaterial
+        // }
+        // if (name.endsWith('mask_mouth')) {
+        //   mesh.setEnabled(true)
+        //   mesh.material = skinShaderMaterial
+        // }
+        // if (name.endsWith('hands_basemesh')) {
+        //   mesh.setEnabled(true)
+        //   mesh.material = skinShaderMaterial
+        // }
       }
 
       // build avatar
