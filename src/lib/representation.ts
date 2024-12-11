@@ -71,3 +71,11 @@ export function getContentUrl(representation: WearableRepresentationDefinition) 
 export function isTexture(representation: WearableRepresentationDefinition) {
   return representation.mainFile.endsWith('png')
 }
+
+export function isTextureFile(key: string) {
+  return key?.endsWith('png') && !key?.includes('Avatar_MaleSkinBase')
+}
+
+export function isTextureSkinFile(key: string) {
+  return key?.endsWith('png')
+}

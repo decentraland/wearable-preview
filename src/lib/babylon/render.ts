@@ -1,4 +1,4 @@
-import { Color4, Texture } from '@babylonjs/core'
+import { Color3, Color4, DynamicTexture, Scene, Texture } from '@babylonjs/core'
 import { PreviewConfig, PreviewType, BodyShape, IPreviewController, IEmoteController } from '@dcl/schemas'
 import { createInvalidEmoteController, isEmote } from '../emote'
 import { getBodyShape } from './body'
@@ -11,6 +11,7 @@ import { isFacialFeature, isModel, isSuccesful } from './utils'
 import { loadWearable } from './wearable'
 import { createShader } from './explorer-alpha-shader'
 import { createOutlineShader } from './explorer-alpha-shader/OutlineShader'
+import { isTextureFile } from '../representation'
 
 /**
  * Initializes Babylon, creates the scene and loads a list of wearables in it
@@ -22,37 +23,26 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
   // create the root scene
   const [scene, sceneController, engine] = await createScene(canvas, config)
 
-  // create shaders - feet , hands , body , pants , hairs
   const hairShaderMaterial = createShader(scene, 'hair')
   const upperBodyShaderMaterial = createShader(scene, 'hoodie')
   const lowerBodyShaderMaterial = createShader(scene, 'pants')
   const feetShaderMaterial = createShader(scene, 'shoes')
-
   const skinShaderMaterial = createShader(scene, 'skin')
-
   const outlineShaderMaterial = createOutlineShader(scene, 'outline')
 
-  // upperBody
-  const upperMainTexture = new Texture('/upper-MainTex', scene)
-  // const upperNormalTexture = new Texture('/pants-normal', scene)
-  upperBodyShaderMaterial.setTexture('textureSampler', upperMainTexture)
-  upperBodyShaderMaterial.setTexture('sampler_Emissive_Tex', upperMainTexture)
+  function createTexture(scene: Scene, hexColor: string) {
+    const texture = new DynamicTexture('dynamicTexture', { width: 512, height: 512 }, scene)
+    const context = texture.getContext()
 
-  // Lower Body
-  const pantsMainTex = new Texture('/pants-maintex', scene)
-  const pantsNormalTexture = new Texture('/pants-normal', scene)
-  lowerBodyShaderMaterial.setTexture('sampler_MainTex', pantsMainTex)
-  lowerBodyShaderMaterial.setTexture('sampler_NormalMap', pantsNormalTexture)
+    const color = Color3.FromHexString(hexColor).toLinearSpace()
+    context.fillStyle = `rgba(${Math.floor(color.r * 255)}, ${Math.floor(color.g * 255)}, ${Math.floor(
+      color.b * 255
+    )}, 1)`
+    context.fillRect(0, 0, 512, 512)
+    texture.update()
 
-  // feet Part
-  const feetMainTex = new Texture('/shoes-mainTex', scene)
-  const feetNormalTexture = new Texture('/shoes-normalMap', scene)
-  feetShaderMaterial.setTexture('sampler_MainTex', feetMainTex)
-  feetShaderMaterial.setTexture('sampler_NormalMap', feetNormalTexture)
-
-  // skin
-  const skinTexture = new Texture('/skin-Normal', scene)
-  skinShaderMaterial.setTexture('sampler_MainTex', skinTexture)
+    return texture
+  }
 
   try {
     // setup the mappings for all the contents
@@ -72,29 +62,52 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
       const wearables = Array.from(slots.values())
 
       for (const wearable of wearables.filter(isModel)) {
-        console.log('wearable?.data?.category', wearable?.data?.category);
-        if (
-          wearable?.data?.category !== 'lower_body' &&
-          wearable?.data?.category !== 'hair' &&
-          wearable?.data?.category !== 'feet' 
-        ) {
-          const promise = loadWearable(scene, wearable, config.bodyShape, config.skin, config.hair).catch((error) => {
-            console.warn(error.message)
-          })
-          avatarPromises?.push(promise)
-        }
-        // const promise = loadWearable(scene, wearable, config.bodyShape, config.skin, config.hair).catch((error) => {
-        //   console.warn(error.message)
-        // })
-        // avatarPromises?.push(promise)
+        const promise = loadWearable(scene, wearable, config.bodyShape, config.skin, config.hair).catch((error) => {
+          console.warn(error.message)
+        })
+        avatarPromises?.push(promise)
       }
 
       const assets = (await Promise.all(avatarPromises)).filter(isSuccesful)
 
-      // add all assets to  scene and create shaderMaterial based on bodyPart
       for (const asset of assets) {
-        console.log('assets', asset);
-          asset.container.addAllToScene()
+        asset.container.addAllToScene()
+
+        const category = asset?.wearable?.data?.category
+        const contents = asset?.wearable?.data?.representations[0]?.contents
+
+        switch (category) {
+          case 'body_shape':
+            const skinColor = config.skin
+            const skinTexture = createTexture(scene, skinColor)
+            skinShaderMaterial.setInt('materialType', 0)
+            skinShaderMaterial.setTexture('textureSampler', skinTexture)
+            skinShaderMaterial.setFloat('alpha', 0.7)
+            break
+          case 'hair':
+            const hairColor = config.hair
+            const hairTexture = createTexture(scene, hairColor)
+            hairShaderMaterial.setInt('materialType', 0)
+            hairShaderMaterial.setTexture('textureSampler', hairTexture)
+            hairShaderMaterial.setFloat('alpha', 1)
+            break
+          case 'upper_body':
+            const upperContent = contents.find((content) => isTextureFile(content?.key))
+            const upperMainTexture = new Texture(upperContent?.url || '', scene)
+            upperBodyShaderMaterial.setTexture('textureSampler', upperMainTexture)
+            break
+          case 'lower_body':
+            const lowerContent = contents.find((content) => isTextureFile(content?.key))
+            const pantsMainTex = new Texture(lowerContent?.url || '', scene)
+            lowerBodyShaderMaterial.setTexture('textureSampler', pantsMainTex)
+            break
+          case 'feet':
+            const feetContent = contents.find((content) => isTextureFile(content?.key))
+            const feetMainTex = new Texture(feetContent?.url || '', scene)
+            feetShaderMaterial.setTexture('textureSampler', feetMainTex)
+            feetShaderMaterial.setInt('materialType', 2)
+            break
+        }
       }
 
       for (const mesh of scene.meshes) {
@@ -104,38 +117,38 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
           mesh.setEnabled(false)
           mesh.material = skinShaderMaterial
         }
-        // if (name.endsWith('lbody_basemesh')) {
-        //   mesh.setEnabled(false)
-        //   mesh.material = skinShaderMaterial
-        // }
-        // if (name.endsWith('feet_basemesh')) {
-        //   mesh.setEnabled(false)
-        //   mesh.material = skinShaderMaterial
-        // }
-        // if (name.endsWith('head')) {
-        //   mesh.setEnabled(true)
-        //   mesh.material = skinShaderMaterial
-        // }
-        // if (name.endsWith('head_basemesh')) {
-        //   mesh.setEnabled(true)
-        //   mesh.material = skinShaderMaterial
-        // }
-        // if (name.endsWith('mask_eyes')) {
-        //   mesh.setEnabled(true)
-        //   mesh.material = skinShaderMaterial
-        // }
-        // if (name.endsWith('mask_eyebrows')) {
-        //   mesh.setEnabled(true)
-        //   mesh.material = skinShaderMaterial
-        // }
-        // if (name.endsWith('mask_mouth')) {
-        //   mesh.setEnabled(true)
-        //   mesh.material = skinShaderMaterial
-        // }
-        // if (name.endsWith('hands_basemesh')) {
-        //   mesh.setEnabled(true)
-        //   mesh.material = skinShaderMaterial
-        // }
+        if (name.endsWith('lbody_basemesh')) {
+          mesh.setEnabled(false)
+          mesh.material = skinShaderMaterial
+        }
+        if (name.endsWith('feet_basemesh')) {
+          mesh.setEnabled(false)
+          mesh.material = skinShaderMaterial
+        }
+        if (name.endsWith('head')) {
+          mesh.setEnabled(true)
+          mesh.material = skinShaderMaterial
+        }
+        if (name.endsWith('head_basemesh')) {
+          mesh.setEnabled(true)
+          mesh.material = skinShaderMaterial
+        }
+        if (name.endsWith('mask_eyes')) {
+          mesh.setEnabled(true)
+          mesh.material = skinShaderMaterial
+        }
+        if (name.endsWith('mask_eyebrows')) {
+          mesh.setEnabled(true)
+          mesh.material = skinShaderMaterial
+        }
+        if (name.endsWith('mask_mouth')) {
+          mesh.setEnabled(true)
+          mesh.material = skinShaderMaterial
+        }
+        if (name.endsWith('hands_basemesh')) {
+          mesh.setEnabled(true)
+          mesh.material = skinShaderMaterial
+        }
       }
 
       // build avatar
