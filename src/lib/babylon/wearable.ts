@@ -26,6 +26,14 @@ export async function loadWearable(
   const url = getContentUrl(representation)
   const container = await loadAssetContainer(scene, url)
 
+  // Remove colliders
+  for (const mesh of container.meshes) {
+    if (mesh.name.toLowerCase().includes('collider')) {
+      mesh.isVisible = false
+      scene.removeMesh(mesh)
+    }
+  }
+
   // Stop any animations
   for (const animationGroup of container.animationGroups) {
     animationGroup.stop()

@@ -10,6 +10,5 @@ out vec2 vUV;
 
 void main(void) {
     gl_Position = worldViewProjection * vec4(position, 1.0);
-
     vUV = vec2(uv.x, 1.0 - uv.y);
 }`

@@ -37,19 +37,25 @@ export function setupMappings(config: PreviewConfig) {
   const wearables = isWearable(config.item) ? [config.item, ...config.wearables] : config.wearables
   const emote = isEmote(config.item) ? config.item : undefined
   const mappings = createMappings(wearables, emote, config.bodyShape)
+
+  const processedUrls: any = []
   SceneLoader.OnPluginActivatedObservable.add((plugin) => {
     if (plugin.name === 'gltf') {
       const gltf = plugin as GLTFFileLoader
-      gltf.preprocessUrlAsync = async (url: string) => {
+      gltf.preprocessUrlAsync = async (url) => {
         const baseUrl = `/`
         const filename = url.split(baseUrl).pop()
-        if (!filename) {
-          return url
+        if (filename) {
+          const keys = Object.keys(mappings)
+          const key = keys.find((_key) => _key.endsWith(filename))
+          const processedUrl = mappings[key!] || url
+          processedUrls.push(processedUrl) // Track processed URLs
+          return processedUrl
         }
-        const keys = Object.keys(mappings)
-        const key = keys.find((_key) => _key.endsWith(filename))
-        return mappings[key!] || url
+        return url
       }
     }
   })
+
+  return mappings
 }
