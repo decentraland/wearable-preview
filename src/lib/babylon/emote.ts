@@ -131,7 +131,17 @@ export async function playEmote(
             const keys = targetedAnimation.animation.getKeys()
             animation.setKeys([...keys])
 
-            const isAvatarAnimation = animationGroup.name.toLowerCase().includes('avatar')
+            // Determine if this is an avatar animation based on three criteria:
+            // 1. Single animation case: If the emote only has one animation group, it must be meant for the avatar
+            //    (props always come as additional animation groups)
+            // 2. Group name: If the animation group's name contains "avatar", it's explicitly marked for the avatar
+            //    (e.g., "Horse_Avatar" for the riding animation)
+            // 3. Target name: If the animated node starts with "Avatar_", it's part of the avatar skeleton
+            //    (e.g., "Avatar_Head", "Avatar_Spine", etc.)
+            const isAvatarAnimation =
+              container.animationGroups.length === 1 ||
+              animationGroup.name.toLowerCase().includes('avatar') ||
+              target.name.startsWith('Avatar_')
 
             if (isAvatarAnimation) {
               // Strip any .# suffix from target name for matching
@@ -145,6 +155,8 @@ export async function playEmote(
                   nodeAnimation.setKeys([...keys])
                   emoteAnimationGroup.addTargetedAnimation(nodeAnimation, node)
                 }
+              } else {
+                console.warn('No matching bone found for', target.name)
               }
             } else {
               emoteAnimationGroup.addTargetedAnimation(animation, target)
