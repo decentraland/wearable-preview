@@ -1,14 +1,5 @@
 import mitt from 'mitt'
-import {
-  AnimationGroup,
-  ArcRotateCamera,
-  AssetContainer,
-  Scene,
-  TransformNode,
-  Vector3,
-  Sound,
-  Engine,
-} from '@babylonjs/core'
+import { AnimationGroup, ArcRotateCamera, AssetContainer, Scene, TransformNode, Sound, Engine } from '@babylonjs/core'
 import {
   IEmoteController,
   PreviewCamera,
@@ -116,28 +107,43 @@ export async function playEmote(
   // play emote animation
   try {
     for (const asset of assets) {
-      // store all the transform nodes in a map, there can be repeated node ids
-      // if a wearable has multiple representations, so for each id we keep an array of nodes
-      const nodes = [...asset.container.transformNodes, ...(container?.transformNodes || [])].reduce((map, node) => {
-        const list = map.get(node.id) || []
+      // Store all transform nodes in a map by name for quick lookup
+      const nodesByName = new Map<string, TransformNode[]>()
+
+      // Include both transform nodes and regular nodes
+      const allNodes = [...asset.container.transformNodes, ...asset.container.meshes]
+      for (const node of allNodes) {
+        // Strip any .# or .00# suffix from the node name for matching
+        const baseName = node.name.replace(/\.\d+$/, '')
+        const list = nodesByName.get(baseName) || []
         list.push(node)
-        // Initialize position when starting an animation to avoid wearables misplaced
-        if (container && config.emote) {
-          node.position = new Vector3(0, 0, 0)
-        }
-        return map.set(node.id, list)
-      }, new Map<string, TransformNode[]>())
+        nodesByName.set(baseName, list)
+      }
+
       // apply each targeted animation from the emote asset container to the transform nodes of all the wearables
       if (container && container.animationGroups.length > 0) {
         for (const animationGroup of container.animationGroups) {
           for (const targetedAnimation of animationGroup.targetedAnimations) {
-            const animation = targetedAnimation.animation
+            const animation = targetedAnimation.animation.clone()
             const target = targetedAnimation.target as TransformNode
-            if (animationGroup.name.toLowerCase().includes('avatar') || container.animationGroups.length === 1) {
-              const newTargets = nodes.get(target.id)
-              if (newTargets && newTargets.length > 0) {
-                for (const newTarget of newTargets) {
-                  emoteAnimationGroup.addTargetedAnimation(animation, newTarget)
+
+            // Ensure we copy all keyframes exactly
+            const keys = targetedAnimation.animation.getKeys()
+            animation.setKeys([...keys])
+
+            const isAvatarAnimation = animationGroup.name.toLowerCase().includes('avatar')
+
+            if (isAvatarAnimation) {
+              // Strip any .# suffix from target name for matching
+              const targetBaseName = target.name.replace(/\.\d+$/, '')
+              const matchingNodes = nodesByName.get(targetBaseName) || []
+
+              if (matchingNodes.length > 0) {
+                // Apply animation to all matching nodes
+                for (const node of matchingNodes) {
+                  const nodeAnimation = animation.clone()
+                  nodeAnimation.setKeys([...keys])
+                  emoteAnimationGroup.addTargetedAnimation(nodeAnimation, node)
                 }
               }
             } else {
