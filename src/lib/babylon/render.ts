@@ -1,4 +1,4 @@
-import { Color4 } from '@babylonjs/core'
+import { Color4, DynamicTexture, HighlightLayer, Texture } from '@babylonjs/core'
 import { PreviewConfig, PreviewType, BodyShape, IPreviewController, IEmoteController } from '@dcl/schemas'
 import { createInvalidEmoteController, isEmote } from '../emote'
 import { getBodyShape } from './body'
@@ -9,6 +9,8 @@ import { setupMappings } from './mappings'
 import { Asset, center, createScene } from './scene'
 import { isFacialFeature, isModel, isSuccesful } from './utils'
 import { loadWearable } from './wearable'
+import { createShader } from './explorer-alpha-shader'
+import { createOutlineShader } from './explorer-alpha-shader/OutlineShader'
 
 /**
  * Initializes Babylon, creates the scene and loads a list of wearables in it
@@ -18,7 +20,65 @@ import { loadWearable } from './wearable'
  */
 export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): Promise<IPreviewController> {
   // create the root scene
-  const [scene, sceneController] = await createScene(canvas, config)
+  const [scene, sceneController, engine] = await createScene(canvas, config)
+
+  // create shaders - feet , hands , body , pants , hairs
+  const hairShaderMaterial = createShader(scene, 'hair')
+  const upperBodyShaderMaterial = createShader(scene, 'hoodie')
+  const lowerBodyShaderMaterial = createShader(scene, 'pants')
+  const feetShaderMaterial = createShader(scene, 'shoes')
+
+  const outlineShaderMaterial = createOutlineShader(scene, 'outline')
+
+  const hl = new HighlightLayer('hl1', scene)
+
+
+  // working on the texture 
+
+  const mainTex = new DynamicTexture('mainTex', { width: 512, height: 512 }, scene)
+  const mainCtx = mainTex.getContext()
+
+  const mainTex2 = new DynamicTexture('mainTex', { width: 512, height: 512 }, scene)
+  const mainCtx2 = mainTex2.getContext()
+
+  mainCtx.fillStyle = '#8B4513' 
+  mainCtx.fillRect(0, 0, 512, 512) 
+  mainTex.update()
+
+  mainCtx2.fillStyle = '#FFC0CB' 
+  mainCtx2.fillRect(0, 0, 512, 512)
+  mainTex2.update()
+
+  const normalMap = new DynamicTexture('normalMap', { width: 512, height: 512 }, scene)
+  const normalCtx = normalMap.getContext()
+
+  normalCtx.fillStyle = '#0000FF'
+  normalCtx.fillRect(0, 0, 512, 512)
+  normalMap.update()
+
+  const emissiveTex = new DynamicTexture('emissiveTex', { width: 512, height: 512 }, scene)
+  const emissiveCtx = emissiveTex.getContext()
+
+  emissiveCtx.fillStyle = '#00FF00' 
+  emissiveCtx.fillRect(0, 0, 512, 512)
+  emissiveTex.update()
+
+  // lower
+  lowerBodyShaderMaterial.setTexture('sampler_MainTex', mainTex)
+  lowerBodyShaderMaterial.setTexture('sampler_NormalMap', normalMap)
+  lowerBodyShaderMaterial.setTexture('sampler_Emissive_Tex', emissiveTex)
+
+  // upper
+  upperBodyShaderMaterial.setTexture('sampler_MainTex', mainTex2)
+  upperBodyShaderMaterial.setTexture('sampler_NormalMap', normalMap)
+  upperBodyShaderMaterial.setTexture('sampler_Emissive_Tex', emissiveTex)
+
+  // feat
+
+  feetShaderMaterial.setTexture('sampler_MainTex', mainTex2)
+  feetShaderMaterial.setTexture('sampler_NormalMap', normalMap)
+  feetShaderMaterial.setTexture('sampler_Emissive_Tex', emissiveTex)
+
   try {
     // setup the mappings for all the contents
     setupMappings(config)
@@ -26,8 +86,8 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
     // emote controller
     let emoteController: IEmoteController
 
-    // load all the wearables into the root scene
-    const promises: Promise<void | Asset>[] = []
+    // create promises for both avatars
+    const avatarPromises: Promise<void | Asset>[] = []
 
     if (config.type === PreviewType.AVATAR) {
       // get slots
@@ -40,13 +100,48 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
         const promise = loadWearable(scene, wearable, config.bodyShape, config.skin, config.hair).catch((error) => {
           console.warn(error.message)
         })
-        promises.push(promise)
+        avatarPromises?.push(promise)
       }
-      const assets = (await Promise.all(promises)).filter(isSuccesful)
 
-      // add all assets to scene
+      const assets = (await Promise.all(avatarPromises)).filter(isSuccesful)
+
+      const mainTexture = new Texture('logo.png', scene)
+
+      // add all assets to  scene and create shaderMaterial based on bodyPart
       for (const asset of assets) {
         asset.container.addAllToScene()
+
+        // Dynamically create a texture for the asset
+        const texture = new Texture(asset.wearable.thumbnail, scene)
+
+        texture.onLoadObservable.add(() => {
+          console.log(`${'asset name'} texture loaded successfully.`)
+        })
+
+        switch (asset?.wearable?.data?.category) {
+          case 'body_shape':
+            break
+
+          case 'hair':
+            hairShaderMaterial.setTexture('sampler_MainTex', mainTexture)
+            break
+
+          case 'upper_body':
+            // upperBodyShaderMaterial.setTexture('sampler_MainTex', mainTexture)
+            break
+
+          case 'lower_body':
+            // lowerBodyShaderMaterial.setTexture('sampler_MainTex', mainTexture)
+            break
+
+          case 'feet':
+            // feetShaderMaterial.setTexture('sampler_MainTex', mainTexture)
+            break
+
+          default:
+            console.warn(`Unknown asset type: ${asset.wearable.name}`)
+            break
+        }
       }
 
       // build avatar
@@ -83,6 +178,120 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
       // can't use emote controller if PreviewType is not "avatar"
       emoteController = createInvalidEmoteController()
     }
+
+    scene.getOutlineRenderer()
+
+    const meshIDsToOutline = [
+      'M_Hair_Standard_01',
+      'M_uBody_Hoodie_01',
+      'M_uBody_Hoodie_02',
+      'M_lBody_LongPants_01_primitive0',
+      'M_lBody_LongPants_01_primitive1',
+      'M_Feet_Sneakers_01_primitive0',
+      'M_Feet_Sneakers_02',
+    ]
+
+    // options could be new-avatar, outline, both, old
+    const renderMode: any = 'old'
+
+    engine.runRenderLoop(() => {
+      switch (renderMode) {
+        case 'outline':
+          outlineShaderMaterial.backFaceCulling = false
+          outlineShaderMaterial.setColor4('_BaseColor', new Color4(1, 0.75, 0.8, 1))
+          for (const mesh of scene.meshes) {
+            if (meshIDsToOutline?.includes(mesh?.id)) {
+              mesh.material = outlineShaderMaterial // Assign the outline shader material
+            }
+          }
+          engine.clear(scene.clearColor, true, true)
+          scene.render()
+          break
+        case 'new-avatar':
+          for (const mesh of scene.meshes) {
+              switch (mesh?.id) {
+                case 'M_Hair_Standard_01':
+                  mesh.material = hairShaderMaterial
+                  break
+                case 'M_uBody_Hoodie_01':
+                  mesh.material = upperBodyShaderMaterial
+                  break
+                case 'M_uBody_Hoodie_02':
+                  mesh.material = upperBodyShaderMaterial
+                  break
+                case 'M_lBody_LongPants_01_primitive0':
+                  mesh.material = lowerBodyShaderMaterial
+                  break
+                case 'M_lBody_LongPants_01_primitive1':
+                  mesh.material = lowerBodyShaderMaterial
+                  break
+                case 'M_Feet_Sneakers_01_primitive0':
+                  mesh.material = feetShaderMaterial
+                  break
+                case 'M_Feet_Sneakers_02':
+                  mesh.material = feetShaderMaterial
+                  break
+
+                default:
+                  // Optional: Handle cases where no match is found
+                  break
+              }
+            hl.innerGlow = false
+            mesh.computeBonesUsingShaders = false
+          }
+          scene.render()
+          break
+        case 'both':
+          outlineShaderMaterial.backFaceCulling = false
+          outlineShaderMaterial.setColor4('_BaseColor', new Color4(1, 0.75, 0.8, 1))
+          for (const mesh of scene.meshes) {
+            if (meshIDsToOutline?.includes(mesh?.id)) {
+              mesh.material = outlineShaderMaterial // Assign the outline shader material
+            }
+          }
+          engine.clear(scene.clearColor, true, true)
+          scene.render()
+          for (const mesh of scene.meshes) {
+            switch (mesh?.id) {
+              case 'M_Hair_Standard_01':
+                mesh.material = hairShaderMaterial
+                break
+              case 'M_uBody_Hoodie_01':
+                mesh.material = upperBodyShaderMaterial
+                break
+              case 'M_uBody_Hoodie_02':
+                mesh.material = upperBodyShaderMaterial
+                break
+              case 'M_lBody_LongPants_01_primitive0':
+                mesh.material = lowerBodyShaderMaterial
+                break
+              case 'M_lBody_LongPants_01_primitive1':
+                mesh.material = lowerBodyShaderMaterial
+                break
+              case 'M_Feet_Sneakers_01_primitive0':
+                mesh.material = feetShaderMaterial
+                break
+              case 'M_Feet_Sneakers_02':
+                mesh.material = feetShaderMaterial
+                break
+
+              default:
+                // Optional: Handle cases where no match is found
+                break
+            }
+            hl.innerGlow = false
+            mesh.computeBonesUsingShaders = false
+          }
+          scene.render()
+          break
+        case 'old':
+          scene.render()
+          break
+        default:
+          console.warn(`Unknown render mode: ${renderMode}`)
+          break
+      }
+    })
 
     // center the root scene into the camera
     if (config.centerBoundingBox) {

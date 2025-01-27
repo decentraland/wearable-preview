@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import classNames from 'classnames'
 import { PreviewCamera, PreviewType, PreviewMessageType, sendMessage, PreviewEmote } from '@dcl/schemas'
 import { useWindowSize } from '../../hooks/useWindowSize'
@@ -28,50 +28,6 @@ const Preview: React.FC = () => {
   const isLoading = (isLoadingModel || isLoadingConfig) && !error
   const showImage = !!image && !is3D && !isLoading
   const showCanvas = is3D && !isLoading
-
-  useEffect(() => {
-    let removeEmoteEvents: () => unknown = () => {}
-    if (canvasRef.current && config) {
-      let style: React.CSSProperties = { opacity: 1 } // fade in effect
-
-      // set background image
-      if (config.background.image) {
-        setImage(config.background.image)
-        style.opacity = 1
-        // if rendering a texture, babylon won't render the background, so we do it by css
-        if (!config.background.transparent && config.type === PreviewType.TEXTURE) {
-          style.backgroundColor = config.background.color
-        }
-      }
-
-      setStyle(style)
-
-      // load model or image (for texture only wearables)
-      if (config.type === PreviewType.TEXTURE) {
-        setIs3D(false)
-        setIsLoadingModel(false)
-        setIsLoaded(true)
-      } else {
-        // preview models
-        render(canvasRef.current, config)
-          .then((newController) => {
-            // set new controller as current one
-            controller.current = newController
-            // handle emote events and forward them as messages
-            removeEmoteEvents = handleEmoteEvents(controller.current)
-          })
-          .catch((error) => setPreviewError(error.message))
-          .finally(() => {
-            setIsLoadingModel(false)
-            setIsLoaded(true)
-          })
-      }
-    }
-
-    return () => {
-      removeEmoteEvents()
-    }
-  }, [canvasRef.current, config]) // eslint-disable-line
 
   // send a mesasge to the parent window when loaded or error occurs
   useEffect(() => {
@@ -109,6 +65,50 @@ const Preview: React.FC = () => {
 
   // send ready message to parent
   useReady()
+
+  useLayoutEffect(() => {
+    let removeEmoteEvents: () => unknown = () => {}
+    if (canvasRef?.current && config) {
+      let style: React.CSSProperties = { opacity: 1 } // fade in effect
+
+      // set background image
+      if (config?.background?.image) {
+        setImage(config?.background?.image)
+        style.opacity = 1
+        // if rendering a texture, babylon won't render the background, so we do it by css
+        if (!config.background.transparent && config.type === PreviewType.TEXTURE) {
+          style.backgroundColor = config.background.color
+        }
+      }
+
+      setStyle(style)
+
+      // load model or image (for texture only wearables)
+      if (config?.type === PreviewType?.TEXTURE) {
+        setIs3D(false)
+        setIsLoadingModel(false)
+        setIsLoaded(true)
+      } else {
+        // preview models
+        render(canvasRef?.current, config)
+          .then((newController) => {
+            // set new controller as current one
+            controller.current = newController
+            // handle emote events and forward them as messages
+            removeEmoteEvents = handleEmoteEvents(controller.current)
+          })
+          .catch((error) => setPreviewError(error.message))
+          .finally(() => {
+            setIsLoadingModel(false)
+            setIsLoaded(true)
+          })
+      }
+    }
+
+    return () => {
+      removeEmoteEvents()
+    }
+  }, [canvasRef?.current, config]) // eslint-disable-line
 
   return (
     <div
