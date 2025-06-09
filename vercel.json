@@ -6,7 +6,8 @@
       "NODE_ENV": "development",
       "GEN_STATIC_LOCAL": "true",
       "VITE_BASE_URL": "/",
-      "VITE_REACT_APP_DCL_DEFAULT_ENV": "true"
+      "VITE_REACT_APP_DCL_DEFAULT_ENV": "true",
+      "VITE_ROLLUP_USE_NATIVE": "false"
     }
   },
   "rewrites": [
