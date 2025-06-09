@@ -4,6 +4,13 @@ import { useOverrides } from './useOverrides'
 import { BodyShape, PreviewCamera, PreviewEmote, PreviewOptions, PreviewProjection, PreviewType } from '@dcl/schemas'
 import { parseZoom } from '../lib/zoom'
 
+export enum UnityPreviewMode {
+  PROFILE = 'profile',
+  MARKETPLACE = 'marketplace',
+  AUTHENTICATION = 'authentication',
+  BUILDER = 'builder',
+}
+
 export const useOptions = () => {
   // get options from url params
   const [search] = useState(window.location.search.toString())
@@ -25,21 +32,22 @@ export const useOptions = () => {
     const lockAlpha = params.get('lockAlpha')
     const lockBeta = params.get('lockBeta')
     const lockRadius = params.get('lockRadius')
+    const mode = params.get('mode') as UnityPreviewMode | null
 
     const transparentBackground = params.has('transparentBackground')
     if (transparentBackground) {
       console.warn(
-        `Deprecated: you are using the query param "transparentBackground" that has been deprecated in favor of "disableBackground". Please switch to the new query param since in the future this will not be supported.`
+        `Deprecated: you are using the query param "transparentBackground" that has been deprecated in favor of "disableBackground". Please switch to the new query param since in the future this will not be supported.`,
       )
     }
     const centerBoundingBox = params.get('centerBoundingBox') !== 'false'
     if (transparentBackground) {
       console.warn(
-        `Deprecated: you are using the query param "transparentBackground" that has been deprecated in favor of "disableBackground". Please switch to the new query param since in the future this will not be supported.`
+        `Deprecated: you are using the query param "transparentBackground" that has been deprecated in favor of "disableBackground". Please switch to the new query param since in the future this will not be supported.`,
       )
     }
 
-    const options: PreviewOptions = {
+    const options: PreviewOptions & { mode: UnityPreviewMode | null } = {
       contractAddress: params.get('contract')!,
       tokenId: params.get('token'),
       itemId: params.get('item'),
@@ -66,8 +74,8 @@ export const useOptions = () => {
         bodyShapeParam === 'female' || bodyShapeParam === BodyShape.FEMALE
           ? BodyShape.FEMALE
           : bodyShapeParam === 'male' || bodyShapeParam === BodyShape.MALE
-          ? BodyShape.MALE
-          : null,
+            ? BodyShape.MALE
+            : null,
       urns: params.getAll('urn'),
       urls: params.getAll('url'),
       base64s: params.getAll('base64'),
@@ -88,6 +96,7 @@ export const useOptions = () => {
       lockAlpha: lockAlpha === 'true',
       lockBeta: lockBeta === 'true',
       lockRadius: lockRadius === 'true',
+      mode,
     }
     return options
   }, [search])
@@ -99,7 +108,7 @@ export const useOptions = () => {
       ...options,
       ...overrides,
     }),
-    [options, overrides]
+    [options, overrides],
   )
 
   // return options with overrides applied (if any)
