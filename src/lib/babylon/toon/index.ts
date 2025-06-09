@@ -1,4 +1,5 @@
 import { Effect } from '@babylonjs/core'
+import customToonShading from './new-pbr.hlsl?raw'
 
 const needle = `#include<pbrBlockFinalColorComposition>`
 const injection = `#include<customToonShading>`
@@ -7,7 +8,7 @@ if (Effect.ShadersStore['pbrPixelShader'].includes(needle)) {
   if (!Effect.ShadersStore['pbrPixelShader'].includes(injection)) {
     Effect.ShadersStore['pbrPixelShader'] = Effect.ShadersStore['pbrPixelShader'].replace(
       needle,
-      needle + '\n' + injection + '\n'
+      needle + '\n' + injection + '\n',
     )
   }
 } else {
@@ -15,5 +16,4 @@ if (Effect.ShadersStore['pbrPixelShader'].includes(needle)) {
 }
 
 // Monkey-patch the shaders with the corrected version for Decentraland
-// eslint-disable-next-line
-Effect.IncludesShadersStore['customToonShading'] = require('!!raw-loader!./new-pbr.hlsl').default
+Effect.IncludesShadersStore['customToonShading'] = customToonShading
