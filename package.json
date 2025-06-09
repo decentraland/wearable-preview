@@ -71,6 +71,7 @@
     "@vitejs/plugin-react": "^4.5.1",
     "dotenv": "^16.5.0",
     "prettier": "^3.5.3",
+    "rollup": "^4.42.0",
     "typescript": "^5.2.2",
     "vite": "^6.3.5"
   }
