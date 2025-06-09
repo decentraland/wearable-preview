@@ -26,7 +26,7 @@
     "build": "vite build",
     "build:static-local": "GEN_STATIC_LOCAL=true npm run build && mv ./build ./static-local",
     "test": "jest",
-    "prebuild": "node ./scripts/prebuild.js"
+    "prebuild": "node ./scripts/prebuild.cjs"
   },
   "eslintConfig": {
     "extends": [
