@@ -18,20 +18,24 @@
   ],
   "headers": [
     {
-      "source": "/unity/Build/(.*)\\.br",
+      "source": "/unity/Build/(.*)\\.framework\\.js\\.br",
       "headers": [
-        {
-          "key": "Content-Encoding",
-          "value": "br"
-        },
-        {
-          "key": "Content-Type",
-          "value": "application/octet-stream"
-        },
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
+        { "key": "Content-Encoding", "value": "br" },
+        { "key": "Content-Type", "value": "application/javascript" }
+      ]
+    },
+    {
+      "source": "/unity/Build/(.*)\\.wasm\\.br",
+      "headers": [
+        { "key": "Content-Encoding", "value": "br" },
+        { "key": "Content-Type", "value": "application/wasm" }
+      ]
+    },
+    {
+      "source": "/unity/Build/(.*)\\.data\\.br",
+      "headers": [
+        { "key": "Content-Encoding", "value": "br" },
+        { "key": "Content-Type", "value": "application/octet-stream" }
       ]
     }
   ]
