@@ -96,7 +96,7 @@ export const useOptions = () => {
       lockAlpha: lockAlpha === 'true',
       lockBeta: lockBeta === 'true',
       lockRadius: lockRadius === 'true',
-      mode,
+      mode: (params.get('mode') as UnityPreviewMode) ?? 'marketplace',
     }
     return options
   }, [search])
