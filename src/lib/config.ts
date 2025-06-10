@@ -277,7 +277,7 @@ async function fetchWearablesAndEmotes(
 }
 
 export async function createConfig(
-  options: PreviewOptions & { mode?: UnityPreviewMode } = {},
+  options: PreviewOptions & { mode?: UnityPreviewMode | null } = {},
 ): Promise<PreviewConfig & { mode: UnityPreviewMode }> {
   const { contractAddress, tokenId, itemId } = options
 
