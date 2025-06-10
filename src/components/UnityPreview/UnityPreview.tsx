@@ -94,6 +94,9 @@ const UnityPreview: React.FC = () => {
       if (isLoaded) {
         sendMessage(getParent(), PreviewMessageType.LOAD, null)
         setIsMessageSent(true)
+        if (config?.mode) {
+          unityInstanceRef.current?.SendMessage('JSBridge', 'SetMode', config.mode.toString())
+        }
         if (config?.type === PreviewType.AVATAR || (config?.emote && config.emote !== PreviewEmote.IDLE)) {
           // Handle emote playback through Unity instance if needed
           unityInstanceRef.current?.SendMessage('AvatarController', 'PlayEmote', config.emote)
@@ -103,7 +106,7 @@ const UnityPreview: React.FC = () => {
         setIsMessageSent(true)
       }
     }
-  }, [isLoaded, error, isMessageSent, config?.type, config?.emote])
+  }, [isLoaded, error, isMessageSent, config?.type, config?.emote, config?.mode, unityInstanceRef.current])
 
   // when the config is being loaded again reset all the other loading flags
   useEffect(() => {

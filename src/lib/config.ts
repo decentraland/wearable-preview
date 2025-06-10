@@ -34,6 +34,7 @@ import {
   getNonFacialFeatureCategories,
 } from './wearable'
 import { computeZoom, getZoom } from './zoom'
+import { UnityPreviewMode } from '../hooks/useOptions'
 
 const DEFAULT_PROFILE = 'default'
 const QUANTITY_OF_PARTS_ON_SHORTENED_ITEMS_URN = 6
@@ -275,7 +276,9 @@ async function fetchWearablesAndEmotes(
   return [wearables, emotes]
 }
 
-export async function createConfig(options: PreviewOptions = {}): Promise<PreviewConfig> {
+export async function createConfig(
+  options: PreviewOptions & { mode?: UnityPreviewMode } = {},
+): Promise<PreviewConfig & { mode: UnityPreviewMode }> {
   const { contractAddress, tokenId, itemId } = options
 
   const peerUrl = options.peerUrl || config.get('PEER_URL')
@@ -482,6 +485,7 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
     lockAlpha: !!options.lockAlpha,
     lockBeta: !!options.lockBeta,
     lockRadius: !!options.lockRadius,
+    mode: options.mode || ('marketplace' as UnityPreviewMode),
   }
 }
 

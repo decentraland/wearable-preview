@@ -14,7 +14,7 @@ export enum UnityPreviewMode {
 export const useOptions = () => {
   // get options from url params
   const [search] = useState(window.location.search.toString())
-  const options = useMemo<PreviewOptions>(() => {
+  const options = useMemo<PreviewOptions & { mode: UnityPreviewMode | null }>(() => {
     const params = new URLSearchParams(search)
     const autoRotateSpeedParam = params.get('autoRotateSpeed') as string | null
     const offsetXParam = params.get('offsetX') as string | null
@@ -32,7 +32,7 @@ export const useOptions = () => {
     const lockAlpha = params.get('lockAlpha')
     const lockBeta = params.get('lockBeta')
     const lockRadius = params.get('lockRadius')
-    const mode = params.get('mode') as UnityPreviewMode | null
+    const mode = (params.get('mode') as UnityPreviewMode | null) || ('marketplace' as UnityPreviewMode)
 
     const transparentBackground = params.has('transparentBackground')
     if (transparentBackground) {
@@ -96,7 +96,7 @@ export const useOptions = () => {
       lockAlpha: lockAlpha === 'true',
       lockBeta: lockBeta === 'true',
       lockRadius: lockRadius === 'true',
-      mode: (params.get('mode') as UnityPreviewMode) ?? 'marketplace',
+      mode,
     }
     return options
   }, [search])
