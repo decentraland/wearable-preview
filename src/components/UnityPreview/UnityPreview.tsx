@@ -21,7 +21,6 @@ const UnityPreview: React.FC = () => {
   const [config, isLoadingConfig, configError] = useConfig()
 
   const [previewError, setPreviewError] = useState('')
-  const [isDragging, setIsDragging] = useState(false)
   const [is3D, setIs3D] = useState(true)
   const [image, setImage] = useState('')
   const [isMessageSent, setIsMessageSent] = useState(false)
@@ -130,18 +129,9 @@ const UnityPreview: React.FC = () => {
 
   useReady()
 
-  const handleMouseDown = useCallback(() => {
-    setIsDragging(is3D && !error)
-  }, [is3D, error])
-
-  const handleMouseUp = useCallback(() => {
-    setIsDragging(false)
-  }, [])
-
   return (
     <div
       className={classNames('Preview', {
-        'is-dragging': isDragging,
         'is-loading': isLoading,
         'is-loaded': isLoaded,
         'is-3d': is3D && config?.camera === PreviewCamera.INTERACTIVE,
@@ -157,8 +147,6 @@ const UnityPreview: React.FC = () => {
         className={classNames({ 'is-visible': showCanvas })}
         width={width}
         height={height}
-        onMouseDown={handleMouseDown}
-        onMouseUp={handleMouseUp}
       />
       {error && <div className="error">{error}</div>}
     </div>
