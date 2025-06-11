@@ -12,10 +12,12 @@ import { loadUnityInstance } from '../../lib/unity/loader'
 import './UnityPreview.css'
 
 const UnityPreview: React.FC = () => {
-  const { width, height } = useWindowSize()
+  const { width = window.innerWidth, height = window.innerHeight } = useWindowSize()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const unityInstanceRef = useRef<any>(null)
   const initializingRef = useRef(false)
+
+  const [pixelRatio, setPixelRatio] = useState(() => window.devicePixelRatio || 1)
 
   const controller = useController()
   const [config, isLoadingConfig, configError] = useConfig()
@@ -127,7 +129,29 @@ const UnityPreview: React.FC = () => {
     }
   }, [isLoadingConfig])
 
+  useEffect(() => {
+    const handlePixelRatioChange = () => {
+      const newPixelRatio = window.devicePixelRatio || 1
+      setPixelRatio(newPixelRatio)
+    }
+
+    const mediaQuery = window.matchMedia(`(resolution: ${pixelRatio}dppx)`)
+    mediaQuery.addEventListener('change', handlePixelRatioChange)
+
+    return () => {
+      mediaQuery.removeEventListener('change', handlePixelRatioChange)
+    }
+  }, [pixelRatio])
+
   useReady()
+
+  const canvasStyle = useMemo(
+    () => ({
+      width: `${width}px`,
+      height: `${height}px`,
+    }),
+    [width, height],
+  )
 
   return (
     <div
@@ -145,8 +169,9 @@ const UnityPreview: React.FC = () => {
         ref={canvasRef}
         id="unity-canvas"
         className={classNames({ 'is-visible': showCanvas })}
-        width={width}
-        height={height}
+        width={Math.round(width * pixelRatio)}
+        height={Math.round(height * pixelRatio)}
+        style={canvasStyle}
       />
       {error && <div className="error">{error}</div>}
     </div>
