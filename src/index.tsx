@@ -6,7 +6,7 @@ import './index.css'
 
 const App = () => {
   const search = new URLSearchParams(window.location.search)
-  const isUnityPreview = search.get('unity') !== null
+  const isUnityPreview = search.get('unity') === 'true'
 
   return isUnityPreview ? <UnityPreview /> : <Preview />
 }
