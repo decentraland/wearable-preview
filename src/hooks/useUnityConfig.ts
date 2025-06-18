@@ -41,7 +41,9 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
           color: options.background || '#4b4852',
           transparent: options.disableBackground === true,
         }
-        updateQueryParam('background', background.color.replace('#', ''))
+        if (!background.transparent) {
+          updateQueryParam('background', background.color.replace('#', ''))
+        }
 
         const eyes = options.eyes || '000000'
         updateQueryParam('eyes', eyes.replace('#', ''))
