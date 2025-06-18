@@ -3,11 +3,11 @@ import classNames from 'classnames'
 import { PreviewCamera, PreviewType, PreviewMessageType, sendMessage, PreviewEmote } from '@dcl/schemas'
 
 import { useWindowSize } from '../../hooks/useWindowSize'
-import { useConfig } from '../../hooks/useConfig'
+import { useUnityConfig } from '../../hooks/useUnityConfig'
 import { useReady } from '../../hooks/useReady'
 import { useController } from '../../hooks/useController'
 import { getParent } from '../../lib/parent'
-import { loadUnityInstance } from '../../lib/unity/loader'
+import { render } from '../../lib/unity/render'
 
 import './UnityPreview.css'
 
@@ -20,63 +20,55 @@ const UnityPreview: React.FC = () => {
   const [pixelRatio, setPixelRatio] = useState(() => window.devicePixelRatio || 1)
 
   const controller = useController()
-  const [config, isLoadingConfig, configError] = useConfig()
+  const [config, isLoadingConfig, configError] = useUnityConfig()
 
   const [previewError, setPreviewError] = useState('')
   const [is3D, setIs3D] = useState(true)
   const [image, setImage] = useState('')
-  const [isMessageSent, setIsMessageSent] = useState(false)
-  const [isLoadingModel, setIsLoadingModel] = useState(true)
   const [isLoaded, setIsLoaded] = useState(false)
 
+  console.log('config', config)
+
   const error = previewError || configError
-  const isLoading = (isLoadingModel || isLoadingConfig) && !error
+  const isLoading = isLoadingConfig && !error
   const showImage = !!image && !is3D && !isLoading
   const showCanvas = is3D && !isLoading
 
-  const style = useMemo(
-    () => ({
-      opacity: 1,
-      backgroundColor:
-        !config?.background.transparent && config?.type === PreviewType.TEXTURE ? config.background.color : undefined,
-    }),
-    [config],
+  const onLoaded = useCallback(
+    (event: MessageEvent) => {
+      if (event.data.type === 'unity-renderer') {
+        const { type, payload } = event.data.payload
+        if (type === 'loaded' && (payload === true || payload === 'true')) {
+          if (config && unityInstanceRef.current) {
+            if (config.type === PreviewType.AVATAR && config.emote && config.emote !== PreviewEmote.IDLE) {
+              controller.current?.emote.play()
+            }
+          }
+          setIsLoaded(true)
+          sendMessage(getParent(), PreviewMessageType.LOAD, null)
+        }
+      }
+    },
+    [config, controller, unityInstanceRef, setIsLoaded],
   )
 
-  const sendUnityMessage = useCallback((target: string, method: string, value: string) => {
-    try {
-      unityInstanceRef.current?.SendMessage(target, method, value)
-    } catch (err) {
-      console.error(`Unity msg failed (${target}.${method}):`, err)
-    }
-  }, [])
-
   useEffect(() => {
+    if (isLoadingConfig || !config) return
+
     const init = async () => {
       if (!canvasRef.current || initializingRef.current || unityInstanceRef.current) return
       initializingRef.current = true
+
       try {
-        const instance = await loadUnityInstance(
-          canvasRef.current,
-          '/unity/Build/aang-renderer.loader.js',
-          '/unity/Build/aang-renderer.data.br',
-          '/unity/Build/aang-renderer.framework.js.br',
-          '/unity/Build/aang-renderer.wasm.br',
-          '/unity/Build/aang-renderer.symbols.json.br',
-          '/unity/StreamingAssets',
-          'Decentraland',
-          'AangRenderer',
-          '0.1.0',
-          true,
-          [],
-        )
-        unityInstanceRef.current = instance
-        setIsLoaded(true)
-        setIsLoadingModel(false)
+        const { unity, scene, emote } = await render(canvasRef.current)
+        unityInstanceRef.current = unity
+        controller.current = { scene, emote }
+        window.addEventListener('message', onLoaded, false)
       } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load Unity'
         console.error('Unity init failed:', err)
-        setPreviewError(err instanceof Error ? err.message : 'Failed to load Unity')
-        setIsLoadingModel(false)
+        setPreviewError(errorMessage)
+        sendMessage(getParent(), PreviewMessageType.ERROR, { message: errorMessage })
       } finally {
         initializingRef.current = false
       }
@@ -85,12 +77,14 @@ const UnityPreview: React.FC = () => {
     init()
 
     return () => {
+      window.removeEventListener('message', onLoaded, false)
+
       if (unityInstanceRef.current) {
         unityInstanceRef.current.Quit?.()
         unityInstanceRef.current = null
       }
     }
-  }, [])
+  }, [config, isLoadingConfig])
 
   useEffect(() => {
     if (!config) return
@@ -101,33 +95,8 @@ const UnityPreview: React.FC = () => {
 
     if (config.type === PreviewType.TEXTURE) {
       setIs3D(false)
-      setIsLoadingModel(false)
-      setIsLoaded(true)
     }
   }, [config])
-
-  useEffect(() => {
-    if (!isMessageSent && isLoaded && config && unityInstanceRef.current) {
-      sendMessage(getParent(), PreviewMessageType.LOAD, null)
-      config.mode && sendUnityMessage('JSBridge', 'SetMode', config.mode.toString())
-      config.background.color && sendUnityMessage('JSBridge', 'SetBackground', config.background.color.replace('#', ''))
-      if (config.type === PreviewType.AVATAR && config.emote && config.emote !== PreviewEmote.IDLE) {
-        sendUnityMessage('AvatarController', 'PlayEmote', config.emote.toString())
-      }
-      setIsMessageSent(true)
-    } else if (!isMessageSent && error) {
-      sendMessage(getParent(), PreviewMessageType.ERROR, { message: error })
-      setIsMessageSent(true)
-    }
-  }, [isLoaded, error, isMessageSent, config, sendUnityMessage])
-
-  useEffect(() => {
-    if (isLoadingConfig) {
-      setIsLoadingModel(true)
-      setIsMessageSent(false)
-      setIsLoaded(false)
-    }
-  }, [isLoadingConfig])
 
   useEffect(() => {
     const handlePixelRatioChange = () => {
@@ -144,6 +113,15 @@ const UnityPreview: React.FC = () => {
   }, [pixelRatio])
 
   useReady()
+
+  const style = useMemo(
+    () => ({
+      opacity: 1,
+      backgroundColor:
+        !config?.background.transparent && config?.type === PreviewType.TEXTURE ? config.background.color : undefined,
+    }),
+    [config],
+  )
 
   const canvasStyle = useMemo(
     () => ({

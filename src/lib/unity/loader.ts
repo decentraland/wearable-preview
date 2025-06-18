@@ -14,7 +14,35 @@ declare function createUnityInstance(
   },
 ): Promise<any>
 
-export const loadUnityInstance = (
+// cache unity loader promises to prevent multiple loads
+const unityLoaderCache = new Map<string, Promise<HTMLScriptElement>>()
+
+function loadUnityLoaderScript(src: string): Promise<HTMLScriptElement> {
+  if (unityLoaderCache.has(src)) {
+    return unityLoaderCache.get(src)!
+  }
+
+  const promise = new Promise<HTMLScriptElement>((resolve, reject) => {
+    const existingScript = document.querySelector<HTMLScriptElement>(`script[src="${src}"]`)
+    if (existingScript) {
+      existingScript.addEventListener('load', () => resolve(existingScript))
+      existingScript.addEventListener('error', (e) => reject(e))
+      return
+    }
+
+    const script = document.createElement('script')
+    script.src = src
+    script.async = true
+    script.onload = () => resolve(script)
+    script.onerror = (e) => reject(e)
+    document.body.appendChild(script)
+  })
+
+  unityLoaderCache.set(src, promise)
+  return promise
+}
+
+export const loadUnityInstance = async (
   canvas: HTMLCanvasElement,
   src: string,
   dataUrl: string,
@@ -27,36 +55,24 @@ export const loadUnityInstance = (
   productVersion: string,
   matchWebGLToCanvasSize: boolean,
   args: string[],
-) => {
-  return new Promise((resolve, reject) => {
-    const script = document.createElement('script')
-    ;(script.src = src),
-      (script.onload = () => {
-        createUnityInstance(canvas, {
-          dataUrl: dataUrl,
-          frameworkUrl: frameworkUrl,
-          codeUrl: codeUrl,
-          symbolsUrl: symbolsUrl,
-          streamingAssetsUrl: streamingAssetsUrl,
-          companyName: companyName,
-          productName: productName,
-          productVersion: productVersion,
-          matchWebGLToCanvasSize: matchWebGLToCanvasSize,
-          arguments: args,
-        })
-          .then((unityInstance) => {
-            console.log('✅ Unity loaded')
-            resolve(unityInstance)
-          })
-          .catch((error) => {
-            console.error('❌ Unity load failed', error)
-            reject(error)
-          })
-      })
-    script.onerror = (e) => {
-      console.error('❌ Failed to load Unity loader script', e)
-      reject(e)
-    }
-    document.body.appendChild(script)
-  })
+): Promise<any> => {
+  try {
+    await loadUnityLoaderScript(src)
+
+    return await createUnityInstance(canvas, {
+      dataUrl,
+      frameworkUrl,
+      codeUrl,
+      symbolsUrl,
+      streamingAssetsUrl,
+      companyName,
+      productName,
+      productVersion,
+      matchWebGLToCanvasSize,
+      arguments: args,
+    })
+  } catch (error) {
+    console.error('❌ Failed to load Unity instance:', error)
+    throw error
+  }
 }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useOverrides } from './useOverrides'
 
 import { BodyShape, PreviewCamera, PreviewEmote, PreviewOptions, PreviewProjection, PreviewType } from '@dcl/schemas'
@@ -13,7 +13,7 @@ export enum UnityPreviewMode {
 
 export const useOptions = () => {
   // get options from url params
-  const [search] = useState(window.location.search.toString())
+  const search = window.location.search.toString()
   const options = useMemo<PreviewOptions & { mode: UnityPreviewMode | null }>(() => {
     const params = new URLSearchParams(search)
     const autoRotateSpeedParam = params.get('autoRotateSpeed') as string | null
@@ -32,7 +32,7 @@ export const useOptions = () => {
     const lockAlpha = params.get('lockAlpha')
     const lockBeta = params.get('lockBeta')
     const lockRadius = params.get('lockRadius')
-    const mode = (params.get('mode') as UnityPreviewMode | null) || ('marketplace' as UnityPreviewMode)
+    const mode = params.get('mode') as UnityPreviewMode | null
 
     const transparentBackground = params.has('transparentBackground')
     if (transparentBackground) {
@@ -41,11 +41,6 @@ export const useOptions = () => {
       )
     }
     const centerBoundingBox = params.get('centerBoundingBox') !== 'false'
-    if (transparentBackground) {
-      console.warn(
-        `Deprecated: you are using the query param "transparentBackground" that has been deprecated in favor of "disableBackground". Please switch to the new query param since in the future this will not be supported.`,
-      )
-    }
 
     const options: PreviewOptions & { mode: UnityPreviewMode | null } = {
       contractAddress: params.get('contract')!,
