@@ -27,11 +27,11 @@ export async function render(canvas: HTMLCanvasElement): Promise<IPreviewControl
     // Initialize Unity instance
     instance = (await loadUnityInstance(
       canvas,
-      '/unity/Build/WebGLBuild.loader.js',
-      '/unity/Build/WebGLBuild.data.br',
-      '/unity/Build/WebGLBuild.framework.js.br',
-      '/unity/Build/WebGLBuild.wasm.br',
-      '/unity/Build/WebGLBuild.symbols.json.br',
+      '/unity/Build/aang-renderer.loader.js',
+      '/unity/Build/aang-renderer.data.br',
+      '/unity/Build/aang-renderer.framework.js.br',
+      '/unity/Build/aang-renderer.wasm.br',
+      '/unity/Build/aang-renderer.symbols.json.br',
       '/unity/StreamingAssets',
       'Decentraland',
       'AangRenderer',
