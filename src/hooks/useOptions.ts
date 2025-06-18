@@ -32,7 +32,7 @@ export const useOptions = () => {
     const lockAlpha = params.get('lockAlpha')
     const lockBeta = params.get('lockBeta')
     const lockRadius = params.get('lockRadius')
-    const unityMode = params.get('unityMode') as UnityPreviewMode | null
+    const mode = params.get('mode') as UnityPreviewMode | null
 
     const transparentBackground = params.has('transparentBackground')
     if (transparentBackground) {
@@ -91,7 +91,7 @@ export const useOptions = () => {
       lockAlpha: lockAlpha === 'true',
       lockBeta: lockBeta === 'true',
       lockRadius: lockRadius === 'true',
-      mode: unityMode,
+      mode,
     }
     return options
   }, [search])
