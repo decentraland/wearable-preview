@@ -62,13 +62,23 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
         }
 
         const sanitizedProfile = sanitizeProfile(options.profile)
-        const profile = sanitizedProfile
-          ? sanitizedProfile.type === 'address'
-            ? await fetchProfile(sanitizedProfile.value, peerUrl)
-            : await fetchProfileEntity(sanitizedProfile.value, peerUrl)
-          : null
-        if (profile && sanitizedProfile) {
-          updateQueryParam('profile', sanitizedProfile.value)
+
+        // If profile is 'default', add a random postfix number from 1 to 159
+        let profileValue = sanitizedProfile?.value
+        if (profileValue === 'default') {
+          const randomNumber = Math.floor(Math.random() * 159) + 1
+          profileValue = `default${randomNumber}`
+        }
+
+        const profile =
+          profileValue && sanitizedProfile
+            ? sanitizedProfile.type === 'address'
+              ? await fetchProfile(profileValue, peerUrl)
+              : await fetchProfileEntity(profileValue, peerUrl)
+            : null
+
+        if (profile && sanitizedProfile && profileValue) {
+          updateQueryParam('profile', profileValue)
         }
 
         const bodyShape = options.bodyShape || (profile && (profile.avatar.bodyShape as BodyShape)) || BodyShape.MALE
