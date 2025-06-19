@@ -106,7 +106,7 @@ function isValidCIDv1(entity: string): boolean {
   return /^baf[a-z2-7]{56}$/.test(entity)
 }
 
-function sanitizeProfile(profile: string | null | undefined): {
+export function sanitizeProfile(profile: string | null | undefined): {
   type: 'address' | 'entity'
   value: string
 } | null {
@@ -172,7 +172,7 @@ async function fetchURLs(urls: string[]): Promise<[WearableDefinition[], EmoteDe
 }
 
 export const profileMemo = createMemo<Avatar | null>()
-async function fetchProfile(profile: string, peerUrl: string) {
+export async function fetchProfile(profile: string, peerUrl: string) {
   return profileMemo.memo(profile, async () => {
     if (profile === DEFAULT_PROFILE) {
       return null
@@ -185,7 +185,7 @@ async function fetchProfile(profile: string, peerUrl: string) {
   })
 }
 
-async function fetchProfileEntity(profile: string, peerUrl: string) {
+export async function fetchProfileEntity(profile: string, peerUrl: string) {
   return profileMemo.memo(profile, async () => {
     const resp = await peerApi
       .fetchProfileEntity(profile, peerUrl)

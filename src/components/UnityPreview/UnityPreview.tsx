@@ -39,11 +39,6 @@ const UnityPreview: React.FC = () => {
       if (event.data.type === 'unity-renderer') {
         const { type, payload } = event.data.payload
         if (type === 'loaded' && (payload === true || payload === 'true')) {
-          if (config && unityInstanceRef.current) {
-            if (config.type === PreviewType.AVATAR && config.emote && config.emote !== PreviewEmote.IDLE) {
-              controller.current?.emote.play()
-            }
-          }
           setIsLoaded(true)
           sendMessage(getParent(), PreviewMessageType.LOAD, null)
         }
