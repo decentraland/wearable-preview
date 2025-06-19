@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import classNames from 'classnames'
-import { PreviewCamera, PreviewType, PreviewMessageType, sendMessage, PreviewEmote } from '@dcl/schemas'
+import { PreviewCamera, PreviewType, PreviewMessageType, sendMessage } from '@dcl/schemas'
 
 import { useWindowSize } from '../../hooks/useWindowSize'
 import { useUnityConfig } from '../../hooks/useUnityConfig'
@@ -27,10 +27,8 @@ const UnityPreview: React.FC = () => {
   const [image, setImage] = useState('')
   const [isLoaded, setIsLoaded] = useState(false)
 
-  console.log('config', config)
-
   const error = previewError || configError
-  const isLoading = isLoadingConfig && !error
+  const isLoading = (isLoadingConfig || !isLoaded) && !error
   const showImage = !!image && !is3D && !isLoading
   const showCanvas = is3D && !isLoading
 
@@ -55,6 +53,7 @@ const UnityPreview: React.FC = () => {
       initializingRef.current = true
 
       try {
+        setIsLoaded(false)
         const { unity, scene, emote } = await render(canvasRef.current)
         unityInstanceRef.current = unity
         controller.current = { scene, emote }
@@ -79,7 +78,7 @@ const UnityPreview: React.FC = () => {
         unityInstanceRef.current = null
       }
     }
-  }, [config, isLoadingConfig])
+  }, [config, isLoadingConfig, setIsLoaded])
 
   useEffect(() => {
     if (!config) return

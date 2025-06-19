@@ -67,6 +67,9 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
             ? await fetchProfile(sanitizedProfile.value, peerUrl)
             : await fetchProfileEntity(sanitizedProfile.value, peerUrl)
           : null
+        if (profile && sanitizedProfile) {
+          updateQueryParam('profile', sanitizedProfile.value)
+        }
 
         const bodyShape = options.bodyShape || (profile && (profile.avatar.bodyShape as BodyShape)) || BodyShape.MALE
         updateQueryParam('bodyShape', bodyShape)

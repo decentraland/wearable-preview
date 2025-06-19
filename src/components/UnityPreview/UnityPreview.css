@@ -11,6 +11,10 @@
   transition: opacity ease 0.3s;
 }
 
+.Preview.is-loading {
+  visibility: hidden;
+}
+
 .Preview.is-3d.is-loaded {
   cursor: grab;
 }
