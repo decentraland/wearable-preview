@@ -14,7 +14,7 @@ export enum UnityPreviewMode {
 export const useOptions = () => {
   // get options from url params
   const search = window.location.search.toString()
-  const options = useMemo<PreviewOptions & { mode: UnityPreviewMode | null }>(() => {
+  const options = useMemo<PreviewOptions & { mode: UnityPreviewMode | null; disableLoader: boolean }>(() => {
     const params = new URLSearchParams(search)
     const autoRotateSpeedParam = params.get('autoRotateSpeed') as string | null
     const offsetXParam = params.get('offsetX') as string | null
@@ -42,7 +42,7 @@ export const useOptions = () => {
     }
     const centerBoundingBox = params.get('centerBoundingBox') !== 'false'
 
-    const options: PreviewOptions & { mode: UnityPreviewMode | null } = {
+    const options: PreviewOptions & { mode: UnityPreviewMode | null; disableLoader: boolean } = {
       contractAddress: params.get('contract')!,
       tokenId: params.get('token'),
       itemId: params.get('item'),
@@ -92,6 +92,7 @@ export const useOptions = () => {
       lockBeta: lockBeta === 'true',
       lockRadius: lockRadius === 'true',
       mode,
+      disableLoader: params.has('disableLoader') || true,
     }
     return options
   }, [search])

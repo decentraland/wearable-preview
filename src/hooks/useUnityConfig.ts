@@ -45,6 +45,11 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
           updateQueryParam('background', background.color.replace('#', ''))
         }
 
+        // Disable unity loader by default
+        if (options.disableLoader) {
+          updateQueryParam('disableLoader', 'true')
+        }
+
         const eyes = options.eyes || '000000'
         updateQueryParam('eyes', eyes.replace('#', ''))
 
