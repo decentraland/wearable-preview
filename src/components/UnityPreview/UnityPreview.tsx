@@ -30,7 +30,7 @@ const UnityPreview: React.FC = () => {
   const [isLoaded, setIsLoaded] = useState(false)
 
   const error = previewError || configError
-  const isLoading = (isLoadingConfig || !isLoaded) && !error
+  const isLoading = !isLoaded && !error
   const showImage = !!image && !is3D && !isLoading
   const showCanvas = is3D && !isLoading
 
