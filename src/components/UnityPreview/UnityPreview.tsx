@@ -11,6 +11,8 @@ import { render } from '../../lib/unity/render'
 
 import './UnityPreview.css'
 
+let unityInitialized = false
+
 const UnityPreview: React.FC = () => {
   const { width = window.innerWidth, height = window.innerHeight } = useWindowSize()
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -46,7 +48,7 @@ const UnityPreview: React.FC = () => {
   )
 
   useEffect(() => {
-    if (isLoadingConfig || !config) return
+    if (unityInitialized || isLoadingConfig || !config) return
 
     const init = async () => {
       if (!canvasRef.current || initializingRef.current || unityInstanceRef.current) return
@@ -58,6 +60,7 @@ const UnityPreview: React.FC = () => {
         unityInstanceRef.current = unity
         controller.current = { scene, emote }
         window.addEventListener('message', onLoaded, false)
+        unityInitialized = true
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to load Unity'
         console.error('Unity init failed:', err)
