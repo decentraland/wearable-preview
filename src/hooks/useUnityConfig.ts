@@ -10,14 +10,29 @@ export interface UnityPreviewConfig extends PreviewConfig {
   mode?: UnityPreviewMode
 }
 
-// Basic utility to update a query param
-function updateQueryParam(key: string, value: string) {
+// Batch update query parameters to avoid multiple reloads
+function updateQueryParams(params: Record<string, string | string[]>) {
   const url = new URL(window.location.href)
-  if (value === '') {
+
+  Object.entries(params).forEach(([key, value]) => {
+    // Clear existing parameter first
     url.searchParams.delete(key)
-  } else {
-    url.searchParams.set(key, value)
-  }
+
+    if (Array.isArray(value)) {
+      // Handle array values (like multiple URNs)
+      value.forEach((item) => {
+        if (item !== '') {
+          url.searchParams.append(key, item)
+        }
+      })
+    } else {
+      // Handle single values
+      if (value !== '') {
+        url.searchParams.set(key, value)
+      }
+    }
+  })
+
   window.history.replaceState({}, '', url.toString())
 }
 
@@ -50,19 +65,22 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
           transparent: options.disableBackground === true,
         }
 
+        // Collect all query parameters for batch update
+        const queryParams: Record<string, string | string[]> = {}
+
+        // Background
         if (background.transparent) {
-          updateQueryParam('background', '')
+          queryParams.background = ''
         } else {
-          updateQueryParam('background', background.color.replace('#', ''))
+          queryParams.background = background.color.replace('#', '')
         }
 
         // Disable unity loader by default
         if (options.disableLoader) {
-          updateQueryParam('disableLoader', 'true')
+          queryParams.disableLoader = 'true'
         }
 
         const sanitizedProfile = sanitizeProfile(options.profile)
-
         // If profile is 'default', add a random postfix number from 1 to 159
         let profileValue = sanitizedProfile?.value
         if (profileValue === 'default') {
@@ -77,44 +95,48 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
               : await fetchProfileEntity(profileValue, peerUrl)
             : null
 
+        // Profile
         if (profile && sanitizedProfile && profileValue) {
-          updateQueryParam('profile', profileValue)
+          queryParams.profile = profileValue
         }
 
         const bodyShape = options.bodyShape || (profile && (profile.avatar.bodyShape as BodyShape)) || BodyShape.MALE
-        updateQueryParam('bodyShape', bodyShape)
+        queryParams.bodyShape = bodyShape
 
         // use colors from options, default to profile, if none, use default values
         const eyes = formatHex(options.eyes || (profile && colorToHex(profile.avatar.eyes.color)) || '000000')
-        updateQueryParam('eyes', eyes.replace('#', ''))
+        queryParams.eyes = eyes.replace('#', '')
 
         const hair = formatHex(options.hair || (profile && colorToHex(profile.avatar.hair.color)) || '000000')
-        updateQueryParam('hair', hair.replace('#', ''))
+        queryParams.hair = hair.replace('#', '')
 
         const skin = formatHex(options.skin || (profile && colorToHex(profile.avatar.skin.color)) || 'cc9b76')
-        updateQueryParam('skin', skin.replace('#', ''))
+        queryParams.skin = skin.replace('#', '')
 
         const mode = options.mode || UnityPreviewMode.MARKETPLACE
-        updateQueryParam('mode', mode)
+        queryParams.mode = mode
 
         const camera =
           options.camera && Object.values(PreviewCamera).includes(options.camera)
             ? options.camera
             : PreviewCamera.INTERACTIVE
-        updateQueryParam('camera', camera)
+        queryParams.camera = camera
 
         const projection =
           options.projection && Object.values(PreviewProjection).includes(options.projection)
             ? options.projection
             : PreviewProjection.PERSPECTIVE
-        updateQueryParam('projection', projection)
+        queryParams.projection = projection
 
         const emote = options.disableDefaultEmotes
           ? null
           : options.emote && Object.values(PreviewEmote).includes(options.emote)
             ? options.emote
             : PreviewEmote.IDLE
-        updateQueryParam('emote', emote || '')
+        queryParams.emote = emote || ''
+
+        // Batch update all query parameters at once
+        updateQueryParams(queryParams)
 
         const newConfig: UnityPreviewConfig = {
           background,
