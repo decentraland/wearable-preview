@@ -15,18 +15,15 @@ function updateQueryParams(params: Record<string, string | string[]>) {
   const url = new URL(window.location.href)
 
   Object.entries(params).forEach(([key, value]) => {
-    // Clear existing parameter first
     url.searchParams.delete(key)
 
     if (Array.isArray(value)) {
-      // Handle array values (like multiple URNs)
       value.forEach((item) => {
         if (item !== '') {
           url.searchParams.append(key, item)
         }
       })
     } else {
-      // Handle single values
       if (value !== '') {
         url.searchParams.set(key, value)
       }
