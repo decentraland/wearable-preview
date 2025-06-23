@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import equal from 'fast-deep-equal'
 import { PreviewType, PreviewCamera, PreviewEmote, PreviewConfig, BodyShape, PreviewProjection } from '@dcl/schemas'
 import { config } from '../config'
 import { colorToHex, formatHex } from '../lib/color'
@@ -38,8 +39,17 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
   const [unityConfig, setUnityConfig] = useState<UnityPreviewConfig | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const previousConfigRef = useRef<UnityPreviewConfig | null>(null)
+  const previousOptionsRef = useRef<any>(null)
 
   useEffect(() => {
+    // Only proceed if options have actually changed
+    if (equal(previousOptionsRef.current, options)) {
+      return
+    }
+
+    previousOptionsRef.current = options
+
     const loadConfig = async () => {
       try {
         setIsLoading(true)
@@ -62,21 +72,6 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
           transparent: options.disableBackground === true,
         }
 
-        // Collect all query parameters for batch update
-        const queryParams: Record<string, string | string[]> = {}
-
-        // Background
-        if (background.transparent) {
-          queryParams.background = ''
-        } else {
-          queryParams.background = background.color.replace('#', '')
-        }
-
-        // Disable unity loader by default
-        if (options.disableLoader) {
-          queryParams.disableLoader = 'true'
-        }
-
         const sanitizedProfile = sanitizeProfile(options.profile)
         // If profile is 'default', add a random postfix number from 1 to 159
         let profileValue = sanitizedProfile?.value
@@ -92,48 +87,30 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
               : await fetchProfileEntity(profileValue, peerUrl)
             : null
 
-        // Profile
-        if (profile && sanitizedProfile && profileValue) {
-          queryParams.profile = profileValue
-        }
-
         const bodyShape = options.bodyShape || (profile && (profile.avatar.bodyShape as BodyShape)) || BodyShape.MALE
-        queryParams.bodyShape = bodyShape
 
         // use colors from options, default to profile, if none, use default values
         const eyes = formatHex(options.eyes || (profile && colorToHex(profile.avatar.eyes.color)) || '000000')
-        queryParams.eyes = eyes.replace('#', '')
-
         const hair = formatHex(options.hair || (profile && colorToHex(profile.avatar.hair.color)) || '000000')
-        queryParams.hair = hair.replace('#', '')
-
         const skin = formatHex(options.skin || (profile && colorToHex(profile.avatar.skin.color)) || 'cc9b76')
-        queryParams.skin = skin.replace('#', '')
 
         const mode = options.mode || UnityPreviewMode.MARKETPLACE
-        queryParams.mode = mode
 
         const camera =
           options.camera && Object.values(PreviewCamera).includes(options.camera)
             ? options.camera
             : PreviewCamera.INTERACTIVE
-        queryParams.camera = camera
 
         const projection =
           options.projection && Object.values(PreviewProjection).includes(options.projection)
             ? options.projection
             : PreviewProjection.PERSPECTIVE
-        queryParams.projection = projection
 
         const emote = options.disableDefaultEmotes
           ? null
           : options.emote && Object.values(PreviewEmote).includes(options.emote)
             ? options.emote
             : PreviewEmote.IDLE
-        queryParams.emote = emote || ''
-
-        // Batch update all query parameters at once
-        updateQueryParams(queryParams)
 
         const newConfig: UnityPreviewConfig = {
           background,
@@ -170,8 +147,49 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
           zoom: options.zoom || 1.75,
         }
 
-        console.log('Config created successfully:', newConfig)
-        setUnityConfig(newConfig)
+        // Only update query params if the config has actually changed
+        if (!equal(previousConfigRef.current, newConfig)) {
+          const queryParams: Record<string, string | string[]> = {}
+
+          // Background
+          if (background.transparent) {
+            queryParams.background = ''
+          } else {
+            queryParams.background = background.color.replace('#', '')
+          }
+
+          // Disable unity loader by default
+          if (options.disableLoader) {
+            queryParams.disableLoader = 'true'
+          }
+
+          // Profile
+          if (profile && sanitizedProfile && profileValue) {
+            queryParams.profile = profileValue
+          }
+
+          queryParams.bodyShape = bodyShape
+          queryParams.eyes = eyes.replace('#', '')
+          queryParams.hair = hair.replace('#', '')
+          queryParams.skin = skin.replace('#', '')
+          queryParams.mode = mode
+          queryParams.camera = camera
+          queryParams.projection = projection
+          queryParams.emote = emote || ''
+
+          // Update query parameters
+          console.log('Updating query params:', queryParams)
+          updateQueryParams(queryParams)
+
+          // Only update the config state when we actually update query params
+          console.log('Config created successfully:', newConfig)
+          setUnityConfig(newConfig)
+        } else {
+          console.log('Config unchanged, skipping update')
+        }
+
+        // Always update the previous config reference to prevent false positives
+        previousConfigRef.current = newConfig
       } catch (err) {
         console.error('Error loading config:', err)
         setError(err instanceof Error ? err.message : 'Failed to load Unity config')

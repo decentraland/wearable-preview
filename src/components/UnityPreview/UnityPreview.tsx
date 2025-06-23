@@ -81,7 +81,7 @@ const UnityPreview: React.FC = () => {
         unityInstanceRef.current = null
       }
     }
-  }, [config, isLoadingConfig, setIsLoaded])
+  }, [config, isLoadingConfig, setIsLoaded, onLoaded])
 
   useEffect(() => {
     if (!config) return
