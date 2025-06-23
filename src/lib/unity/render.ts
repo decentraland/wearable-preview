@@ -32,7 +32,7 @@ export async function render(canvas: HTMLCanvasElement): Promise<IPreviewControl
       '/unity/Build/aang-renderer.framework.js.br',
       '/unity/Build/aang-renderer.wasm.br',
       '/unity/Build/aang-renderer.symbols.json.br',
-      '/unity/StreamingAssets',
+      '/emotes',
       'Decentraland',
       'AangRenderer',
       '0.1.0',
