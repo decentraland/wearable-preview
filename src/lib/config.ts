@@ -195,7 +195,7 @@ export async function fetchProfileEntity(profile: string, peerUrl: string) {
   })
 }
 
-async function fetchItemFromContract(options: {
+export async function fetchItemFromContract(options: {
   contractAddress: string
   itemId?: string | null
   tokenId?: string | null

@@ -1,14 +1,40 @@
 import { useState, useEffect, useRef } from 'react'
-import equal from 'fast-deep-equal'
-import { PreviewType, PreviewCamera, PreviewEmote, PreviewConfig, BodyShape, PreviewProjection } from '@dcl/schemas'
+
+import {
+  PreviewCamera,
+  PreviewEmote,
+  BodyShape,
+  PreviewProjection,
+  WearableDefinition,
+  EmoteDefinition,
+  PreviewType,
+} from '@dcl/schemas'
 import { config } from '../config'
 import { colorToHex, formatHex } from '../lib/color'
-import { fetchProfile, fetchProfileEntity, sanitizeProfile } from '../lib/config'
+import { fetchItemFromContract, fetchProfile, fetchProfileEntity, sanitizeProfile } from '../lib/config'
 import { UnityPreviewMode, useOptions } from './useOptions'
+import { isWearable } from '../lib/wearable'
+import { isTexture } from '../lib/representation'
+import { getWearableRepresentationOrDefault } from '../lib/representation'
 
-// Extend PreviewConfig to include mode
-export interface UnityPreviewConfig extends PreviewConfig {
-  mode?: UnityPreviewMode
+export interface UnityPreviewConfig {
+  background: { color: string; transparent: boolean; image?: string }
+  mode: UnityPreviewMode
+  type: PreviewType
+  base64?: string
+  bodyShape?: string
+  contract?: string
+  disableLoader?: boolean
+  emote?: string
+  eyeColor?: string
+  hairColor?: string
+  item?: string
+  profile?: string
+  projection?: string
+  showAnimationReference?: boolean
+  skinColor?: string
+  token?: string
+  urn?: string[]
 }
 
 // Batch update query parameters to avoid multiple reloads
@@ -44,10 +70,14 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
 
   useEffect(() => {
     // Only proceed if options have actually changed
-    if (equal(previousOptionsRef.current, options)) {
+    const currentOptionsString = JSON.stringify(options)
+    const previousOptionsString = JSON.stringify(previousOptionsRef.current)
+
+    if (currentOptionsString === previousOptionsString) {
       return
     }
 
+    // Update the previous options reference when options change
     previousOptionsRef.current = options
 
     const loadConfig = async () => {
@@ -55,19 +85,10 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
         setIsLoading(true)
         setError(null)
         const peerUrl = options.peerUrl || config.get('PEER_URL')
+        const nftServerUrl = options.nftServerUrl || config.get('NFT_SERVER_URL')
 
-        // Determine preview type
         let type = PreviewType.WEARABLE
-        if (
-          (options.urns && options.urns.length > 0) ||
-          (options.urls && options.urls.length > 0) ||
-          (options.base64s && options.base64s.length > 0) ||
-          options.profile
-        ) {
-          type = PreviewType.AVATAR
-        }
-
-        const background = {
+        let background: { color: string; transparent: boolean; image?: string } = {
           color: options.background || '#4b4852',
           transparent: options.disableBackground === true,
         }
@@ -88,6 +109,27 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
             : null
 
         const bodyShape = options.bodyShape || (profile && (profile.avatar.bodyShape as BodyShape)) || BodyShape.MALE
+        let item: WearableDefinition | EmoteDefinition | null = null
+        if (options.contractAddress) {
+          item = await fetchItemFromContract({
+            contractAddress: options.contractAddress,
+            tokenId: options.tokenId,
+            itemId: options.itemId,
+            peerUrl,
+            nftServerUrl,
+          })
+
+          if (item && isWearable(item)) {
+            background = {
+              ...background,
+              image: item.thumbnail,
+            }
+            const representation = getWearableRepresentationOrDefault(item)
+            if (isTexture(representation)) {
+              type = PreviewType.TEXTURE
+            }
+          }
+        }
 
         // use colors from options, default to profile, if none, use default values
         const eyes = formatHex(options.eyes || (profile && colorToHex(profile.avatar.eyes.color)) || '000000')
@@ -115,40 +157,28 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
         const newConfig: UnityPreviewConfig = {
           background,
           bodyShape,
-          camera,
-          emote,
-          eyes,
-          hair,
           mode,
           projection,
-          skin,
           type,
-          // The following properties are not supported by the Unity preview:
-          autoRotateSpeed: options.disableAutoRotate ? 0 : 0.2,
-          cameraX: options.cameraX || 0,
-          cameraY: options.cameraY || 1,
-          cameraZ: options.cameraZ || 3.5,
-          centerBoundingBox: !options.disableAutoCenter,
-          face: !options.disableFace,
-          fadeEffect: !options.disableFadeEffect,
-          lockAlpha: options.lockAlpha || false,
-          lockBeta: options.lockBeta || false,
-          lockRadius: options.lockRadius || false,
-          offsetX: options.offsetX || 0,
-          offsetY: options.offsetY || 0,
-          offsetZ: options.offsetZ || 0,
-          panning: options.panning || false,
-          showSceneBoundaries: options.showSceneBoundaries || false,
-          showThumbnailBoundaries: options.showThumbnailBoundaries || false,
-          wearables: [],
-          wheelStart: options.wheelStart || 50,
-          wheelPrecision: options.wheelPrecision || 100,
-          wheelZoom: options.wheelZoom || 1,
-          zoom: options.zoom || 1.75,
+          base64: options.base64s && options.base64s.length > 0 ? options.base64s[0] : undefined,
+          contract: options.contractAddress || undefined,
+          disableLoader: options.disableLoader || false,
+          emote: emote || undefined,
+          eyeColor: eyes.replace('#', ''),
+          hairColor: hair.replace('#', ''),
+          item: options.itemId || undefined,
+          profile: profileValue,
+          skinColor: skin.replace('#', ''),
+          token: options.tokenId || undefined,
+          urn: options.urns || [],
         }
 
         // Only update query params if the config has actually changed
-        if (!equal(previousConfigRef.current, newConfig)) {
+        const currentConfigString = JSON.stringify(newConfig)
+        const previousConfigString = JSON.stringify(previousConfigRef.current)
+
+        if (currentConfigString !== previousConfigString) {
+          previousConfigRef.current = newConfig
           const queryParams: Record<string, string | string[]> = {}
 
           // Background
@@ -169,32 +199,25 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
           }
 
           queryParams.bodyShape = bodyShape
-          queryParams.eyes = eyes.replace('#', '')
-          queryParams.hair = hair.replace('#', '')
-          queryParams.skin = skin.replace('#', '')
+          queryParams.eyeColor = eyes.replace('#', '')
+          queryParams.hairColor = hair.replace('#', '')
+          queryParams.skinColor = skin.replace('#', '')
           queryParams.mode = mode
           queryParams.camera = camera
           queryParams.projection = projection
           queryParams.emote = emote || ''
+          queryParams.urn = options.urns ? [...options.urns] : ''
+          queryParams.base64 = options.base64s ? [...options.base64s] : ''
 
           // Update query parameters
-          console.log('Updating query params:', queryParams)
           updateQueryParams(queryParams)
 
-          // Only update the config state when we actually update query params
-          console.log('Config created successfully:', newConfig)
           setUnityConfig(newConfig)
-        } else {
-          console.log('Config unchanged, skipping update')
         }
-
-        // Always update the previous config reference to prevent false positives
-        previousConfigRef.current = newConfig
       } catch (err) {
         console.error('Error loading config:', err)
         setError(err instanceof Error ? err.message : 'Failed to load Unity config')
       } finally {
-        console.log('Setting isLoading to false')
         setIsLoading(false)
       }
     }

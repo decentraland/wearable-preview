@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import classNames from 'classnames'
-import { PreviewCamera, PreviewType, PreviewMessageType, sendMessage } from '@dcl/schemas'
+import { PreviewType, PreviewMessageType, sendMessage } from '@dcl/schemas'
 
 import { useWindowSize } from '../../hooks/useWindowSize'
 import { useUnityConfig } from '../../hooks/useUnityConfig'
@@ -79,6 +79,7 @@ const UnityPreview: React.FC = () => {
       if (unityInstanceRef.current) {
         unityInstanceRef.current.Quit?.()
         unityInstanceRef.current = null
+        unityInitialized = false
       }
     }
   }, [config, isLoadingConfig, setIsLoaded, onLoaded])
@@ -133,9 +134,8 @@ const UnityPreview: React.FC = () => {
       className={classNames('Preview', {
         'is-loading': isLoading,
         'is-loaded': isLoaded,
-        'is-3d': is3D && config?.camera === PreviewCamera.INTERACTIVE,
+        'is-3d': is3D,
         'has-error': !!error,
-        'no-fade-effect': config && !config.fadeEffect,
       })}
       style={style}
     >
