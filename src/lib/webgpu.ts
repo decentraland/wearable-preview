@@ -221,7 +221,6 @@ export const getWebGPUInstructions = (
   platformVersion: string,
   browserVersion: string,
 ): string => {
-  const isMobile = platform === 'Android' || platform === 'iOS'
   const browserVersionNum = parseFloat(browserVersion.split('.')[0]) || 0
   const platformVersionNum = parseFloat(platformVersion.split('.')[0]) || 0
 
@@ -310,12 +309,10 @@ Note: WebGPU support in Firefox is experimental and may be unstable.`
   } else if (browser === 'Safari') {
     if (browserVersionNum >= 16.4) {
       return `To enable WebGPU in Safari ${browserVersion}:
-1. Go to Safari > Settings > Advanced
-2. Check "Show Develop menu in menu bar"
-3. Go to Develop > Feature Flags
-4. Find "WebGPU" and enable it
-5. Restart Safari
-6. WebGPU should now be available.
+1. Go to Safari > Settings > Feature Flags
+2. Find "WebGPU" and enable it
+3. Restart Safari
+4. WebGPU should now be available.
 
 Note: WebGPU support in Safari is experimental.`
     } else {
