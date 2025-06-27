@@ -126,16 +126,8 @@ const detectPlatformAndBrowser = (): { platform: string; browser: string; versio
 export const detectWebGPU = async (): Promise<WebGPUSupport> => {
   const { platform, browser, version } = detectPlatformAndBrowser()
 
-  console.log('🔍 WebGPU Detection Debug:', {
-    platform,
-    browser,
-    version,
-    hasNavigatorGpu: !!navigator.gpu,
-    userAgent: navigator.userAgent,
-  })
-
   if (!navigator.gpu) {
-    console.log('❌ navigator.gpu is not available')
+    console.warn('❌ navigator.gpu is not available')
     return {
       isSupported: false,
       isAvailable: false,
@@ -147,13 +139,11 @@ export const detectWebGPU = async (): Promise<WebGPUSupport> => {
     }
   }
 
-  console.log('✅ navigator.gpu is available, requesting adapter...')
-
   try {
     const adapter = await navigator.gpu.requestAdapter()
 
     if (!adapter) {
-      console.log('❌ No WebGPU adapter available')
+      console.warn('❌ No WebGPU adapter available')
       return {
         isSupported: true,
         isAvailable: false,
@@ -166,12 +156,10 @@ export const detectWebGPU = async (): Promise<WebGPUSupport> => {
       }
     }
 
-    console.log('✅ WebGPU adapter found:', adapter.name)
-
     const device = await adapter.requestDevice()
 
     if (!device) {
-      console.log('❌ Failed to create WebGPU device')
+      console.warn('❌ Failed to create WebGPU device')
       return {
         isSupported: true,
         isAvailable: false,
@@ -184,7 +172,6 @@ export const detectWebGPU = async (): Promise<WebGPUSupport> => {
       }
     }
 
-    console.log('✅ WebGPU device created successfully')
     return {
       isSupported: true,
       isAvailable: true,
@@ -223,9 +210,6 @@ export const getWebGPUInstructions = (
 ): string => {
   const browserVersionNum = parseFloat(browserVersion.split('.')[0]) || 0
   const platformVersionNum = parseFloat(platformVersion.split('.')[0]) || 0
-
-  console.log('PLATFORM', platform, platformVersion)
-  console.log('BROWSER', browser, browserVersion)
 
   // iOS specific instructions
   if (platform === 'iOS') {

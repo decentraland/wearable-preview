@@ -22,8 +22,6 @@ export async function render(canvas: HTMLCanvasElement): Promise<IPreviewControl
   let instance: UnityInstance | null = null
 
   try {
-    console.log('Loading Unity instance...')
-
     // Initialize Unity instance
     instance = (await loadUnityInstance(
       canvas,
@@ -43,8 +41,6 @@ export async function render(canvas: HTMLCanvasElement): Promise<IPreviewControl
     if (!instance) {
       throw new Error('Failed to load Unity instance')
     }
-
-    console.log('Unity instance loaded successfully')
 
     const sceneController = createSceneController(instance)
     const emoteController = createEmoteController(instance)
