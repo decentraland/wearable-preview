@@ -8,6 +8,7 @@ import {
   WearableDefinition,
   EmoteDefinition,
   PreviewType,
+  Avatar,
 } from '@dcl/schemas'
 import { config } from '../config'
 import { colorToHex, formatHex } from '../lib/color'
@@ -18,27 +19,76 @@ import { isTexture } from '../lib/representation'
 import { getWearableRepresentationOrDefault } from '../lib/representation'
 
 export interface UnityPreviewConfig {
-  background: { color: string; transparent: boolean; image?: string }
+  background: Background
   mode: UnityPreviewMode
   type: PreviewType
-  base64?: string
-  bodyShape?: string
-  contract?: string
-  disableLoader?: boolean
-  emote?: string
-  eyeColor?: string
-  hairColor?: string
-  item?: string
-  profile?: string
-  projection?: string
-  showAnimationReference?: boolean
-  skinColor?: string
-  token?: string
-  urn?: string[]
+  base64: string | null
+  bodyShape: BodyShape | null
+  contract: string | null
+  disableLoader: boolean
+  emote: string | null
+  eyeColor: string
+  hairColor: string
+  item: string | null
+  profile: string | null
+  projection: PreviewProjection | null
+  showAnimationReference: boolean | null
+  skinColor: string
+  token: string | null
+  urn: string[] | null
 }
 
+interface Background {
+  color: string
+  transparent: boolean
+  image?: string
+}
+
+interface AvatarColors {
+  eyes: string
+  hair: string
+  skin: string
+}
+
+type QueryParams = {
+  background: string
+  disableLoader: string
+  profile: string
+  bodyShape: string
+  eyeColor: string
+  hairColor: string
+  skinColor: string
+  mode: UnityPreviewMode
+  camera: PreviewCamera
+  projection: PreviewProjection
+  emote: string
+  urn: string[]
+  base64: string[]
+}
+
+// Helper functions
+const getRandomProfileNumber = () => Math.floor(Math.random() * 159) + 1
+
+const getDefaultColors = (
+  profile: Avatar | null,
+  options: { eyes?: string | null; hair?: string | null; skin?: string | null },
+): AvatarColors => ({
+  eyes: formatHex(options.eyes || (profile?.avatar?.eyes?.color && colorToHex(profile.avatar.eyes.color)) || '#000000'),
+  hair: formatHex(options.hair || (profile?.avatar?.hair?.color && colorToHex(profile.avatar.hair.color)) || '#000000'),
+  skin: formatHex(options.skin || (profile?.avatar?.skin?.color && colorToHex(profile.avatar.skin.color)) || '#cc9b76'),
+})
+
+// Convert potentially null/undefined values to string or empty string
+const toQueryValue = (value: string | null | undefined): string => value || ''
+
+// Convert potentially null/undefined array to string array
+const toQueryArray = (value: string[] | null | undefined): string[] => value || []
+
+// Convert color value to hex string without #
+const toQueryColor = (value: string): string => value.replace('#', '')
+
 // Batch update query parameters to avoid multiple reloads
-function updateQueryParams(params: Record<string, string | string[]>) {
+function updateQueryParams(params: Partial<QueryParams>): void {
   const url = new URL(window.location.href)
 
   Object.entries(params).forEach(([key, value]) => {
@@ -50,10 +100,8 @@ function updateQueryParams(params: Record<string, string | string[]>) {
           url.searchParams.append(key, item)
         }
       })
-    } else {
-      if (value !== '') {
-        url.searchParams.set(key, value)
-      }
+    } else if (value !== '') {
+      url.searchParams.set(key, value)
     }
   })
 
@@ -61,12 +109,13 @@ function updateQueryParams(params: Record<string, string | string[]>) {
 }
 
 export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | null] {
-  const options = useOptions()
+  const { options, overrideSources } = useOptions()
+
   const [unityConfig, setUnityConfig] = useState<UnityPreviewConfig | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const previousConfigRef = useRef<UnityPreviewConfig | null>(null)
-  const previousOptionsRef = useRef<any>(null)
+  const previousOptionsRef = useRef(options)
 
   useEffect(() => {
     // Only proceed if options have actually changed
@@ -84,23 +133,26 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
       try {
         setIsLoading(true)
         setError(null)
+
+        // Initialize URLs
         const peerUrl = options.peerUrl || config.get('PEER_URL')
         const nftServerUrl = options.nftServerUrl || config.get('NFT_SERVER_URL')
 
+        // Initialize basic config
         let type = PreviewType.WEARABLE
-        let background: { color: string; transparent: boolean; image?: string } = {
+        let background: Background = {
           color: options.background || '#4b4852',
           transparent: options.disableBackground === true,
         }
 
+        // Handle profile
         const sanitizedProfile = sanitizeProfile(options.profile)
-        // If profile is 'default', add a random postfix number from 1 to 159
         let profileValue = sanitizedProfile?.value
         if (profileValue === 'default') {
-          const randomNumber = Math.floor(Math.random() * 159) + 1
-          profileValue = `default${randomNumber}`
+          profileValue = `default${getRandomProfileNumber()}`
         }
 
+        // Fetch profile and get the first avatar if available
         const profile =
           profileValue && sanitizedProfile
             ? sanitizedProfile.type === 'address'
@@ -108,7 +160,12 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
               : await fetchProfileEntity(profileValue, peerUrl)
             : null
 
-        const bodyShape = options.bodyShape || (profile && (profile.avatar.bodyShape as BodyShape)) || BodyShape.MALE
+        // Get body shape
+        const bodyShape = (options.bodyShape ||
+          (profile?.avatar?.bodyShape as BodyShape) ||
+          BodyShape.MALE) as BodyShape
+
+        // Handle item and background
         let item: WearableDefinition | EmoteDefinition | null = null
         if (options.contractAddress) {
           item = await fetchItemFromContract({
@@ -131,27 +188,29 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
           }
         }
 
-        // use colors from options, default to profile, if none, use default values
-        const eyes = formatHex(options.eyes || (profile && colorToHex(profile.avatar.eyes.color)) || '000000')
-        const hair = formatHex(options.hair || (profile && colorToHex(profile.avatar.hair.color)) || '000000')
-        const skin = formatHex(options.skin || (profile && colorToHex(profile.avatar.skin.color)) || 'cc9b76')
+        // Get colors
+        const { eyes, hair, skin } = getDefaultColors(profile, {
+          eyes: options.eyes,
+          hair: options.hair,
+          skin: options.skin,
+        })
 
+        // Get mode and camera settings
         const mode = options.mode || UnityPreviewMode.MARKETPLACE
-
         const camera =
-          options.camera && Object.values(PreviewCamera).includes(options.camera)
-            ? options.camera
+          options.camera && Object.values(PreviewCamera).includes(options.camera as PreviewCamera)
+            ? (options.camera as PreviewCamera)
             : PreviewCamera.INTERACTIVE
-
         const projection =
-          options.projection && Object.values(PreviewProjection).includes(options.projection)
-            ? options.projection
+          options.projection && Object.values(PreviewProjection).includes(options.projection as PreviewProjection)
+            ? (options.projection as PreviewProjection)
             : PreviewProjection.PERSPECTIVE
 
+        // Handle emote
         const emote = options.disableDefaultEmotes
           ? null
-          : options.emote && Object.values(PreviewEmote).includes(options.emote)
-            ? options.emote
+          : options.emote && Object.values(PreviewEmote).includes(options.emote as PreviewEmote)
+            ? (options.emote as PreviewEmote)
             : PreviewEmote.IDLE
 
         const newConfig: UnityPreviewConfig = {
@@ -160,70 +219,64 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
           mode,
           projection,
           type,
-          base64: options.base64s && options.base64s.length > 0 ? options.base64s[0] : undefined,
-          contract: options.contractAddress || undefined,
+          base64: options.base64s?.[0] || null,
+          contract: options.contractAddress || null,
           disableLoader: options.disableLoader || false,
-          emote: emote || undefined,
+          emote: emote?.toString() || null,
           eyeColor: eyes.replace('#', ''),
           hairColor: hair.replace('#', ''),
-          item: options.itemId || undefined,
-          profile: profileValue,
+          item: options.itemId || null,
+          profile: profileValue || null,
           skinColor: skin.replace('#', ''),
-          token: options.tokenId || undefined,
-          urn: options.urns || [],
+          token: options.tokenId || null,
+          urn: options.urns || null,
+          showAnimationReference: null,
         }
 
-        // Only update query params if the config has actually changed
+        // Only update if config has changed
         const currentConfigString = JSON.stringify(newConfig)
         const previousConfigString = JSON.stringify(previousConfigRef.current)
 
         if (currentConfigString !== previousConfigString) {
           previousConfigRef.current = newConfig
-          const queryParams: Record<string, string | string[]> = {}
 
-          // Background
-          if (background.transparent) {
-            queryParams.background = ''
-          } else {
-            queryParams.background = background.color.replace('#', '')
+          // Only update query parameters if no overrides are present
+          if (Object.keys(overrideSources).length === 0) {
+            const urns = toQueryArray(options.urns)
+            const base64s = toQueryArray(options.base64s)
+
+            const queryParams: Partial<QueryParams> = {
+              background: background.transparent ? '' : toQueryColor(background.color),
+              disableLoader: options.disableLoader ? 'true' : '',
+              profile: toQueryValue(profileValue || ''),
+              bodyShape: toQueryValue(bodyShape || ''),
+              eyeColor: toQueryColor(eyes || ''),
+              hairColor: toQueryColor(hair || ''),
+              skinColor: toQueryColor(skin || ''),
+              mode,
+              camera,
+              projection,
+              emote: toQueryValue(emote?.toString() || ''),
+              urn: urns.length > 0 ? urns : [''],
+              base64: base64s.length > 0 ? base64s : [''],
+            }
+
+            updateQueryParams(queryParams)
           }
-
-          // Disable unity loader by default
-          if (options.disableLoader) {
-            queryParams.disableLoader = 'true'
-          }
-
-          // Profile
-          if (profile && sanitizedProfile && profileValue) {
-            queryParams.profile = profileValue
-          }
-
-          queryParams.bodyShape = bodyShape
-          queryParams.eyeColor = eyes.replace('#', '')
-          queryParams.hairColor = hair.replace('#', '')
-          queryParams.skinColor = skin.replace('#', '')
-          queryParams.mode = mode
-          queryParams.camera = camera
-          queryParams.projection = projection
-          queryParams.emote = emote || ''
-          queryParams.urn = options.urns ? [...options.urns] : ''
-          queryParams.base64 = options.base64s ? [...options.base64s] : ''
-
-          // Update query parameters
-          updateQueryParams(queryParams)
 
           setUnityConfig(newConfig)
         }
+
+        setIsLoading(false)
       } catch (err) {
-        console.error('Error loading config:', err)
-        setError(err instanceof Error ? err.message : 'Failed to load Unity config')
-      } finally {
+        console.error('Failed to load config:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load config')
         setIsLoading(false)
       }
     }
 
     loadConfig()
-  }, [options])
+  }, [options, overrideSources])
 
   return [unityConfig, isLoading, error]
 }
