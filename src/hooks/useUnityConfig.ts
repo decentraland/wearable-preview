@@ -20,7 +20,7 @@ import { getWearableRepresentationOrDefault } from '../lib/representation'
 
 export interface UnityPreviewConfig {
   background: Background
-  mode: UnityPreviewMode
+  mode: UnityPreviewMode | null
   type: PreviewType
   base64: string | null
   bodyShape: BodyShape | null
@@ -58,7 +58,7 @@ type QueryParams = {
   eyeColor: string
   hairColor: string
   skinColor: string
-  mode: UnityPreviewMode
+  mode: UnityPreviewMode | string
   camera: PreviewCamera
   projection: PreviewProjection
   emote: string
@@ -199,8 +199,8 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
           skin: options.skin,
         })
 
-        // Get mode and camera settings
-        const mode = options.mode || UnityPreviewMode.MARKETPLACE
+        // Get camera settings
+        const mode = options.mode || null
         const camera =
           options.camera && Object.values(PreviewCamera).includes(options.camera as PreviewCamera)
             ? (options.camera as PreviewCamera)
@@ -257,7 +257,7 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
               eyeColor: toQueryColor(eyes || ''),
               hairColor: toQueryColor(hair || ''),
               skinColor: toQueryColor(skin || ''),
-              mode,
+              mode: toQueryValue(mode || ''),
               camera,
               projection,
               emote: toQueryValue(emote?.toString() || ''),
