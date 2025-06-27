@@ -6,18 +6,18 @@ const SOURCE_DIR = path.join(
   process.env.HOME || process.env.USERPROFILE,
   'Projects',
   'aang-renderer',
-  'WebGLBuild',
+  'aang-renderer',
   'Build',
 )
 const DEST_DIR = path.join(process.cwd(), 'public', 'unity', 'Build')
 
 // File mappings: source -> destination
 const FILE_MAPPINGS = [
-  { source: 'WebGLBuild.data.br', dest: 'aang-renderer.data.br' },
-  { source: 'WebGLBuild.framework.js.br', dest: 'aang-renderer.framework.js.br' },
-  { source: 'WebGLBuild.loader.js', dest: 'aang-renderer.loader.js' },
-  { source: 'WebGLBuild.symbols.json.br', dest: 'aang-renderer.symbols.json.br' },
-  { source: 'WebGLBuild.wasm.br', dest: 'aang-renderer.wasm.br' },
+  { source: 'aang-renderer.data.br', dest: 'aang-renderer.data.br' },
+  { source: 'aang-renderer.framework.js.br', dest: 'aang-renderer.framework.js.br' },
+  { source: 'aang-renderer.loader.js', dest: 'aang-renderer.loader.js' },
+  { source: 'aang-renderer.symbols.json.br', dest: 'aang-renderer.symbols.json.br' },
+  { source: 'aang-renderer.wasm.br', dest: 'aang-renderer.wasm.br' },
 ]
 
 // Ensure destination directory exists
