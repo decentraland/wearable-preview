@@ -10,7 +10,12 @@ export enum UnityPreviewMode {
   BUILDER = 'builder',
 }
 
-export const useOptions = () => {
+export interface OptionsWithSource {
+  options: PreviewOptions & { mode: UnityPreviewMode | null; disableLoader: boolean }
+  overrideSources: Record<string, boolean>
+}
+
+export const useOptions = (): OptionsWithSource => {
   const [searchParams, setSearchParams] = useState(() => new URLSearchParams(window.location.search))
   const previousSearchRef = useRef<string>(window.location.search)
 
@@ -106,14 +111,26 @@ export const useOptions = () => {
 
   // apply overrides
   const overrides = useOverrides()
-  const optionsWithOverrides = useMemo(
-    () => ({
+  const optionsWithOverrides = useMemo(() => {
+    const mergedOptions = {
       ...options,
       ...overrides,
-    }),
-    [options, overrides],
-  )
+    }
 
-  // return options with overrides applied (if any)
+    // Track which properties came from overrides
+    const overrideSources: Record<string, boolean> = {}
+    Object.keys(overrides).forEach((key) => {
+      if (overrides[key as keyof PreviewOptions] !== undefined) {
+        overrideSources[key] = true
+      }
+    })
+
+    return {
+      options: mergedOptions,
+      overrideSources,
+    }
+  }, [options, overrides])
+
+  // return options with overrides applied (if any) and source tracking
   return optionsWithOverrides
 }
