@@ -1,4 +1,6 @@
 // Supported Unity JSBridge methods
+import { getRandomDefaultProfile } from '../profile'
+
 export enum UnityMethod {
   // Property setters
   SET_MODE = 'SetMode',
@@ -46,7 +48,7 @@ const PROPERTY_METHOD_MAP: Record<string, UnityMethod> = {
 // Individual method handlers for specific value transformations
 const VALUE_TRANSFORMERS: Record<string, (value: any) => string> = {
   unityMode: (value) => String(value),
-  profile: (value) => String(value),
+  profile: (value) => (value === 'default' ? getRandomDefaultProfile() : String(value)),
   emote: (value) => String(value),
   urns: (value) => (Array.isArray(value) ? value.join(',') : String(value)),
   background: (value) => (typeof value === 'string' ? value.replace('#', '') : String(value)),

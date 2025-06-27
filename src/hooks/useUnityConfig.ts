@@ -17,6 +17,7 @@ import { UnityPreviewMode, useOptions } from './useOptions'
 import { isWearable } from '../lib/wearable'
 import { isTexture } from '../lib/representation'
 import { getWearableRepresentationOrDefault } from '../lib/representation'
+import { getRandomDefaultProfile } from '../lib/profile'
 
 export interface UnityPreviewConfig {
   background: Background
@@ -153,7 +154,7 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
         const sanitizedProfile = sanitizeProfile(options.profile)
         let profileValue = sanitizedProfile?.value
         if (profileValue === 'default') {
-          profileValue = `default${getRandomProfileNumber()}`
+          profileValue = getRandomDefaultProfile()
         }
 
         // Fetch profile and get the first avatar if available
