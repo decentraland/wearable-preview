@@ -116,15 +116,19 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
   const [error, setError] = useState<string | null>(null)
   const previousConfigRef = useRef<UnityPreviewConfig | null>(null)
   const previousOptionsRef = useRef(options)
+  const isFirstMount = useRef(true)
 
   useEffect(() => {
     // Only proceed if options have actually changed
     const currentOptionsString = JSON.stringify(options)
     const previousOptionsString = JSON.stringify(previousOptionsRef.current)
 
-    if (currentOptionsString === previousOptionsString) {
+    if (!isFirstMount.current && currentOptionsString === previousOptionsString) {
       return
     }
+
+    // After first mount, set flag to false
+    isFirstMount.current = false
 
     // Update the previous options reference when options change
     previousOptionsRef.current = options
@@ -260,16 +264,14 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
               urn: urns.length > 0 ? urns : [''],
               base64: base64s.length > 0 ? base64s : [''],
             }
-
             updateQueryParams(queryParams)
           }
-
           setUnityConfig(newConfig)
         }
 
         setIsLoading(false)
       } catch (err) {
-        console.error('Failed to load config:', err)
+        console.error('[useUnityConfig] Failed to load config:', err)
         setError(err instanceof Error ? err.message : 'Failed to load config')
         setIsLoading(false)
       }
