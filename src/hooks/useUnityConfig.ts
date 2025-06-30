@@ -67,9 +67,6 @@ type QueryParams = {
   base64: string[]
 }
 
-// Helper functions
-const getRandomProfileNumber = () => Math.floor(Math.random() * 159) + 1
-
 const getDefaultColors = (
   profile: Avatar | null,
   options: { eyes?: string | null; hair?: string | null; skin?: string | null },
