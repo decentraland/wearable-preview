@@ -2,14 +2,15 @@ import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import classNames from 'classnames'
 import { PreviewType, PreviewMessageType, sendMessage, PreviewRenderer } from '@dcl/schemas'
 
+import { sendIndividualOverrideMessages } from '../../lib/unity/messages'
+import { getParent } from '../../lib/parent'
+import { render } from '../../lib/unity/render'
+import { getRandomDefaultProfile } from '../../lib/profile'
 import { useWindowSize } from '../../hooks/useWindowSize'
 import { useUnityConfig } from '../../hooks/useUnityConfig'
 import { useReady } from '../../hooks/useReady'
 import { useController } from '../../hooks/useController'
 import { useOptions } from '../../hooks/useOptions'
-import { sendIndividualOverrideMessages } from '../../lib/unity/messages'
-import { getParent } from '../../lib/parent'
-import { render } from '../../lib/unity/render'
 
 import './UnityPreview.css'
 
@@ -62,7 +63,6 @@ const useUnityRenderer = (
           isInitialized: true,
         }))
         sendMessage(getParent(), PreviewMessageType.LOAD, { renderer: PreviewRenderer.UNITY })
-        refs.lastSentOverrides.current = {}
       }
     }
   }, [])
@@ -176,6 +176,11 @@ const useUnityOverrides = (
   useEffect(() => {
     if (!renderingState.isInitialized || !renderingState.isLoaded || !unityInstance.current) {
       return
+    }
+
+    if (overridesData.profile === 'default') {
+      const previousProfile = lastSentOverrides.current.profile
+      overridesData.profile = previousProfile?.match(/^default\d+$/) ? previousProfile : getRandomDefaultProfile()
     }
 
     if (Object.keys(overridesData).length > 0) {
