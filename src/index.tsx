@@ -1,37 +1,34 @@
-import { StrictMode, useState, useEffect, useMemo } from 'react'
+import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { detectWebGPU } from './lib/webgpu'
 import { Preview } from './components/Preview'
 import { UnityPreview } from './components/UnityPreview'
+import { WebGPUProvider } from './contexts/WebGPUContext'
+import { useWebGPU } from './hooks/useWebGPU'
+import { detectWebGPU } from './lib/webgpu'
 import './index.css'
 
 const App = () => {
   const search = new URLSearchParams(window.location.search)
   const isUnityPreview = search.get('unity') === 'true'
-  const [webGPUSupport, setWebGPUSupport] = useState<{ isSupported: boolean; isAvailable: boolean } | null>(null)
-
-  useEffect(() => {
-    const checkWebGPU = async () => {
-      try {
-        const support = await detectWebGPU()
-        setWebGPUSupport(support)
-      } catch (error) {
-        console.warn('Failed to detect WebGPU support:', error)
-        setWebGPUSupport({ isSupported: false, isAvailable: false })
-      }
-    }
-
-    checkWebGPU()
-  }, [])
+  const { isAvailable } = useWebGPU()
 
   // Use UnityPreview if WebGPU is available and Unity is requested, otherwise use Preview
-  const shouldUseUnity = isUnityPreview && webGPUSupport?.isAvailable
+  const shouldUseUnity = isUnityPreview && isAvailable
 
   return shouldUseUnity ? <UnityPreview /> : <Preview />
 }
 
-createRoot(document.getElementById('root') as HTMLElement).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+// Initialize the app with WebGPU detection
+const startApp = async () => {
+  const webGPUSupport = await detectWebGPU()
+
+  createRoot(document.getElementById('root') as HTMLElement).render(
+    <StrictMode>
+      <WebGPUProvider value={webGPUSupport}>
+        <App />
+      </WebGPUProvider>
+    </StrictMode>,
+  )
+}
+
+startApp()

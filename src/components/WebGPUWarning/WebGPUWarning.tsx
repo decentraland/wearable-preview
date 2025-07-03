@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useCallback, useState } from 'react'
 import { Button, Icon } from 'decentraland-ui'
-import { detectWebGPU, getWebGPUInstructions, WebGPUSupport } from '../../lib/webgpu'
+import { getWebGPUInstructions } from '../../lib/webgpu'
+import { useWebGPU } from '../../hooks/useWebGPU'
 import './WebGPUWarning.css'
 
 const WebGPUWarning: React.FC = () => {
-  const [webGPUSupport, setWebGPUSupport] = useState<WebGPUSupport | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const { webGPUSupport, isLoading } = useWebGPU()
   const [isDismissed, setIsDismissed] = useState(false)
   const [showDebug, setShowDebug] = useState(false)
 
@@ -15,29 +15,6 @@ const WebGPUWarning: React.FC = () => {
 
   const toggleDebug = useCallback(() => {
     setShowDebug((prev) => !prev)
-  }, [])
-
-  useEffect(() => {
-    const checkWebGPU = async () => {
-      try {
-        const support = await detectWebGPU()
-        setWebGPUSupport(support)
-      } catch (error) {
-        // Create a fallback WebGPUSupport object with all required properties
-        setWebGPUSupport({
-          isSupported: false,
-          isAvailable: false,
-          error: 'Failed to detect WebGPU support',
-          platform: 'Unknown',
-          browser: 'Unknown',
-          platformVersion: 'Unknown',
-          browserVersion: 'Unknown',
-        })
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    checkWebGPU()
   }, [])
 
   if (isLoading || webGPUSupport?.isAvailable || isDismissed) {
