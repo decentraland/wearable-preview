@@ -24,12 +24,8 @@ const App = () => {
     checkWebGPU()
   }, [])
 
-  const useFallback = useMemo(() => {
-    return isUnityPreview && !!webGPUSupport && !webGPUSupport.isAvailable
-  }, [isUnityPreview, webGPUSupport])
-
   // Use UnityPreview if WebGPU is available and Unity is requested, otherwise use Preview
-  const shouldUseUnity = isUnityPreview && webGPUSupport?.isAvailable && !useFallback
+  const shouldUseUnity = isUnityPreview && webGPUSupport?.isAvailable
 
   return shouldUseUnity ? <UnityPreview /> : <Preview />
 }
