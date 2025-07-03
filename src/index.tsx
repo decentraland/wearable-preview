@@ -3,7 +3,6 @@ import { createRoot } from 'react-dom/client'
 import { detectWebGPU } from './lib/webgpu'
 import { Preview } from './components/Preview'
 import { UnityPreview } from './components/UnityPreview'
-import { WebGPUWarning } from './components/WebGPUWarning'
 import './index.css'
 
 const App = () => {
@@ -32,14 +31,7 @@ const App = () => {
   // Use UnityPreview if WebGPU is available and Unity is requested, otherwise use Preview
   const shouldUseUnity = isUnityPreview && webGPUSupport?.isAvailable && !useFallback
 
-  return shouldUseUnity ? (
-    <UnityPreview />
-  ) : (
-    <>
-      {useFallback && <WebGPUWarning />}
-      <Preview />
-    </>
-  )
+  return shouldUseUnity ? <UnityPreview /> : <Preview />
 }
 
 createRoot(document.getElementById('root') as HTMLElement).render(
