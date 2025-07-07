@@ -20,7 +20,7 @@ jobs:
         with:
           node-version: 18.x
       - name: set package.json version
-        uses: menduz/oddish-action@master
+        uses: decentraland/oddish-action@master
         with:
           deterministic-snapshot: true
           only-update-versions: true
@@ -37,7 +37,7 @@ jobs:
       - name: Move static-local into main build
         run: mv ./static-local ./dist/static-local
       - name: Publish
-        uses: menduz/oddish-action@master
+        uses: decentraland/oddish-action@master
         with:
           cwd: './dist'
           deterministic-snapshot: true
@@ -45,5 +45,7 @@ jobs:
           access: public
           gitlab-token: ${{ secrets.GITLAB_CDN_DEPLOYER_TOKEN }}
           gitlab-pipeline-url: ${{ secrets.GITLAB_CDN_DEPLOYER_URL }}
+          config:
+            - .github/workflows/config/cdn-unity.yaml
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
