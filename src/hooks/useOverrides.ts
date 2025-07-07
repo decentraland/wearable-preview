@@ -1,4 +1,4 @@
-import equal from 'deep-equal'
+import equal from 'fast-deep-equal'
 import { PreviewMessagePayload, PreviewMessageType, PreviewOptions } from '@dcl/schemas'
 import { useMessage } from './useMessage'
 import { useState } from 'react'

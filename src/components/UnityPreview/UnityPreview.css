@@ -1,0 +1,80 @@
+.Preview {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  right: 0px;
+  bottom: 0px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity ease 0.3s;
+}
+
+.Preview.is-loading {
+  visibility: hidden;
+}
+
+.Preview.is-3d.is-loaded {
+  cursor: grab;
+}
+
+.Preview canvas {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  right: 0px;
+  bottom: 0px;
+  opacity: 0;
+  transition: opacity ease 0.3s;
+}
+
+.Preview canvas.is-visible {
+  opacity: 1;
+}
+
+.Preview.is-3d.is-dragging {
+  cursor: grabbing;
+}
+
+.Preview.is-3d.has-error {
+  opacity: 1;
+  cursor: default;
+}
+
+.Preview .thumbnail {
+  max-height: 256px;
+  margin: auto;
+  opacity: 0;
+  transition: opacity ease 0.3s;
+}
+
+.Preview .thumbnail.is-visible {
+  opacity: 1;
+}
+
+.Preview .error {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  right: 0px;
+  bottom: 0px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: black;
+}
+
+.Preview .ui.loader:before {
+  border-color: transparent !important;
+}
+
+#babylonjsLoadingDiv {
+  display: none !important;
+}
+
+.Preview.no-fade-effect,
+.Preview.no-fade-effect canvas,
+.Preview.no-fade-effect .thumbnail {
+  transition: none;
+}

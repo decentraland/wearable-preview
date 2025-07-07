@@ -106,8 +106,8 @@ function isValidCIDv1(entity: string): boolean {
   return /^baf[a-z2-7]{56}$/.test(entity)
 }
 
-function sanitizeProfile(profile: string | null | undefined): {
-  type: 'address' | 'entity',
+export function sanitizeProfile(profile: string | null | undefined): {
+  type: 'address' | 'entity'
   value: string
 } | null {
   if (!profile) {
@@ -162,7 +162,7 @@ async function fetchURLs(urls: string[]): Promise<[WearableDefinition[], EmoteDe
   const promises = urls.map((url) =>
     fetch(url)
       .then((resp) => resp.json())
-      .catch()
+      .catch(),
   )
   const results = await Promise.all(promises)
 
@@ -172,7 +172,7 @@ async function fetchURLs(urls: string[]): Promise<[WearableDefinition[], EmoteDe
 }
 
 export const profileMemo = createMemo<Avatar | null>()
-async function fetchProfile(profile: string, peerUrl: string) {
+export async function fetchProfile(profile: string, peerUrl: string) {
   return profileMemo.memo(profile, async () => {
     if (profile === DEFAULT_PROFILE) {
       return null
@@ -185,7 +185,7 @@ async function fetchProfile(profile: string, peerUrl: string) {
   })
 }
 
-async function fetchProfileEntity(profile: string, peerUrl: string) {
+export async function fetchProfileEntity(profile: string, peerUrl: string) {
   return profileMemo.memo(profile, async () => {
     const resp = await peerApi
       .fetchProfileEntity(profile, peerUrl)
@@ -195,7 +195,7 @@ async function fetchProfileEntity(profile: string, peerUrl: string) {
   })
 }
 
-async function fetchItemFromContract(options: {
+export async function fetchItemFromContract(options: {
   contractAddress: string
   itemId?: string | null
   tokenId?: string | null
@@ -229,7 +229,7 @@ async function fetchWearablesAndEmotes(
   bodyShape: BodyShape,
   includeDefaultWearables: boolean,
   includeFacialFeatures: boolean,
-  peerUrl: string
+  peerUrl: string,
 ): Promise<[WearableDefinition[], EmoteDefinition[]]> {
   // gather wearables from profile, urns, urls and base64s
   const [wearablesFromProfile, [wearablesFromURNs, emotesFromURNs], [wearablesFromURLs, emotesFromURLs]] =
@@ -252,10 +252,10 @@ async function fetchWearablesAndEmotes(
     includeDefaultWearables && includeFacialFeatures
       ? getDefaultCategories()
       : includeDefaultWearables
-      ? getNonFacialFeatureCategories()
-      : includeFacialFeatures
-      ? getFacialFeatureCategories()
-      : []
+        ? getNonFacialFeatureCategories()
+        : includeFacialFeatures
+          ? getFacialFeatureCategories()
+          : []
   for (const category of categories) {
     const wearable = getWearableByCategory(wearables, category)
     if (!wearable) {
@@ -289,11 +289,11 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
 
   // load profile
   const sanitizedProfile = sanitizeProfile(options.profile)
-  const profilePromise = sanitizedProfile ? 
-      sanitizedProfile.type === 'address' ? 
-        fetchProfile(sanitizedProfile.value, peerUrl) : 
-        fetchProfileEntity(sanitizedProfile.value, peerUrl) 
-      : Promise.resolve(null)
+  const profilePromise = sanitizedProfile
+    ? sanitizedProfile.type === 'address'
+      ? fetchProfile(sanitizedProfile.value, peerUrl)
+      : fetchProfileEntity(sanitizedProfile.value, peerUrl)
+    : Promise.resolve(null)
 
   // await promises
   const [item, profile] = await Promise.all([itemPromise, profilePromise] as const)
@@ -340,7 +340,7 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
       bodyShape,
       !options.disableDefaultWearables && !profile?.avatar,
       !options.disableFace,
-      peerUrl
+      peerUrl,
     )
     wearables = allWearables
     emotes = allEmotes
@@ -490,7 +490,7 @@ function isNumber(value: number | null | undefined): boolean {
 }
 
 function fromBlobRepresentation<T extends WearableRepresentationWithBlobs | EmoteRepresentationWithBlobs>(
-  representation: T
+  representation: T,
 ) {
   return {
     ...representation,

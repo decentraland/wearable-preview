@@ -1,55 +1,70 @@
-import { useMemo, useState } from 'react'
-import { useOverrides } from './useOverrides'
-
+import { useMemo, useRef, useEffect, useState } from 'react'
 import { BodyShape, PreviewCamera, PreviewEmote, PreviewOptions, PreviewProjection, PreviewType } from '@dcl/schemas'
 import { parseZoom } from '../lib/zoom'
+import { useOverrides } from './useOverrides'
 
-export const useOptions = () => {
-  // get options from url params
-  const [search] = useState(window.location.search.toString())
-  const options = useMemo<PreviewOptions>(() => {
-    const params = new URLSearchParams(search)
-    const autoRotateSpeedParam = params.get('autoRotateSpeed') as string | null
-    const offsetXParam = params.get('offsetX') as string | null
-    const offsetYParam = params.get('offsetY') as string | null
-    const offsetZParam = params.get('offsetZ') as string | null
-    const cameraXParam = params.get('cameraX') as string | null
-    const cameraYParam = params.get('cameraY') as string | null
-    const cameraZParam = params.get('cameraZ') as string | null
-    const zoomScaleParam = params.get('zoomScale') as string | null
-    const wheelZoomParam = params.get('wheelZoom') as string | null
-    const wheelPrecisionParam = params.get('wheelPrecision') as string | null
-    const wheelStartParam = params.get('wheelStart') as string | null
-    const bodyShapeParam = params.get('bodyShape')
-    const panning = params.get('panning')
-    const lockAlpha = params.get('lockAlpha')
-    const lockBeta = params.get('lockBeta')
-    const lockRadius = params.get('lockRadius')
+export enum UnityPreviewMode {
+  PROFILE = 'profile',
+  MARKETPLACE = 'marketplace',
+  AUTHENTICATION = 'authentication',
+  BUILDER = 'builder',
+}
 
-    const transparentBackground = params.has('transparentBackground')
+export interface OptionsWithSource {
+  options: PreviewOptions & { mode: UnityPreviewMode | null; disableLoader: boolean }
+  overrideSources: Record<string, boolean>
+}
+
+export const useOptions = (): OptionsWithSource => {
+  const [searchParams, setSearchParams] = useState(() => new URLSearchParams(window.location.search))
+  const previousSearchRef = useRef<string>(window.location.search)
+
+  // Update search params when URL changes
+  useEffect(() => {
+    const currentSearch = window.location.search
+    if (currentSearch !== previousSearchRef.current) {
+      setSearchParams(new URLSearchParams(currentSearch))
+      previousSearchRef.current = currentSearch
+    }
+  })
+
+  const options = useMemo<PreviewOptions & { mode: UnityPreviewMode | null; disableLoader: boolean }>(() => {
+    const autoRotateSpeedParam = searchParams.get('autoRotateSpeed') as string | null
+    const offsetXParam = searchParams.get('offsetX') as string | null
+    const offsetYParam = searchParams.get('offsetY') as string | null
+    const offsetZParam = searchParams.get('offsetZ') as string | null
+    const cameraXParam = searchParams.get('cameraX') as string | null
+    const cameraYParam = searchParams.get('cameraY') as string | null
+    const cameraZParam = searchParams.get('cameraZ') as string | null
+    const zoomScaleParam = searchParams.get('zoomScale') as string | null
+    const wheelZoomParam = searchParams.get('wheelZoom') as string | null
+    const wheelPrecisionParam = searchParams.get('wheelPrecision') as string | null
+    const wheelStartParam = searchParams.get('wheelStart') as string | null
+    const bodyShapeParam = searchParams.get('bodyShape')
+    const panning = searchParams.get('panning')
+    const lockAlpha = searchParams.get('lockAlpha')
+    const lockBeta = searchParams.get('lockBeta')
+    const lockRadius = searchParams.get('lockRadius')
+
+    const transparentBackground = searchParams.has('transparentBackground')
     if (transparentBackground) {
       console.warn(
-        `Deprecated: you are using the query param "transparentBackground" that has been deprecated in favor of "disableBackground". Please switch to the new query param since in the future this will not be supported.`
+        `Deprecated: you are using the query param "transparentBackground" that has been deprecated in favor of "disableBackground". Please switch to the new query param since in the future this will not be supported.`,
       )
     }
-    const centerBoundingBox = params.get('centerBoundingBox') !== 'false'
-    if (transparentBackground) {
-      console.warn(
-        `Deprecated: you are using the query param "transparentBackground" that has been deprecated in favor of "disableBackground". Please switch to the new query param since in the future this will not be supported.`
-      )
-    }
+    const centerBoundingBox = searchParams.get('centerBoundingBox') !== 'false'
 
-    const options: PreviewOptions = {
-      contractAddress: params.get('contract')!,
-      tokenId: params.get('token'),
-      itemId: params.get('item'),
-      skin: params.get('skin'),
-      hair: params.get('hair'),
-      eyes: params.get('eyes'),
-      emote: params.get('emote') as PreviewEmote | null,
-      camera: params.get('camera') as PreviewCamera | null,
-      projection: params.get('projection') as PreviewProjection | null,
-      background: params.get('background'),
+    const options: PreviewOptions & { mode: UnityPreviewMode | null; disableLoader: boolean } = {
+      contractAddress: searchParams.get('contract')!,
+      tokenId: searchParams.get('token'),
+      itemId: searchParams.get('item'),
+      skin: searchParams.get('skin'),
+      hair: searchParams.get('hair'),
+      eyes: searchParams.get('eyes'),
+      emote: searchParams.get('emote') as PreviewEmote | null,
+      camera: searchParams.get('camera') as PreviewCamera | null,
+      projection: searchParams.get('projection') as PreviewProjection | null,
+      background: searchParams.get('background'),
       autoRotateSpeed: autoRotateSpeedParam ? parseFloat(autoRotateSpeedParam) : null,
       offsetX: offsetXParam ? parseFloat(offsetXParam) : null,
       offsetY: offsetYParam ? parseFloat(offsetYParam) : null,
@@ -60,48 +75,62 @@ export const useOptions = () => {
       wheelZoom: wheelZoomParam ? parseFloat(wheelZoomParam) : null,
       wheelPrecision: wheelPrecisionParam ? parseFloat(wheelPrecisionParam) : null,
       wheelStart: wheelStartParam ? parseFloat(wheelStartParam) : null,
-      zoom: parseZoom(params.get('zoom')),
+      zoom: parseZoom(searchParams.get('zoom')),
       zoomScale: zoomScaleParam ? parseFloat(zoomScaleParam) : null,
       bodyShape:
         bodyShapeParam === 'female' || bodyShapeParam === BodyShape.FEMALE
           ? BodyShape.FEMALE
           : bodyShapeParam === 'male' || bodyShapeParam === BodyShape.MALE
-          ? BodyShape.MALE
-          : null,
-      urns: params.getAll('urn'),
-      urls: params.getAll('url'),
-      base64s: params.getAll('base64'),
-      profile: params.get('profile'),
-      showSceneBoundaries: params.has('showSceneBoundaries') || false,
-      showThumbnailBoundaries: params.has('showThumbnailBoundaries') || false,
-      disableBackground: params.has('disableBackground') || transparentBackground,
-      disableAutoCenter: params.has('disableAutoCenter') || !centerBoundingBox,
-      disableAutoRotate: params.has('disableAutoRotate') || !centerBoundingBox,
-      disableFace: params.has('disableFace'),
-      disableDefaultWearables: params.has('disableDefaultWearables'),
-      disableDefaultEmotes: params.has('disableDefaultEmotes'),
-      disableFadeEffect: params.has('disableFadeEffect'),
-      peerUrl: params.get('peerUrl'),
-      nftServerUrl: params.get('nftServerUrl'),
-      type: params.get('type') as PreviewType | null,
+            ? BodyShape.MALE
+            : null,
+      urns: searchParams.getAll('urn'),
+      urls: searchParams.getAll('url'),
+      base64s: searchParams.getAll('base64'),
+      profile: searchParams.get('profile'),
+      showSceneBoundaries: searchParams.has('showSceneBoundaries') || false,
+      showThumbnailBoundaries: searchParams.has('showThumbnailBoundaries') || false,
+      disableBackground: searchParams.has('disableBackground') || transparentBackground,
+      disableAutoCenter: searchParams.has('disableAutoCenter') || !centerBoundingBox,
+      disableAutoRotate: searchParams.has('disableAutoRotate') || !centerBoundingBox,
+      disableFace: searchParams.has('disableFace'),
+      disableDefaultWearables: searchParams.has('disableDefaultWearables'),
+      disableDefaultEmotes: searchParams.has('disableDefaultEmotes'),
+      disableFadeEffect: searchParams.has('disableFadeEffect'),
+      peerUrl: searchParams.get('peerUrl'),
+      nftServerUrl: searchParams.get('nftServerUrl'),
+      type: searchParams.get('type') as PreviewType | null,
       panning: panning === 'true' || panning === null,
       lockAlpha: lockAlpha === 'true',
       lockBeta: lockBeta === 'true',
       lockRadius: lockRadius === 'true',
+      mode: searchParams.get('mode') as UnityPreviewMode | null,
+      disableLoader: searchParams.has('disableLoader') || true,
     }
     return options
-  }, [search])
+  }, [searchParams])
 
   // apply overrides
   const overrides = useOverrides()
-  const optionsWithOverrides = useMemo(
-    () => ({
+  const optionsWithOverrides = useMemo(() => {
+    const mergedOptions = {
       ...options,
       ...overrides,
-    }),
-    [options, overrides]
-  )
+    }
 
-  // return options with overrides applied (if any)
+    // Track which properties came from overrides
+    const overrideSources: Record<string, boolean> = {}
+    Object.keys(overrides).forEach((key) => {
+      if (overrides[key as keyof PreviewOptions] !== undefined) {
+        overrideSources[key] = true
+      }
+    })
+
+    return {
+      options: mergedOptions,
+      overrideSources,
+    }
+  }, [options, overrides])
+
+  // return options with overrides applied (if any) and source tracking
   return optionsWithOverrides
 }

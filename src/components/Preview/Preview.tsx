@@ -1,6 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react'
 import classNames from 'classnames'
-import { PreviewCamera, PreviewType, PreviewMessageType, sendMessage, PreviewEmote } from '@dcl/schemas'
+import {
+  PreviewCamera,
+  PreviewType,
+  PreviewMessageType,
+  sendMessage,
+  PreviewEmote,
+  PreviewRenderer,
+} from '@dcl/schemas'
 import { useWindowSize } from '../../hooks/useWindowSize'
 import { useConfig } from '../../hooks/useConfig'
 import { useReady } from '../../hooks/useReady'
@@ -77,7 +84,7 @@ const Preview: React.FC = () => {
   useEffect(() => {
     if (!isMessageSent) {
       if (isLoaded) {
-        sendMessage(getParent(), PreviewMessageType.LOAD, null)
+        sendMessage(getParent(), PreviewMessageType.LOAD, { renderer: PreviewRenderer.BABYLON })
         setIsMessageSent(true)
         if (config?.type === PreviewType.AVATAR || (config?.emote && config.emote !== PreviewEmote.IDLE)) {
           controller.current?.emote.play()

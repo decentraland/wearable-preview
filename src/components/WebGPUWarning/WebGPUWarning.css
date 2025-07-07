@@ -1,0 +1,201 @@
+.webgpu-toast-notification {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  background: #18181b;
+  color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  min-width: 320px;
+  max-width: 380px;
+  padding: 0;
+  font-size: 0.95rem;
+  animation: webgpu-toast-fadein 0.3s;
+}
+
+@keyframes webgpu-toast-fadein {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.webgpu-toast-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 8px 16px;
+  border-bottom: 1px solid #23232a;
+}
+
+.webgpu-toast-icon {
+  color: #ff6b6b !important;
+  font-size: 1.5rem !important;
+  margin-right: 8px;
+}
+
+.webgpu-toast-title {
+  font-weight: 600;
+  font-size: 1.05rem;
+  flex: 1;
+}
+
+.webgpu-toast-close.ui.button {
+  color: #aaa !important;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin-left: 8px;
+  padding: 4px !important;
+  min-width: 0 !important;
+}
+.webgpu-toast-close.ui.button:hover {
+  color: #fff !important;
+  background: #23232a !important;
+}
+
+.webgpu-toast-message {
+  padding: 12px 20px 0 20px;
+  color: #eee;
+  font-size: 0.97rem;
+}
+
+.webgpu-toast-instructions {
+  background: #23232a;
+  border-radius: 8px;
+  margin: 12px 16px;
+  padding: 10px 12px;
+  color: #ccc;
+  font-size: 0.92rem;
+}
+.webgpu-toast-instructions strong {
+  color: #fff;
+  font-size: 0.95rem;
+  margin-bottom: 8px;
+  display: block;
+}
+.webgpu-toast-instructions p {
+  margin: 0;
+  color: #aaa;
+  font-size: 0.89rem;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+/* Style numbered instructions as a proper list */
+.webgpu-toast-instructions ol {
+  margin: 8px 0 0 0;
+  padding-left: 20px;
+  color: #aaa;
+  font-size: 0.89rem;
+  line-height: 1.6;
+}
+
+.webgpu-toast-instructions ol li {
+  margin-bottom: 6px;
+  color: #ccc;
+}
+
+.webgpu-toast-instructions ol li:last-child {
+  margin-bottom: 0;
+}
+
+/* Style notes and additional information */
+.webgpu-toast-instructions .note {
+  margin-top: 8px;
+  padding: 6px 8px;
+  background: #1a1a1d;
+  border-radius: 4px;
+  border-left: 3px solid #3b82f6;
+  font-size: 0.85rem;
+  color: #999;
+}
+
+.webgpu-toast-actions {
+  display: flex;
+  gap: 8px;
+  padding: 16px 20px 16px 20px;
+  justify-content: flex-end;
+}
+
+.webgpu-toast-button.ui.primary.button {
+  background-color: #3b82f6 !important;
+  color: white !important;
+  border-radius: 8px !important;
+  font-weight: 600;
+  min-width: 140px;
+}
+.webgpu-toast-button.ui.primary.button:hover {
+  background-color: #2563eb !important;
+}
+
+.webgpu-toast-details {
+  padding: 8px 20px 16px 20px;
+  border-top: 1px solid #23232a;
+  background: #1a1a1d;
+  border-radius: 0 0 12px 12px;
+}
+
+.webgpu-toast-details small {
+  color: #888;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+.webgpu-debug-toggle {
+  cursor: pointer;
+  padding: 4px 0;
+  color: #666;
+  transition: color 0.2s;
+}
+
+.webgpu-debug-toggle:hover {
+  color: #999;
+}
+
+.webgpu-debug-toggle small {
+  font-style: normal;
+  font-weight: 500;
+}
+
+.webgpu-debug-content {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #333;
+}
+
+.webgpu-debug-content small {
+  font-style: normal;
+  line-height: 1.4;
+}
+
+@media (max-width: 600px) {
+  .webgpu-toast-notification {
+    right: 8px;
+    left: 8px;
+    min-width: unset;
+    max-width: 98vw;
+  }
+  .webgpu-toast-header,
+  .webgpu-toast-message,
+  .webgpu-toast-actions {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .webgpu-toast-instructions {
+    margin-left: 8px;
+    margin-right: 8px;
+  }
+  .webgpu-toast-button {
+    width: 100%;
+  }
+  .webgpu-toast-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
