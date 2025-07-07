@@ -40,6 +40,12 @@ interface PreviewState {
   backgroundImage: string
 }
 
+export enum UnityMessageType {
+  LOADED = 'loaded',
+  ERROR = 'error',
+  SCREENSHOT = 'screenshot',
+}
+
 // Custom hook for Unity initialization and state management
 const useUnityRenderer = (
   refs: UnityRefs,
@@ -53,16 +59,19 @@ const useUnityRenderer = (
     error: null,
   })
 
-  const handleUnityLoaded = useCallback((event: MessageEvent) => {
+  const handleUnityMessage = useCallback((event: MessageEvent) => {
     if (event.data.type === UNITY_MESSAGE_TYPE) {
       const { type, payload } = event.data.payload
-      if (type === 'loaded' && (payload === true || payload === 'true')) {
+      if (type === UnityMessageType.LOADED && (payload === true || payload === 'true')) {
         setRenderingState((prev) => ({
           ...prev,
           isLoaded: true,
           isInitialized: true,
         }))
         sendMessage(getParent(), PreviewMessageType.LOAD, { renderer: PreviewRenderer.UNITY })
+      } else if (type === UnityMessageType.ERROR) {
+        setRenderingState((prev) => ({ ...prev, error: payload }))
+        sendMessage(getParent(), PreviewMessageType.ERROR, { message: 'Error loading the wearable. Please try again.' })
       }
     }
   }, [])
@@ -104,12 +113,12 @@ const useUnityRenderer = (
       return
     }
 
-    window.addEventListener('message', handleUnityLoaded, false)
+    window.addEventListener('message', handleUnityMessage, false)
 
     return () => {
-      window.removeEventListener('message', handleUnityLoaded, false)
+      window.removeEventListener('message', handleUnityMessage, false)
     }
-  }, [config, handleUnityLoaded])
+  }, [config, handleUnityMessage])
 
   return renderingState
 }

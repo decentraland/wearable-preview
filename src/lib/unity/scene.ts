@@ -78,5 +78,9 @@ export function createSceneController(instance: UnityInstance): ISceneController
       const radius = position.radius ?? 0
       instance.SendMessage('JSBridge', 'SetCameraPosition', `${alpha},${beta},${radius}`)
     },
+    cleanup: async () => {
+      if (!instance) return
+      instance.SendMessage('JSBridge', 'Cleanup', '')
+    },
   }
 }

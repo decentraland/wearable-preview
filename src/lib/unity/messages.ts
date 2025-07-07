@@ -1,6 +1,3 @@
-// Supported Unity JSBridge methods
-import { getRandomDefaultProfile } from '../profile'
-
 export enum UnityMethod {
   // Property setters
   SET_MODE = 'SetMode',
@@ -23,6 +20,7 @@ export enum UnityMethod {
 
   // Control methods
   RELOAD = 'Reload',
+  CLEANUP = 'Cleanup',
 }
 
 // Property mapping to Unity JSBridge methods

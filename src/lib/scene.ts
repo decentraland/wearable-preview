@@ -49,7 +49,7 @@ export function createSceneController(engine: Engine, scene: Scene, camera: ArcR
     const materials = scene.materials.length
     const meshes = scene.meshes.length
     const textures = scene.textures.filter(
-      (texture) => texture.name && !ignoreTextureList.includes(texture.name)
+      (texture) => texture.name && !ignoreTextureList.includes(texture.name),
     ).length
 
     return {
@@ -62,11 +62,17 @@ export function createSceneController(engine: Engine, scene: Scene, camera: ArcR
     }
   }
 
+  async function cleanup() {
+    // noop
+    return
+  }
+
   return {
     getScreenshot,
     getMetrics,
     panCamera,
     changeZoom,
     changeCameraPosition,
+    cleanup,
   }
 }
