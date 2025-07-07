@@ -17,6 +17,17 @@ declare function createUnityInstance(
 // cache unity loader promises to prevent multiple loads
 const unityLoaderCache = new Map<string, Promise<HTMLScriptElement>>()
 
+const joinUrls = (baseUrl: string, path: string): string => {
+  if (!baseUrl) return path
+
+  if (!path) return baseUrl
+
+  const cleanBaseUrl = baseUrl.replace(/\/$/, '')
+  const cleanPath = path.replace(/^\//, '')
+
+  return `${cleanBaseUrl}/${cleanPath}`
+}
+
 function loadUnityLoaderScript(src: string): Promise<HTMLScriptElement> {
   if (unityLoaderCache.has(src)) {
     return unityLoaderCache.get(src)!
@@ -57,14 +68,15 @@ export const loadUnityInstance = async (
   args: string[],
 ): Promise<any> => {
   try {
-    await loadUnityLoaderScript(src)
+    const baseUrl = process.env.VITE_BASE_URL || ''
+    await loadUnityLoaderScript(joinUrls(baseUrl, src))
 
     return await createUnityInstance(canvas, {
-      dataUrl,
-      frameworkUrl,
-      codeUrl,
-      symbolsUrl,
-      streamingAssetsUrl,
+      dataUrl: joinUrls(baseUrl, dataUrl),
+      frameworkUrl: joinUrls(baseUrl, frameworkUrl),
+      codeUrl: joinUrls(baseUrl, codeUrl),
+      symbolsUrl: joinUrls(baseUrl, symbolsUrl),
+      streamingAssetsUrl: joinUrls(baseUrl, streamingAssetsUrl),
       companyName,
       productName,
       productVersion,
