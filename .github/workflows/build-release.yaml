@@ -45,7 +45,6 @@ jobs:
           access: public
           gitlab-token: ${{ secrets.GITLAB_CDN_DEPLOYER_TOKEN }}
           gitlab-pipeline-url: ${{ secrets.GITLAB_CDN_DEPLOYER_URL }}
-          config:
-            - .github/workflows/config/cdn-unity.yaml
+          config: './.github/workflows/config/cdn-unity.yaml'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
