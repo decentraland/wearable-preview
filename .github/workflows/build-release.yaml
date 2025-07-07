@@ -35,11 +35,11 @@ jobs:
         env:
           NODE_OPTIONS: --max_old_space_size=8192
       - name: Move static-local into main build
-        run: mv ./static-local ./build/static-local
+        run: mv ./static-local ./dist/static-local
       - name: Publish
         uses: menduz/oddish-action@master
         with:
-          cwd: './build'
+          cwd: './dist'
           deterministic-snapshot: true
           registry-url: 'https://registry.npmjs.org'
           access: public
