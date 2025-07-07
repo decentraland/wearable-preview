@@ -29,7 +29,7 @@ function isLooped(emote: PreviewEmote) {
 }
 
 export function buildEmoteUrl(emote: PreviewEmote) {
-  let baseUrl = process.env.PUBLIC_URL || ''
+  let baseUrl = process.env.VITE_BASE_URL || ''
   if (!baseUrl.endsWith('/')) {
     baseUrl += '/'
   }
@@ -51,7 +51,7 @@ export async function loadEmoteFromWearable(scene: Scene, emote: EmoteDefinition
   const content = representation.contents.find((content) => content.key === representation.mainFile)
   if (!content) {
     throw new Error(
-      `Could not find a valid content in representation for emote=${emote.id} and bodyShape=${config.bodyShape}`
+      `Could not find a valid content in representation for emote=${emote.id} and bodyShape=${config.bodyShape}`,
     )
   }
   return loadEmoteFromUrl(scene, content.url)
@@ -65,7 +65,7 @@ export function loadEmoteSound(scene: Scene, emote: EmoteDefinition, config: Pre
 export async function playEmote(
   scene: Scene,
   assets: Asset[],
-  config: PreviewConfig
+  config: PreviewConfig,
 ): Promise<IEmoteController | undefined> {
   // load asset container for emote
   let container: AssetContainer | undefined
