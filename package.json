@@ -24,7 +24,7 @@
   "scripts": {
     "start": "vite",
     "build": "vite build",
-    "build:static-local": "GEN_STATIC_LOCAL=true npm run build && mv ./build ./static-local",
+    "build:static-local": "GEN_STATIC_LOCAL=true npm run build && mv ./dist ./static-local",
     "test": "jest",
     "prebuild": "node ./scripts/prebuild.cjs",
     "update-unity": "node ./scripts/update-unity.cjs"
