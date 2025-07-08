@@ -1,3 +1,27 @@
 matches:
-  - match: "static-local/**/*"
+  - match: 'static-local/**/*'
     ignore: true
+
+  - match: unity/Build/**/*.wasm.br
+    contentEncoding: br
+    contentType: application/wasm
+    immutable: true
+    variants: [uncompressed]
+
+  - match: unity/Build/**/*.data.br
+    contentEncoding: br
+    contentType: application/octet-stream
+    immutable: true
+    variants: [uncompressed]
+
+  - match: unity/Build/**/*.js.br
+    contentEncoding: br
+    contentType: application/javascript
+    immutable: true
+    variants: [uncompressed]
+
+  - match: unity/Build/**/*.js
+    ignore: '**/*.js.br'
+    contentType: application/javascript
+    immutable: true
+    variants: [uncompressed]
