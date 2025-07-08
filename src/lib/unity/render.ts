@@ -29,11 +29,10 @@ export async function render(canvas: HTMLCanvasElement): Promise<IPreviewControl
       '/unity/Build/aang-renderer.data.br',
       '/unity/Build/aang-renderer.framework.js.br',
       '/unity/Build/aang-renderer.wasm.br',
-      '/unity/Build/aang-renderer.symbols.json.br',
       '/emotes',
       'Decentraland',
       'AangRenderer',
-      '0.1.0',
+      '1.3.5',
       true,
       [],
     )) as UnityInstance

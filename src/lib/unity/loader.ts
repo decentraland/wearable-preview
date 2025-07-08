@@ -4,7 +4,6 @@ declare function createUnityInstance(
     dataUrl: string
     frameworkUrl: string
     codeUrl: string
-    symbolsUrl: string
     streamingAssetsUrl?: string
     companyName?: string
     productName?: string
@@ -59,7 +58,6 @@ export const loadUnityInstance = async (
   dataUrl: string,
   frameworkUrl: string,
   codeUrl: string,
-  symbolsUrl: string,
   streamingAssetsUrl: string,
   companyName: string,
   productName: string,
@@ -75,7 +73,6 @@ export const loadUnityInstance = async (
       dataUrl: joinUrls(baseUrl, dataUrl),
       frameworkUrl: joinUrls(baseUrl, frameworkUrl),
       codeUrl: joinUrls(baseUrl, codeUrl),
-      symbolsUrl: joinUrls(baseUrl, symbolsUrl),
       streamingAssetsUrl: joinUrls(baseUrl, streamingAssetsUrl),
       companyName,
       productName,
