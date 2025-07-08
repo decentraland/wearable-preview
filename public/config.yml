@@ -21,7 +21,6 @@ matches:
     variants: [uncompressed]
 
   - match: unity/Build/**/*.js
-    ignore: '**/*.js.br'
     contentType: application/javascript
     immutable: true
     variants: [uncompressed]
