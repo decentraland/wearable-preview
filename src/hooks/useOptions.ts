@@ -8,6 +8,7 @@ export enum UnityPreviewMode {
   MARKETPLACE = 'marketplace',
   AUTHENTICATION = 'authentication',
   BUILDER = 'builder',
+  CONFIGURATOR = 'configurator',
 }
 
 export interface OptionsWithSource {

@@ -247,22 +247,30 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
             const urns = toQueryArray(options.urns)
             const base64s = toQueryArray(options.base64s)
 
-            const queryParams: Partial<QueryParams> = {
-              background: background.transparent ? '' : toQueryColor(background.color),
-              disableLoader: options.disableLoader ? 'true' : '',
-              profile: toQueryValue(profileValue || ''),
-              bodyShape: toQueryValue(bodyShape || ''),
-              eyeColor: toQueryColor(eyes || ''),
-              hairColor: toQueryColor(hair || ''),
-              skinColor: toQueryColor(skin || ''),
-              mode: toQueryValue(mode || ''),
-              camera,
-              projection,
-              emote: toQueryValue(emote?.toString() || ''),
-              urn: urns.length > 0 ? urns : [''],
-              base64: base64s.length > 0 ? base64s : [''],
+            // For configurator mode, only add mode parameter
+            if (mode === 'configurator') {
+              const queryParams: Partial<QueryParams> = {
+                mode: toQueryValue(mode || ''),
+              }
+              updateQueryParams(queryParams)
+            } else {
+              const queryParams: Partial<QueryParams> = {
+                background: background.transparent ? '' : toQueryColor(background.color),
+                disableLoader: options.disableLoader ? 'true' : '',
+                profile: toQueryValue(profileValue || ''),
+                bodyShape: toQueryValue(bodyShape || ''),
+                eyeColor: toQueryColor(eyes || ''),
+                hairColor: toQueryColor(hair || ''),
+                skinColor: toQueryColor(skin || ''),
+                mode: toQueryValue(mode || ''),
+                camera,
+                projection,
+                emote: toQueryValue(emote?.toString() || ''),
+                urn: urns.length > 0 ? urns : [''],
+                base64: base64s.length > 0 ? base64s : [''],
+              }
+              updateQueryParams(queryParams)
             }
-            updateQueryParams(queryParams)
           }
           setUnityConfig(newConfig)
         }

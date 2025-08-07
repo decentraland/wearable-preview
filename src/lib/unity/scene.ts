@@ -15,7 +15,9 @@ enum UnityMessagePayload {
   SCREENSHOT = 'screenshot',
 }
 
-export function createSceneController(instance: UnityInstance): ISceneController {
+export function createSceneController(
+  instance: UnityInstance,
+): ISceneController & { setUsername: (username: string) => void } {
   return {
     getScreenshot: () => {
       return new Promise<string>((resolve) => {
@@ -77,6 +79,10 @@ export function createSceneController(instance: UnityInstance): ISceneController
       const beta = position.beta ?? 0
       const radius = position.radius ?? 0
       instance.SendMessage('JSBridge', 'SetCameraPosition', `${alpha},${beta},${radius}`)
+    },
+    setUsername: async (username: string) => {
+      if (!instance) return
+      instance.SendMessage('JSBridge', 'SetUsername', username)
     },
     cleanup: async () => {
       if (!instance) return

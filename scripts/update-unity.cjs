@@ -8,7 +8,7 @@ const UNITY_OUTPUT_DIR = path.join(process.cwd(), 'public', 'unity')
 const TEMP_DIR = path.join(process.cwd(), 'temp')
 
 // Folders to extract from the ZIP
-const REQUIRED_FOLDERS = ['Build']
+const REQUIRED_FOLDERS = ['Build', 'StreamingAssets']
 
 // Ensure directories exist
 if (!fs.existsSync(UNITY_OUTPUT_DIR)) {
