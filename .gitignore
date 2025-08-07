@@ -28,3 +28,6 @@ yarn-error.log*
 .vscode
 
 static-local
+
+.cursor 
+.claude

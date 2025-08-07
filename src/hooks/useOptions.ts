@@ -12,7 +12,7 @@ export enum UnityPreviewMode {
 }
 
 export interface OptionsWithSource {
-  options: PreviewOptions & { mode: UnityPreviewMode | null; disableLoader: boolean }
+  options: PreviewOptions & { mode: UnityPreviewMode | null; disableLoader: boolean; username: string | null }
   overrideSources: Record<string, boolean>
 }
 
@@ -29,7 +29,9 @@ export const useOptions = (): OptionsWithSource => {
     }
   })
 
-  const options = useMemo<PreviewOptions & { mode: UnityPreviewMode | null; disableLoader: boolean }>(() => {
+  const options = useMemo<
+    PreviewOptions & { mode: UnityPreviewMode | null; disableLoader: boolean; username: string | null }
+  >(() => {
     const autoRotateSpeedParam = searchParams.get('autoRotateSpeed') as string | null
     const offsetXParam = searchParams.get('offsetX') as string | null
     const offsetYParam = searchParams.get('offsetY') as string | null
@@ -55,7 +57,7 @@ export const useOptions = (): OptionsWithSource => {
     }
     const centerBoundingBox = searchParams.get('centerBoundingBox') !== 'false'
 
-    const options: PreviewOptions & { mode: UnityPreviewMode | null; disableLoader: boolean } = {
+    const options: PreviewOptions & { mode: UnityPreviewMode | null; disableLoader: boolean; username: string | null } = {
       contractAddress: searchParams.get('contract')!,
       tokenId: searchParams.get('token'),
       itemId: searchParams.get('item'),
@@ -105,8 +107,10 @@ export const useOptions = (): OptionsWithSource => {
       lockBeta: lockBeta === 'true',
       lockRadius: lockRadius === 'true',
       mode: searchParams.get('mode') as UnityPreviewMode | null,
-      disableLoader: searchParams.has('disableLoader') || true,
+      disableLoader: searchParams.has('disableLoader'),
+      username: searchParams.get('username'),
     }
+
     return options
   }, [searchParams])
 
