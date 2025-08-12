@@ -15,9 +15,7 @@ enum UnityMessagePayload {
   SCREENSHOT = 'screenshot',
 }
 
-export function createSceneController(
-  instance: UnityInstance,
-): ISceneController & { setUsername: (username: string) => void } {
+export function createSceneController(instance: UnityInstance): ISceneController {
   return {
     getScreenshot: () => {
       return new Promise<string>((resolve) => {
