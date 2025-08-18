@@ -44,6 +44,7 @@ export enum UnityMessageType {
   LOADED = 'loaded',
   ERROR = 'error',
   SCREENSHOT = 'screenshot',
+  CUSTOMIZATION_DONE = 'customization-done',
 }
 
 // Custom hook for Unity initialization and state management
@@ -69,6 +70,12 @@ const useUnityRenderer = (
           isInitialized: true,
         }))
         sendMessage(getParent(), PreviewMessageType.LOAD, { renderer: PreviewRenderer.UNITY })
+      } else if (type === UnityMessageType.CUSTOMIZATION_DONE) {
+        sendMessage(getParent(), PreviewMessageType.CONTROLLER_RESPONSE, {
+          id: UnityMessageType.CUSTOMIZATION_DONE,
+          ok: true,
+          result: JSON.parse(event.data.payload.payload),
+        })
       } else if (type === UnityMessageType.ERROR) {
         setRenderingState((prev) => ({ ...prev, error: payload }))
         sendMessage(getParent(), PreviewMessageType.ERROR, { message: 'Error loading the wearable. Please try again.' })
@@ -88,6 +95,15 @@ const useUnityRenderer = (
       const { unity, scene, emote } = await render(refs.canvas.current)
       refs.unityInstance.current = unity
       controller.current = { scene, emote }
+
+      // Unity instance is ready, set loaded state
+      // TODO: get loaded state from unity once unity sent it
+      setRenderingState((prev) => ({
+        ...prev,
+        isLoaded: true,
+        isInitialized: true,
+      }))
+      sendMessage(getParent(), PreviewMessageType.LOAD, { renderer: PreviewRenderer.UNITY })
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : DEFAULT_ERROR_MESSAGE
       console.error('Unity init failed:', err)

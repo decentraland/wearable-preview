@@ -8,6 +8,7 @@ export enum UnityPreviewMode {
   MARKETPLACE = 'marketplace',
   AUTHENTICATION = 'authentication',
   BUILDER = 'builder',
+  CONFIGURATOR = 'configurator',
 }
 
 export interface OptionsWithSource {
@@ -104,8 +105,10 @@ export const useOptions = (): OptionsWithSource => {
       lockBeta: lockBeta === 'true',
       lockRadius: lockRadius === 'true',
       mode: searchParams.get('mode') as UnityPreviewMode | null,
-      disableLoader: searchParams.has('disableLoader') || true,
+      disableLoader: searchParams.has('disableLoader'),
+      username: searchParams.get('username'),
     }
+
     return options
   }, [searchParams])
 

@@ -10,6 +10,7 @@ declare function createUnityInstance(
     productVersion?: string
     matchWebGLToCanvasSize?: boolean
     arguments?: string[]
+    symbolUrl?: string
   },
 ): Promise<any>
 
@@ -58,6 +59,7 @@ export const loadUnityInstance = async (
   dataUrl: string,
   frameworkUrl: string,
   codeUrl: string,
+  symbolUrl: string,
   streamingAssetsUrl: string,
   companyName: string,
   productName: string,
@@ -74,6 +76,7 @@ export const loadUnityInstance = async (
       frameworkUrl: joinUrls(baseUrl, frameworkUrl),
       codeUrl: joinUrls(baseUrl, codeUrl),
       streamingAssetsUrl: joinUrls(baseUrl, streamingAssetsUrl),
+      symbolUrl: joinUrls(baseUrl, symbolUrl),
       companyName,
       productName,
       productVersion,
