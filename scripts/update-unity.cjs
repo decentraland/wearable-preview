@@ -5,14 +5,18 @@ const { execSync } = require('child_process')
 
 const GITHUB_API_URL = 'https://api.github.com/repos/decentraland/aang-renderer/releases/latest'
 const UNITY_OUTPUT_DIR = path.join(process.cwd(), 'public', 'unity')
+const EMOTES_OUTPUT_DIR = path.join(process.cwd(), 'public', 'emotes')
 const TEMP_DIR = path.join(process.cwd(), 'temp')
 
 // Folders to extract from the ZIP
-const REQUIRED_FOLDERS = ['Build']
+const REQUIRED_FOLDERS = ['Build', 'StreamingAssets']
 
 // Ensure directories exist
 if (!fs.existsSync(UNITY_OUTPUT_DIR)) {
   fs.mkdirSync(UNITY_OUTPUT_DIR, { recursive: true })
+}
+if (!fs.existsSync(EMOTES_OUTPUT_DIR)) {
+  fs.mkdirSync(EMOTES_OUTPUT_DIR, { recursive: true })
 }
 if (!fs.existsSync(TEMP_DIR)) {
   fs.mkdirSync(TEMP_DIR, { recursive: true })
@@ -185,16 +189,46 @@ function extractZip(zipPath, outputPath) {
 
         // Move the specific folder to the final destination
         const sourcePath = path.join(extractPath, folderPath)
-        const destPath = path.join(outputPath, folder)
+        let destPath
 
-        if (fs.existsSync(sourcePath)) {
-          // Remove destination folder if it exists
-          if (fs.existsSync(destPath)) {
-            fs.rmSync(destPath, { recursive: true, force: true })
+        if (folder === 'StreamingAssets') {
+          // StreamingAssets contents go to public/emotes
+          destPath = EMOTES_OUTPUT_DIR
+
+          if (fs.existsSync(sourcePath)) {
+            // Remove destination folder if it exists
+            if (fs.existsSync(destPath)) {
+              fs.rmSync(destPath, { recursive: true, force: true })
+              fs.mkdirSync(destPath, { recursive: true })
+            }
+
+            // Copy all contents of StreamingAssets to emotes folder
+            const items = fs.readdirSync(sourcePath)
+            for (const item of items) {
+              const sourceItem = path.join(sourcePath, item)
+              const destItem = path.join(destPath, item)
+
+              if (fs.statSync(sourceItem).isDirectory()) {
+                fs.cpSync(sourceItem, destItem, { recursive: true })
+              } else {
+                fs.copyFileSync(sourceItem, destItem)
+              }
+            }
+            console.log(`   ✅ Copied ${folder} contents to emotes folder`)
           }
-          // Move the folder
-          fs.renameSync(sourcePath, destPath)
-          console.log(`   ✅ Moved ${folder} to final location`)
+        } else {
+          // Other folders go to their normal location
+          destPath = path.join(outputPath, folder)
+
+          if (fs.existsSync(sourcePath)) {
+            // Remove destination folder if it exists
+            if (fs.existsSync(destPath)) {
+              fs.rmSync(destPath, { recursive: true, force: true })
+            }
+            // Move the folder
+            fs.renameSync(sourcePath, destPath)
+            console.log(`   ✅ Moved ${folder} to final location`)
+          }
         }
       } catch (error) {
         console.log(`   ⚠️  Error extracting ${folder}: ${error.message}`)
@@ -214,10 +248,14 @@ async function main() {
     const release = await getLatestRelease()
     console.log(`📦 Found release: ${release.tag_name}`)
 
-    // Clean existing unity directory
+    // Clean existing unity and GLB directories
     console.log('🧹 Cleaning existing Unity files...')
     fs.rmSync(UNITY_OUTPUT_DIR, { recursive: true, force: true })
     fs.mkdirSync(UNITY_OUTPUT_DIR, { recursive: true })
+
+    console.log('🧹 Cleaning existing GLB files...')
+    fs.rmSync(EMOTES_OUTPUT_DIR, { recursive: true, force: true })
+    fs.mkdirSync(EMOTES_OUTPUT_DIR, { recursive: true })
 
     // Download and process each asset
     for (const asset of release.assets) {
