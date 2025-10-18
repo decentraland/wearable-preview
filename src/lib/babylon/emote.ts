@@ -11,7 +11,12 @@ import {
 import { isEmote } from '../emote'
 import { startAutoRotateBehavior } from './camera'
 import { Asset, loadAssetContainer, loadSound } from './scene'
-import { getEmoteRepresentation } from '../representation'
+import { getEmoteData, getEmoteRepresentation, isEmoteDataADR287, isEmoteDataADR74 } from '../representation'
+import { shouldApplySocialEmoteAnimation, SocialEmote } from './utils'
+
+interface ExtendedPreviewConfig extends PreviewConfig {
+  socialEmote?: SocialEmote | null
+}
 
 const loopedEmotes = [
   PreviewEmote.IDLE,
@@ -57,15 +62,17 @@ export async function loadEmoteFromWearable(scene: Scene, emote: EmoteDefinition
   return loadEmoteFromUrl(scene, content.url)
 }
 
-export function loadEmoteSound(scene: Scene, emote: EmoteDefinition, config: PreviewConfig) {
+export function loadEmoteSound(scene: Scene, emote: EmoteDefinition, config: ExtendedPreviewConfig) {
   const representation = getEmoteRepresentation(emote, config.bodyShape)
-  return loadSound(scene, representation)
+  const selectedSound = config.socialEmote ? config.socialEmote.audio : null
+  return loadSound(scene, representation, selectedSound)
 }
 
 export async function playEmote(
   scene: Scene,
   assets: Asset[],
-  config: PreviewConfig,
+  config: ExtendedPreviewConfig,
+  twinMap: Map<TransformNode, TransformNode> | undefined,
 ): Promise<IEmoteController | undefined> {
   // load asset container for emote
   let container: AssetContainer | undefined
@@ -76,7 +83,12 @@ export async function playEmote(
   if (config.item && isEmote(config.item)) {
     try {
       container = await loadEmoteFromWearable(scene, config.item as EmoteDefinition, config)
-      loop = config.item.emoteDataADR74.loop
+      const data = getEmoteData(config.item as EmoteDefinition)
+      loop = isEmoteDataADR74(config.item as EmoteDefinition)
+        ? data.loop
+        : config.socialEmote && isEmoteDataADR287(config.item as EmoteDefinition)
+          ? config.socialEmote.loop
+          : false
       sound = await loadEmoteSound(scene, config.item as EmoteDefinition, config)
     } catch (error) {
       console.warn(`Could not load emote=${config.item.id}`)
@@ -89,7 +101,7 @@ export async function playEmote(
 
   if (container && container.animationGroups.length > 1) {
     container.addAllToScene()
-    // In some cases, the prop animation will start playing on loop when laoded, event though the avatar
+    // In some cases, the prop animation will start playing on loop when loaded, event though the avatar
     // animation is not running. This is to stop all possible animations before creating emote animation group
     scene.stopAllAnimations()
   }
@@ -123,6 +135,14 @@ export async function playEmote(
       // apply each targeted animation from the emote asset container to the transform nodes of all the wearables
       if (container && container.animationGroups.length > 0) {
         for (const animationGroup of container.animationGroups) {
+          // Social emote logic: filter animations based on socialEmote configuration
+          if (config.socialEmote) {
+            // Check if this animation group should be applied based on social emote config
+            const shouldApplyAnimation = shouldApplySocialEmoteAnimation(animationGroup, config.socialEmote)
+            if (!shouldApplyAnimation) {
+              continue // Skip this animation group
+            }
+          }
           for (const targetedAnimation of animationGroup.targetedAnimations) {
             const animation = targetedAnimation.animation.clone()
             const target = targetedAnimation.target as TransformNode
@@ -131,35 +151,88 @@ export async function playEmote(
             const keys = targetedAnimation.animation.getKeys()
             animation.setKeys([...keys])
 
-            // Determine if this is an avatar animation based on three criteria:
-            // 1. Single animation case: If the emote only has one animation group, it must be meant for the avatar
-            //    (props always come as additional animation groups)
-            // 2. Group name: If the animation group's name contains "avatar", it's explicitly marked for the avatar
-            //    (e.g., "Horse_Avatar" for the riding animation)
-            // 3. Target name: If the animated node starts with "Avatar_", it's part of the avatar skeleton
-            //    (e.g., "Avatar_Head", "Avatar_Spine", etc.)
-            const isAvatarAnimation =
-              container.animationGroups.length === 1 ||
-              animationGroup.name.toLowerCase().includes('avatar') ||
-              target.name.startsWith('Avatar_')
+            if (config.socialEmote) {
+              const isAvatarAnimation =
+                config.socialEmote.Armature?.animation &&
+                animationGroup.name.toLowerCase().startsWith(config.socialEmote.Armature.animation.toLowerCase())
 
-            if (isAvatarAnimation) {
-              // Strip any .# suffix from target name for matching
-              const targetBaseName = target.name.replace(/\.\d+$/, '')
-              const matchingNodes = nodesByName.get(targetBaseName) || []
+              const isAvatarOtherAnimation =
+                config.socialEmote.Armature_Other?.animation &&
+                animationGroup.name.toLowerCase().startsWith(config.socialEmote.Armature_Other.animation.toLowerCase())
 
-              if (matchingNodes.length > 0) {
-                // Apply animation to all matching nodes
-                for (const node of matchingNodes) {
-                  const nodeAnimation = animation.clone()
-                  nodeAnimation.setKeys([...keys])
-                  emoteAnimationGroup.addTargetedAnimation(nodeAnimation, node)
+              const isAvatarPropAnimation =
+                config.socialEmote.Armature_Prop?.animation &&
+                animationGroup.name.toLowerCase().startsWith(config.socialEmote.Armature_Prop.animation.toLowerCase())
+
+              if (isAvatarAnimation && !isAvatarOtherAnimation && !isAvatarPropAnimation) {
+                //   // Strip any .# suffix from target name for matching
+                const targetBaseName = target.name.replace(/\.\d+$/, '')
+                const matchingNodes = nodesByName.get(targetBaseName) || []
+
+                if (matchingNodes.length > 0) {
+                  // Apply animation to all matching nodes
+                  for (const node of matchingNodes) {
+                    const nodeAnimation = animation.clone()
+                    nodeAnimation.setKeys([...keys])
+                    emoteAnimationGroup.addTargetedAnimation(nodeAnimation, node)
+                  }
+                } else {
+                  console.warn('No matching bone found for', target.name)
                 }
-              } else {
-                console.warn('No matching bone found for', target.name)
+              } else if (isAvatarOtherAnimation) {
+                const targetBaseName = target.name.replace(/\.\d+$/, '')
+                const matchingNodes = nodesByName.get(targetBaseName) || []
+
+                if (matchingNodes.length > 0) {
+                  // Apply animation to all matching nodes
+                  for (const node of matchingNodes) {
+                    const twinNode = twinMap?.get(node as TransformNode)
+                    if (!twinNode) {
+                      // console.warn('No twin node found for', node.name)
+                      continue
+                    }
+                    const nodeAnimation = animation.clone()
+                    nodeAnimation.setKeys([...keys])
+
+                    emoteAnimationGroup.addTargetedAnimation(nodeAnimation, twinNode)
+                  }
+                } else {
+                  console.warn('No matching bone found for', target.name)
+                }
+              } else if (isAvatarPropAnimation) {
+                emoteAnimationGroup.addTargetedAnimation(animation, target)
               }
             } else {
-              emoteAnimationGroup.addTargetedAnimation(animation, target)
+              // Determine if this is an avatar animation based on three criteria:
+              // 1. Single animation case: If the emote only has one animation group, it must be meant for the avatar
+              //    (props always come as additional animation groups)
+              // 2. Group name: If the animation group's name contains "avatar", it's explicitly marked for the avatar
+              //    (e.g., "Horse_Avatar" for the riding animation)
+              // 3. Target name: If the animated node starts with "Avatar_", it's part of the avatar skeleton
+              //    (e.g., "Avatar_Head", "Avatar_Spine", etc.)
+              const isAvatarAnimation =
+                container.animationGroups.length === 1 ||
+                animationGroup.name.toLowerCase().includes('avatar') ||
+                target.name.startsWith('Avatar_')
+
+              if (isAvatarAnimation) {
+                // Strip any .# suffix from target name for matching
+                const targetBaseName = target.name.replace(/\.\d+$/, '')
+                const matchingNodes = nodesByName.get(targetBaseName) || []
+
+                if (matchingNodes.length > 0) {
+                  // Apply animation to all matching nodes
+                  for (const node of matchingNodes) {
+                    const nodeAnimation = animation.clone()
+                    nodeAnimation.setKeys([...keys])
+                    emoteAnimationGroup.addTargetedAnimation(nodeAnimation, node)
+                  }
+                } else {
+                  console.warn('No matching bone found for', target.name)
+                }
+              } else {
+                emoteAnimationGroup.addTargetedAnimation(animation, target)
+              }
             }
           }
         }
