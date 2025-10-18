@@ -1,5 +1,13 @@
-import { Color4 } from '@babylonjs/core'
-import { PreviewConfig, PreviewType, BodyShape, IPreviewController, IEmoteController } from '@dcl/schemas'
+import { Color4, Mesh, TransformNode } from '@babylonjs/core'
+import {
+  PreviewConfig,
+  PreviewType,
+  BodyShape,
+  IPreviewController,
+  IEmoteController,
+  ArmatureId,
+  EmoteClip,
+} from '@dcl/schemas'
 import { createInvalidEmoteController, isEmote } from '../emote'
 import { getBodyShape } from './body'
 import { getSlots } from './slots'
@@ -7,16 +15,28 @@ import { playEmote } from './emote'
 import { applyFacialFeatures, getFacialFeatures } from './face'
 import { setupMappings } from './mappings'
 import { Asset, center, createScene } from './scene'
-import { isFacialFeature, isModel, isSuccesful } from './utils'
+import { buildTwinMapFromContainer, isFacialFeature, isModel, isSuccesful } from './utils'
 import { loadWearable } from './wearable'
+
+// Extended options type to include socialEmote
+type SocialEmote =
+  | (Partial<Record<ArmatureId, EmoteClip>> & {
+      loop: boolean
+      audio?: string
+    })
+  | undefined
+
+// Extended config type to include socialEmote
+interface ExtendedPreviewConfig extends PreviewConfig {
+  socialEmote?: SocialEmote | null
+}
 
 /**
  * Initializes Babylon, creates the scene and loads a list of wearables in it
  * @param canvas
- * @param wearables
- * @param options
+ * @param config
  */
-export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): Promise<IPreviewController> {
+export async function render(canvas: HTMLCanvasElement, config: ExtendedPreviewConfig): Promise<IPreviewController> {
   // create the root scene
   const [scene, sceneController] = await createScene(canvas, config)
   try {
@@ -42,11 +62,30 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
         })
         promises.push(promise)
       }
+
+      let parentOther: Mesh | null = null
+      if (config.socialEmote && config.socialEmote.Armature_Other) parentOther = new Mesh('parent_other', scene)
+
+      const twinMap = new Map<TransformNode, TransformNode>()
+
       const assets = (await Promise.all(promises)).filter(isSuccesful)
 
       // add all assets to scene
       for (const asset of assets) {
+        // 1) Add originals to the scene
         asset.container.addAllToScene()
+
+        // 2) If we need the "other" avatar now, instantiate a duplicate hierarchy
+        if (parentOther) {
+          const inst = asset.container.instantiateModelsToScene((name) => `${name}_Other`)
+          // Parent the duplicated roots under `parent_other`
+          for (const cloneRoot of inst.rootNodes as TransformNode[]) {
+            cloneRoot.setParent(parentOther)
+          }
+          // Build twin mapping original -> clone (useful for animation targeting)
+          const map = buildTwinMapFromContainer(asset.container, inst.rootNodes as TransformNode[])
+          for (const [k, v] of map) twinMap.set(k, v)
+        }
       }
 
       // build avatar
@@ -59,7 +98,7 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
       }
 
       // play emote
-      emoteController = (await playEmote(scene, assets, config)) || createInvalidEmoteController() // default to invalid emote controller if there is an issue with the emote, but let the rest of the preview keep working
+      emoteController = (await playEmote(scene, assets, config, twinMap)) || createInvalidEmoteController() // default to invalid emote controller if there is an issue with the emote, but let the rest of the preview keep working
     } else {
       const wearable = config.item
       if (wearable && !isEmote(wearable)) {
@@ -74,7 +113,7 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
             wearable,
             config.bodyShape === BodyShape.MALE ? BodyShape.FEMALE : BodyShape.MALE,
             config.skin,
-            config.hair
+            config.hair,
           )
           asset.container.addAllToScene()
         }
