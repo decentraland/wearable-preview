@@ -9,7 +9,7 @@
     "@babylonjs/inspector": "^4.2.2",
     "@babylonjs/loaders": "^4.2.2",
     "@babylonjs/materials": "^4.2.2",
-    "@dcl/schemas": "^18.1.0",
+    "@dcl/schemas": "https://sdk-team-cdn.decentraland.org/@dcl/schemas/branch/fix/add-validation-to-schema/dcl-schemas-19.4.1-18535538910.commit-7d5099f.tgz",
     "@dcl/ui-env": "^1.5.1",
     "classnames": "^2.3.1",
     "decentraland-ui": "^6.17.1",
