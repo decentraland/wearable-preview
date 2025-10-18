@@ -2,7 +2,7 @@ import mitt from 'mitt'
 import { IEmoteController, WearableDefinition, EmoteDefinition } from '@dcl/schemas'
 
 export function isEmote(definition: WearableDefinition | EmoteDefinition | void): definition is EmoteDefinition {
-  return !!definition && 'emoteDataADR74' in definition
+  return !!definition && ('emoteDataADR74' in definition || 'emoteDataADR287' in definition)
 }
 
 export class InvalidEmoteError extends Error {
