@@ -14,6 +14,11 @@ This webapp renders an interactive 3D preview of a wearable or an avatar. It can
 - `eyes`: a color to be used by the eyes tint, it must be in hex.
 - `bodyShape`: which body shape to use, possible values are `urn:decentraland:off-chain:base-avatars:BaseMale` or `urn:decentraland:off-chain:base-avatars:BaseFemale`.
 - `emote`: the emote that the avatar will play. Default value is `idle`, other possible values are: `clap`, `dab`, `dance`, `fashion`, `fashion-2`, `fashion-3`,`fashion-4`, `love`, `money`, `fist-pump` and `head-explode`.
+- `socialEmote`: when specified, duplicates the avatar and plays different animations on each avatar to create a social interaction scenario. The structure should be a JSON object with animation components:
+  - `Armature`: animation for the main avatar (e.g., `{animation: 'HighFive_Start', loop: true}`)
+  - `Armature_Prop`: animation for props/objects (e.g., `{animation: 'HighFive_Prop_Start', loop: true}`)
+  - `ArmatureOther`: animation for the duplicated avatar using AvatarOther\_ nodes (e.g., `{animation: 'HighFive_Other_Start', loop: true}`)
+  - The duplicated avatar is positioned to the side of the main avatar
 - `zoom`: the level of zoom, it must be a number between 1 and 100.
 - `zoomScale`: a multiplier for the zoom level. By default is `1` but it can be increased to get extra zoom.
 - `camera`: which camera type to use, either `interactive` or `static`. By default it uses the `interactive` one.
@@ -47,6 +52,8 @@ This webapp renders an interactive 3D preview of a wearable or an avatar. It can
 - `env`: The environment to use, it can be `prod` (uses mainnet wearables and catalysts) or `dev` (uses testnet wearables and catalysts).
 
 Example: https://wearable-preview.decentraland.org?contract=0xee8ae4c668edd43b34b98934d6d2ff82e41e6488&item=5
+
+Example with social emote: https://wearable-preview.decentraland.org?profile=default&socialEmote={"Armature":{"animation":"HighFive_Start","loop":true},"Armature_Prop":{"animation":"HighFive_Prop_Start","loop":true},"ArmatureOther":{"animation":"HighFive_Other_Start","loop":true}}
 
 ### `iframe` API:
 
@@ -146,7 +153,7 @@ const promises = new Map<string, IFuture<any>>()
 function sendRequest<T>(
   namespace: 'scene' | 'emote',
   method: 'getScreenshot' | 'getMetrics' | 'getLength' | 'isPlaying' | 'goTo' | 'play' | 'pause' | 'stop',
-  params: any[]
+  params: any[],
 ) {
   // create promise
   const promise = future<T>()
