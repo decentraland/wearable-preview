@@ -1,8 +1,24 @@
 import { useMemo, useRef, useEffect, useState } from 'react'
-import { BodyShape, PreviewCamera, PreviewEmote, PreviewOptions, PreviewProjection, PreviewType } from '@dcl/schemas'
+import {
+  ArmatureId,
+  BodyShape,
+  EmoteClip,
+  PreviewCamera,
+  PreviewEmote,
+  PreviewOptions,
+  PreviewProjection,
+  PreviewType,
+} from '@dcl/schemas'
 import { parseZoom } from '../lib/zoom'
 import { useOverrides } from './useOverrides'
 
+// Extended options type to include socialEmote
+type SocialEmote =
+  | (Partial<Record<ArmatureId, EmoteClip>> & {
+      loop: boolean
+      audio?: string
+    })
+  | undefined
 export enum UnityPreviewMode {
   PROFILE = 'profile',
   MARKETPLACE = 'marketplace',
@@ -29,7 +45,9 @@ export const useOptions = (): OptionsWithSource => {
     }
   })
 
-  const options = useMemo<PreviewOptions & { mode: UnityPreviewMode | null; disableLoader: boolean }>(() => {
+  const options = useMemo<
+    PreviewOptions & { mode: UnityPreviewMode | null; disableLoader: boolean; socialEmote?: SocialEmote | null }
+  >(() => {
     const autoRotateSpeedParam = searchParams.get('autoRotateSpeed') as string | null
     const offsetXParam = searchParams.get('offsetX') as string | null
     const offsetYParam = searchParams.get('offsetY') as string | null
@@ -55,7 +73,11 @@ export const useOptions = (): OptionsWithSource => {
     }
     const centerBoundingBox = searchParams.get('centerBoundingBox') !== 'false'
 
-    const options: PreviewOptions & { mode: UnityPreviewMode | null; disableLoader: boolean } = {
+    const options: PreviewOptions & {
+      mode: UnityPreviewMode | null
+      disableLoader: boolean
+      socialEmote?: SocialEmote | null
+    } = {
       contractAddress: searchParams.get('contract')!,
       tokenId: searchParams.get('token'),
       itemId: searchParams.get('item'),
@@ -107,6 +129,15 @@ export const useOptions = (): OptionsWithSource => {
       mode: searchParams.get('mode') as UnityPreviewMode | null,
       disableLoader: searchParams.has('disableLoader'),
       username: searchParams.get('username'),
+      socialEmote: (() => {
+        const socialEmoteParam = searchParams.get('socialEmote')
+        if (!socialEmoteParam) return null
+        try {
+          return JSON.parse(socialEmoteParam) as SocialEmote
+        } catch {
+          return null
+        }
+      })(),
     }
 
     return options
