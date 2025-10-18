@@ -1,6 +1,8 @@
 import {
+  ArmatureId,
   Avatar,
   BodyShape,
+  EmoteClip,
   EmoteDefinition,
   EmoteRepresentationWithBlobs,
   EmoteWithBlobs,
@@ -17,6 +19,18 @@ import {
   WearableRepresentationWithBlobs,
   WearableWithBlobs,
 } from '@dcl/schemas'
+
+// Extended options type to include socialEmote
+type SocialEmote =
+  | (Partial<Record<ArmatureId, EmoteClip>> & {
+      loop: boolean
+      audio?: string
+    })
+  | undefined
+interface ExtendedPreviewOptions extends PreviewOptions {
+  socialEmote?: SocialEmote | null
+}
+
 import { config } from '../config'
 import { nftApi } from './api/nft'
 import { peerApi } from './api/peer'
@@ -275,7 +289,9 @@ async function fetchWearablesAndEmotes(
   return [wearables, emotes]
 }
 
-export async function createConfig(options: PreviewOptions = {}): Promise<PreviewConfig> {
+export async function createConfig(
+  options: ExtendedPreviewOptions = {},
+): Promise<PreviewConfig & { socialEmote?: SocialEmote | null }> {
   const { contractAddress, tokenId, itemId } = options
 
   const peerUrl = options.peerUrl || config.get('PEER_URL')
@@ -482,6 +498,7 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
     lockAlpha: !!options.lockAlpha,
     lockBeta: !!options.lockBeta,
     lockRadius: !!options.lockRadius,
+    socialEmote: options.socialEmote || null,
   }
 }
 
@@ -508,6 +525,15 @@ function fromBlob(itemWithBlobs: WearableWithBlobs | EmoteWithBlobs): WearableDe
       emoteDataADR74: {
         ...itemWithBlobs.emoteDataADR74,
         representations: itemWithBlobs.emoteDataADR74.representations.map(fromBlobRepresentation),
+      },
+    }
+  }
+  if ('emoteDataADR287' in itemWithBlobs) {
+    return {
+      ...itemWithBlobs,
+      emoteDataADR287: {
+        ...itemWithBlobs.emoteDataADR287,
+        representations: itemWithBlobs.emoteDataADR287.representations.map(fromBlobRepresentation),
       },
     }
   }
