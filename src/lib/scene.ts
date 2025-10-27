@@ -62,6 +62,11 @@ export function createSceneController(engine: Engine, scene: Scene, camera: ArcR
     }
   }
 
+  async function setUsername(username: string) {
+    // noop
+    return
+  }
+
   async function cleanup() {
     // noop
     return
@@ -74,5 +79,6 @@ export function createSceneController(engine: Engine, scene: Scene, camera: ArcR
     changeZoom,
     changeCameraPosition,
     cleanup,
+    setUsername,
   }
 }
