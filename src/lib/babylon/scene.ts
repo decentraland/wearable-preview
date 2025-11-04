@@ -44,8 +44,13 @@ import { startAutoRotateBehavior } from './camera'
 // needed for debugging
 const showInspector = process.env.VITE_REACT_APP_DEBUG
 
-if (showInspector) {
-  await import('@babylonjs/inspector')
+// Load inspector asynchronously if needed
+let inspectorLoaded = false
+const loadInspector = async (): Promise<void> => {
+  if (showInspector && !inspectorLoaded) {
+    await import('@babylonjs/inspector')
+    inspectorLoaded = true
+  }
 }
 
 export type Asset = {
@@ -231,6 +236,7 @@ export async function createScene(
 
   // Dev tools
   if (showInspector) {
+    await loadInspector()
     root.debugLayer.show({ showExplorer: true, embedMode: true })
   }
 
