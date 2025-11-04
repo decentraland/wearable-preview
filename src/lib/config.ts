@@ -528,15 +528,7 @@ function fromBlob(itemWithBlobs: WearableWithBlobs | EmoteWithBlobs): WearableDe
       },
     }
   }
-  if ('emoteDataADR287' in itemWithBlobs) {
-    return {
-      ...itemWithBlobs,
-      emoteDataADR287: {
-        ...itemWithBlobs.emoteDataADR287,
-        representations: itemWithBlobs.emoteDataADR287.representations.map(fromBlobRepresentation),
-      },
-    }
-  }
+
   return {
     ...itemWithBlobs,
     data: {

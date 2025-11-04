@@ -1,8 +1,13 @@
 import { IPreviewController, PreviewEmoteEventType, PreviewMessageType, sendMessage } from '@dcl/schemas'
 import { EmoteEventPayload } from '@dcl/schemas/dist/dapps/preview/preview-emote-event-payload'
 import { getParent } from './parent'
+import { IEmoteControllerWithEmote } from './babylon/emote'
 
-export function handleEmoteEvents(controller: IPreviewController): () => void {
+interface IPreviewControllerWithSocialEmotes extends IPreviewController {
+  emote: IEmoteControllerWithEmote
+}
+
+export function handleEmoteEvents(controller: IPreviewControllerWithSocialEmotes): () => void {
   // handle an emote event by forwarding it as a message
 
   const handleAnimationPlay = () => {

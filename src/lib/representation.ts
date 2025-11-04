@@ -12,20 +12,8 @@ export function isFemale(representation: WearableRepresentationDefinition) {
   return is(representation, BodyShape.FEMALE)
 }
 
-export function isEmoteDataADR287(emote: EmoteDefinition) {
-  return 'emoteDataADR287' in emote
-}
-
-export function isEmoteDataADR74(emote: EmoteDefinition) {
-  return 'emoteDataADR74' in emote
-}
-
-export function getEmoteData(emote: EmoteDefinition) {
-  return isEmoteDataADR74(emote) ? emote.emoteDataADR74 : emote.emoteDataADR287
-}
-
 export function getEmoteRepresentation(emote: EmoteDefinition, bodyShape = BodyShape.MALE) {
-  const representation = getEmoteData(emote).representations.find((representation) =>
+  const representation = emote.emoteDataADR74.representations.find((representation) =>
     representation.bodyShapes.includes(bodyShape),
   )
   if (!representation) {

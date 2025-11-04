@@ -7,11 +7,13 @@ import {
   PreviewEmote,
   EmoteDefinition,
   PreviewEmoteEventType,
+  ArmatureId,
+  EmoteClip,
 } from '@dcl/schemas'
 import { isEmote } from '../emote'
 import { startAutoRotateBehavior } from './camera'
 import { Asset, loadAssetContainer, loadSound } from './scene'
-import { getEmoteData, getEmoteRepresentation, isEmoteDataADR287, isEmoteDataADR74 } from '../representation'
+import { getEmoteRepresentation } from '../representation'
 import { shouldApplySocialEmoteAnimation, SocialEmote } from './utils'
 
 interface ExtendedPreviewConfig extends PreviewConfig {
@@ -73,7 +75,7 @@ export async function playEmote(
   assets: Asset[],
   config: ExtendedPreviewConfig,
   twinMap: Map<TransformNode, TransformNode> | undefined,
-): Promise<IEmoteController | undefined> {
+): Promise<IEmoteControllerWithEmote | undefined> {
   // load asset container for emote
   let container: AssetContainer | undefined
   let loop = !!config.emote && isLooped(config.emote)
@@ -83,12 +85,7 @@ export async function playEmote(
   if (config.item && isEmote(config.item)) {
     try {
       container = await loadEmoteFromWearable(scene, config.item as EmoteDefinition, config)
-      const data = getEmoteData(config.item as EmoteDefinition)
-      loop = isEmoteDataADR74(config.item as EmoteDefinition)
-        ? data.loop
-        : config.socialEmote && isEmoteDataADR287(config.item as EmoteDefinition)
-          ? config.socialEmote.loop
-          : false
+      loop = config.socialEmote ? config.socialEmote.loop : config.item.emoteDataADR74.loop
       sound = await loadEmoteSound(scene, config.item as EmoteDefinition, config)
     } catch (error) {
       console.warn(`Could not load emote=${config.item.id}`)
@@ -238,9 +235,10 @@ export async function playEmote(
         }
       }
     }
+
     // play animation group and apply
     emoteAnimationGroup.onAnimationGroupEndObservable.addOnce(onAnimationEnd)
-    const controller = createController(emoteAnimationGroup, loop, sound)
+    const controller = createController(emoteAnimationGroup, loop, sound, config.item as EmoteDefinition)
 
     if (config.camera === PreviewCamera.STATIC) {
       controller.stop() // we call the stop here to freeze the animation at frame 0, otherwise the avatar would be on T-pose
@@ -252,7 +250,26 @@ export async function playEmote(
   }
 }
 
-function createController(animationGroup: AnimationGroup, loop: boolean, sound: Sound | null): IEmoteController {
+type SocialEmoteAnimation = {
+  title: string
+  loop: boolean
+  audio?: string
+} & {
+  [key in ArmatureId]?: EmoteClip
+}
+
+export interface IEmoteControllerWithEmote extends IEmoteController {
+  emote: EmoteDefinition | null
+  isSocialEmote(): Promise<boolean>
+  getSocialEmoteAnimations: () => Promise<SocialEmoteAnimation[] | null>
+}
+
+function createController(
+  animationGroup: AnimationGroup,
+  loop: boolean,
+  sound: Sound | null,
+  emote: EmoteDefinition,
+): IEmoteControllerWithEmote {
   Engine.audioEngine.useCustomUnlockedButton = true
   Engine.audioEngine.setGlobalVolume(0)
   let fromSecond: number | undefined = undefined
@@ -336,6 +353,33 @@ function createController(animationGroup: AnimationGroup, loop: boolean, sound: 
     Engine.audioEngine.setGlobalVolume(0)
   }
 
+  async function isSocialEmote() {
+    return (
+      emote &&
+      emote.emoteDataADR74 &&
+      !!emote.emoteDataADR74.startAnimation &&
+      !!emote.emoteDataADR74.outcomes &&
+      emote.emoteDataADR74.outcomes.length > 0
+    )
+  }
+
+  async function getSocialEmoteAnimations() {
+    return (await isSocialEmote())
+      ? [
+          {
+            title: 'Start Animation',
+            ...emote.emoteDataADR74.startAnimation!,
+          },
+          ...emote.emoteDataADR74.outcomes!.map((outcome) => ({
+            title: outcome.title,
+            loop: outcome.loop,
+            audio: outcome.audio,
+            ...outcome.clips,
+          })),
+        ]
+      : null
+  }
+
   // Temporary typed events.
   type Events = {
     [PreviewEmoteEventType.ANIMATION_PLAY]: void
@@ -411,5 +455,8 @@ function createController(animationGroup: AnimationGroup, loop: boolean, sound: 
     disableSound,
     hasSound,
     events,
+    emote,
+    isSocialEmote,
+    getSocialEmoteAnimations,
   }
 }
