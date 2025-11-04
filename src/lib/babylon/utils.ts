@@ -6,7 +6,7 @@ import {
   WearableCategory,
   WearableDefinition,
 } from '@dcl/schemas'
-import { AnimationGroup, TransformNode } from '@babylonjs/core'
+import { AnimationGroup, TransformNode, Color3, PBRMaterial, StandardMaterial } from '@babylonjs/core'
 import { getWearableRepresentationOrDefault, isTexture } from '../representation'
 import { Asset } from './scene'
 
@@ -118,4 +118,82 @@ export function buildTwinMapFromContainer(
   for (let i = 0; i < n; i++) pairRec(origRoots[i], cloneRoots[i])
 
   return map
+}
+
+/**
+ * Processes and modifies materials for the "other" avatar in social emotes.
+ * - Clones all materials to avoid affecting the original avatar
+ * - Applies solid color to skin materials (removes textures)
+ * - Hides non-skin materials
+ */
+export const processOtherAvatarMaterials = (cloneRoots: TransformNode[], skinColor: Color3): void => {
+  for (const cloneRoot of cloneRoots) {
+    cloneRoot.getChildMeshes().forEach((child) => {
+      if (!child.material) {
+        return
+      }
+
+      // Clone the material so changes don't affect the original avatar
+      const clonedMaterial = child.material.clone(child.material.name + '_Other')
+      if (!clonedMaterial) {
+        return
+      }
+
+      const isSkinMaterial = clonedMaterial.name.toLowerCase().includes('skin')
+
+      if (isSkinMaterial && clonedMaterial instanceof PBRMaterial) {
+        // Clone and remove textures to apply solid color to skin
+        const texture = clonedMaterial.albedoTexture
+        if (texture) {
+          texture.dispose()
+        }
+        clonedMaterial.albedoTexture = undefined as any
+
+        const bumpTexture = clonedMaterial.bumpTexture
+        if (bumpTexture) {
+          bumpTexture.dispose()
+        }
+        clonedMaterial.bumpTexture = undefined as any
+
+        const metallicTexture = clonedMaterial.metallicTexture
+        if (metallicTexture) {
+          metallicTexture.dispose()
+        }
+        clonedMaterial.metallicTexture = undefined as any
+
+        // Apply the solid color
+        clonedMaterial.albedoColor = skinColor
+        clonedMaterial.specularIntensity = 0
+        child.material = clonedMaterial
+      } else if (isSkinMaterial && clonedMaterial instanceof StandardMaterial) {
+        // Clone and remove textures to apply solid color to skin
+        const diffuseTexture = clonedMaterial.diffuseTexture
+        if (diffuseTexture) {
+          diffuseTexture.dispose()
+        }
+        clonedMaterial.diffuseTexture = undefined as any
+
+        const bumpTexture = clonedMaterial.bumpTexture
+        if (bumpTexture) {
+          bumpTexture.dispose()
+        }
+        clonedMaterial.bumpTexture = undefined as any
+
+        const specularTexture = clonedMaterial.specularTexture
+        if (specularTexture) {
+          specularTexture.dispose()
+        }
+        clonedMaterial.specularTexture = undefined as any
+
+        // Apply the solid color
+        clonedMaterial.diffuseColor = skinColor
+        clonedMaterial.specularColor = Color3.Black()
+        child.material = clonedMaterial
+      } else {
+        // Not a skin material - hide it
+        clonedMaterial.dispose()
+        child.visibility = 0
+      }
+    })
+  }
 }

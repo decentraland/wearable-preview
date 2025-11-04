@@ -1,21 +1,13 @@
-import { Color4, Mesh, TransformNode } from '@babylonjs/core'
-import {
-  PreviewConfig,
-  PreviewType,
-  BodyShape,
-  IPreviewController,
-  IEmoteController,
-  ArmatureId,
-  EmoteClip,
-} from '@dcl/schemas'
+import { Color4, Mesh, TransformNode, Color3 } from '@babylonjs/core'
+import { PreviewConfig, PreviewType, BodyShape, IPreviewController, ArmatureId, EmoteClip } from '@dcl/schemas'
 import { createInvalidEmoteController, isEmote } from '../emote'
 import { getBodyShape } from './body'
 import { getSlots } from './slots'
-import { playEmote } from './emote'
+import { IEmoteControllerWithEmote, playEmote } from './emote'
 import { applyFacialFeatures, getFacialFeatures } from './face'
 import { setupMappings } from './mappings'
 import { Asset, center, createScene } from './scene'
-import { buildTwinMapFromContainer, isFacialFeature, isModel, isSuccesful } from './utils'
+import { buildTwinMapFromContainer, isFacialFeature, isModel, isSuccesful, processOtherAvatarMaterials } from './utils'
 import { loadWearable } from './wearable'
 
 // Extended options type to include socialEmote
@@ -29,6 +21,11 @@ type SocialEmote =
 // Extended config type to include socialEmote
 interface ExtendedPreviewConfig extends PreviewConfig {
   socialEmote?: SocialEmote | null
+  otherAvatarSkin?: string // hex color for the cloned avatar's skin
+}
+
+interface IPreviewControllerWithSocialEmotes extends IPreviewController {
+  emote: IEmoteControllerWithEmote
 }
 
 /**
@@ -36,7 +33,10 @@ interface ExtendedPreviewConfig extends PreviewConfig {
  * @param canvas
  * @param config
  */
-export async function render(canvas: HTMLCanvasElement, config: ExtendedPreviewConfig): Promise<IPreviewController> {
+export async function render(
+  canvas: HTMLCanvasElement,
+  config: ExtendedPreviewConfig,
+): Promise<IPreviewControllerWithSocialEmotes> {
   // create the root scene
   const [scene, sceneController] = await createScene(canvas, config)
   try {
@@ -44,7 +44,7 @@ export async function render(canvas: HTMLCanvasElement, config: ExtendedPreviewC
     setupMappings(config)
 
     // emote controller
-    let emoteController: IEmoteController
+    let emoteController: IEmoteControllerWithEmote
 
     // load all the wearables into the root scene
     const promises: Promise<void | Asset>[] = []
@@ -78,12 +78,20 @@ export async function render(canvas: HTMLCanvasElement, config: ExtendedPreviewC
         // 2) If we need the "other" avatar now, instantiate a duplicate hierarchy
         if (parentOther) {
           const inst = asset.container.instantiateModelsToScene((name) => `${name}_Other`)
+          const otherAvatarColor = config.otherAvatarSkin || '#c9c9c9'
+          const colorLinear = Color3.FromHexString(otherAvatarColor).toLinearSpace()
+
           // Parent the duplicated roots under `parent_other`
-          for (const cloneRoot of inst.rootNodes as TransformNode[]) {
+          const cloneRoots = inst.rootNodes as TransformNode[]
+          for (const cloneRoot of cloneRoots) {
             cloneRoot.setParent(parentOther)
           }
+
+          // Process materials for the other avatar
+          processOtherAvatarMaterials(cloneRoots, colorLinear)
+
           // Build twin mapping original -> clone (useful for animation targeting)
-          const map = buildTwinMapFromContainer(asset.container, inst.rootNodes as TransformNode[])
+          const map = buildTwinMapFromContainer(asset.container, cloneRoots)
           for (const [k, v] of map) twinMap.set(k, v)
         }
       }
@@ -129,7 +137,7 @@ export async function render(canvas: HTMLCanvasElement, config: ExtendedPreviewC
     }
 
     // return preview controller
-    const controller: IPreviewController = {
+    const controller: IPreviewControllerWithSocialEmotes = {
       scene: sceneController,
       emote: emoteController,
     }
