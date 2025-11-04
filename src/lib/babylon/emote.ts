@@ -7,18 +7,12 @@ import {
   PreviewEmote,
   EmoteDefinition,
   PreviewEmoteEventType,
-  ArmatureId,
-  EmoteClip,
 } from '@dcl/schemas'
 import { isEmote } from '../emote'
 import { startAutoRotateBehavior } from './camera'
 import { Asset, loadAssetContainer, loadSound } from './scene'
 import { getEmoteRepresentation } from '../representation'
-import { shouldApplySocialEmoteAnimation, SocialEmote } from './utils'
-
-interface ExtendedPreviewConfig extends PreviewConfig {
-  socialEmote?: SocialEmote | null
-}
+import { shouldApplySocialEmoteAnimation } from './utils'
 
 const loopedEmotes = [
   PreviewEmote.IDLE,
@@ -64,7 +58,7 @@ export async function loadEmoteFromWearable(scene: Scene, emote: EmoteDefinition
   return loadEmoteFromUrl(scene, content.url)
 }
 
-export function loadEmoteSound(scene: Scene, emote: EmoteDefinition, config: ExtendedPreviewConfig) {
+export function loadEmoteSound(scene: Scene, emote: EmoteDefinition, config: PreviewConfig) {
   const representation = getEmoteRepresentation(emote, config.bodyShape)
   const selectedSound = config.socialEmote ? config.socialEmote.audio : null
   return loadSound(scene, representation, selectedSound)
@@ -73,9 +67,9 @@ export function loadEmoteSound(scene: Scene, emote: EmoteDefinition, config: Ext
 export async function playEmote(
   scene: Scene,
   assets: Asset[],
-  config: ExtendedPreviewConfig,
+  config: PreviewConfig,
   twinMap: Map<TransformNode, TransformNode> | undefined,
-): Promise<IEmoteControllerWithEmote | undefined> {
+): Promise<IEmoteController | undefined> {
   // load asset container for emote
   let container: AssetContainer | undefined
   let loop = !!config.emote && isLooped(config.emote)
@@ -250,26 +244,12 @@ export async function playEmote(
   }
 }
 
-type SocialEmoteAnimation = {
-  title: string
-  loop: boolean
-  audio?: string
-} & {
-  [key in ArmatureId]?: EmoteClip
-}
-
-export interface IEmoteControllerWithEmote extends IEmoteController {
-  emote: EmoteDefinition | null
-  isSocialEmote(): Promise<boolean>
-  getSocialEmoteAnimations: () => Promise<SocialEmoteAnimation[] | null>
-}
-
 function createController(
   animationGroup: AnimationGroup,
   loop: boolean,
   sound: Sound | null,
   emote: EmoteDefinition,
-): IEmoteControllerWithEmote {
+): IEmoteController {
   Engine.audioEngine.useCustomUnlockedButton = true
   Engine.audioEngine.setGlobalVolume(0)
   let fromSecond: number | undefined = undefined
