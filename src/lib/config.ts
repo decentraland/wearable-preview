@@ -1,8 +1,6 @@
 import {
-  ArmatureId,
   Avatar,
   BodyShape,
-  EmoteClip,
   EmoteDefinition,
   EmoteRepresentationWithBlobs,
   EmoteWithBlobs,
@@ -19,18 +17,7 @@ import {
   WearableRepresentationWithBlobs,
   WearableWithBlobs,
 } from '@dcl/schemas'
-
-// Extended options type to include socialEmote
-type SocialEmote =
-  | (Partial<Record<ArmatureId, EmoteClip>> & {
-      loop: boolean
-      audio?: string
-    })
-  | undefined
-interface ExtendedPreviewOptions extends PreviewOptions {
-  socialEmote?: SocialEmote | null
-}
-
+import { SocialEmoteAnimation } from '@dcl/schemas/dist/dapps/preview/social-emote-animation'
 import { config } from '../config'
 import { nftApi } from './api/nft'
 import { peerApi } from './api/peer'
@@ -290,8 +277,8 @@ async function fetchWearablesAndEmotes(
 }
 
 export async function createConfig(
-  options: ExtendedPreviewOptions = {},
-): Promise<PreviewConfig & { socialEmote?: SocialEmote | null }> {
+  options: PreviewOptions & { socialEmote?: SocialEmoteAnimation | null } = {},
+): Promise<PreviewConfig> {
   const { contractAddress, tokenId, itemId } = options
 
   const peerUrl = options.peerUrl || config.get('PEER_URL')
@@ -498,7 +485,7 @@ export async function createConfig(
     lockAlpha: !!options.lockAlpha,
     lockBeta: !!options.lockBeta,
     lockRadius: !!options.lockRadius,
-    socialEmote: options.socialEmote || null,
+    socialEmote: options.socialEmote || undefined,
   }
 }
 

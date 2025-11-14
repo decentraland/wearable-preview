@@ -1,24 +1,9 @@
 import { useMemo, useRef, useEffect, useState } from 'react'
-import {
-  ArmatureId,
-  BodyShape,
-  EmoteClip,
-  PreviewCamera,
-  PreviewEmote,
-  PreviewOptions,
-  PreviewProjection,
-  PreviewType,
-} from '@dcl/schemas'
+import { BodyShape, PreviewCamera, PreviewEmote, PreviewOptions, PreviewProjection, PreviewType } from '@dcl/schemas'
+import { SocialEmoteAnimation } from '@dcl/schemas/dist/dapps/preview/social-emote-animation'
 import { parseZoom } from '../lib/zoom'
 import { useOverrides } from './useOverrides'
 
-// Extended options type to include socialEmote
-type SocialEmote =
-  | (Partial<Record<ArmatureId, EmoteClip>> & {
-      loop: boolean
-      audio?: string
-    })
-  | undefined
 export enum UnityPreviewMode {
   PROFILE = 'profile',
   MARKETPLACE = 'marketplace',
@@ -46,7 +31,11 @@ export const useOptions = (): OptionsWithSource => {
   })
 
   const options = useMemo<
-    PreviewOptions & { mode: UnityPreviewMode | null; disableLoader: boolean; socialEmote?: SocialEmote | null }
+    PreviewOptions & {
+      mode: UnityPreviewMode | null
+      disableLoader: boolean
+      socialEmote?: SocialEmoteAnimation | null
+    }
   >(() => {
     const autoRotateSpeedParam = searchParams.get('autoRotateSpeed') as string | null
     const offsetXParam = searchParams.get('offsetX') as string | null
@@ -76,7 +65,7 @@ export const useOptions = (): OptionsWithSource => {
     const options: PreviewOptions & {
       mode: UnityPreviewMode | null
       disableLoader: boolean
-      socialEmote?: SocialEmote | null
+      socialEmote?: SocialEmoteAnimation | null
     } = {
       contractAddress: searchParams.get('contract')!,
       tokenId: searchParams.get('token'),
@@ -133,7 +122,7 @@ export const useOptions = (): OptionsWithSource => {
         const socialEmoteParam = searchParams.get('socialEmote')
         if (!socialEmoteParam) return null
         try {
-          return JSON.parse(socialEmoteParam) as SocialEmote
+          return JSON.parse(socialEmoteParam) as SocialEmoteAnimation
         } catch {
           return null
         }

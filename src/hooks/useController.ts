@@ -2,7 +2,6 @@ import { useRef } from 'react'
 import { IPreviewController, PreviewMessagePayload, PreviewMessageType, sendMessage } from '@dcl/schemas'
 import { useMessage } from './useMessage'
 import { getParent } from '../lib/parent'
-import { IEmoteControllerWithEmote } from '../lib/babylon/emote'
 
 function sendResult(id: string, result: any) {
   sendMessage(getParent(), PreviewMessageType.CONTROLLER_RESPONSE, { id, ok: true, result })
@@ -12,12 +11,8 @@ function sendError(id: string, error: string) {
   sendMessage(getParent(), PreviewMessageType.CONTROLLER_RESPONSE, { id, ok: false, error })
 }
 
-interface IPreviewControllerWithSocialEmotes extends IPreviewController {
-  emote: IEmoteControllerWithEmote
-}
-
 export const useController = () => {
-  const controllerRef = useRef<IPreviewControllerWithSocialEmotes | undefined>()
+  const controllerRef = useRef<IPreviewController | undefined>()
 
   useMessage(async (event: MessageEvent) => {
     if (

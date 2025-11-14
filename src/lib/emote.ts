@@ -1,6 +1,5 @@
 import mitt from 'mitt'
-import { WearableDefinition, EmoteDefinition } from '@dcl/schemas'
-import { IEmoteControllerWithEmote } from './babylon/emote'
+import { WearableDefinition, EmoteDefinition, IEmoteController } from '@dcl/schemas'
 
 export function isEmote(definition: WearableDefinition | EmoteDefinition | void): definition is EmoteDefinition {
   return !!definition && 'emoteDataADR74' in definition
@@ -12,7 +11,7 @@ export class InvalidEmoteError extends Error {
   }
 }
 
-export function createInvalidEmoteController(): IEmoteControllerWithEmote {
+export function createInvalidEmoteController(): IEmoteController {
   return {
     getLength() {
       throw new InvalidEmoteError()

@@ -1,11 +1,5 @@
-import {
-  ArmatureId,
-  BodyPartCategory,
-  EmoteClip,
-  HideableWearableCategory,
-  WearableCategory,
-  WearableDefinition,
-} from '@dcl/schemas'
+import { BodyPartCategory, HideableWearableCategory, WearableCategory, WearableDefinition } from '@dcl/schemas'
+import { SocialEmoteAnimation } from '@dcl/schemas/dist/dapps/preview/social-emote-animation'
 import { AnimationGroup, TransformNode, Color3, PBRMaterial, StandardMaterial } from '@babylonjs/core'
 import { getWearableRepresentationOrDefault, isTexture } from '../representation'
 import { Asset } from './scene'
@@ -46,16 +40,11 @@ export function isFacialFeature(wearable: WearableDefinition): boolean {
   return !isModel(wearable)
 }
 
-// Extended options type to include socialEmote
-export type SocialEmote =
-  | (Partial<Record<ArmatureId, EmoteClip>> & {
-      loop: boolean
-      audio?: string
-    })
-  | undefined
-
 // Helper function to determine if an animation group should be applied based on social emote config
-export function shouldApplySocialEmoteAnimation(animationGroup: AnimationGroup, socialEmote: SocialEmote): boolean {
+export function shouldApplySocialEmoteAnimation(
+  animationGroup: AnimationGroup,
+  socialEmote: SocialEmoteAnimation,
+): boolean {
   const groupName = animationGroup.name.toLowerCase()
 
   // Check if this is a prop animation
