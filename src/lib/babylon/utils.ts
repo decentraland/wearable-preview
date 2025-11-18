@@ -58,25 +58,14 @@ export function shouldApplySocialEmoteAnimation(
     groupName.includes('avatar') || groupName.includes('armature') || (!isPropAnimation && !isOtherAnimation)
 
   // Apply filtering based on what's specified in socialEmote
-  if (socialEmote?.Armature_Prop?.animation.toLowerCase() === groupName && isPropAnimation) {
-    return true
-  }
+  const conditions = [
+    socialEmote?.Armature_Prop?.animation.toLowerCase() === groupName && isPropAnimation,
+    socialEmote?.Armature_Other?.animation.toLowerCase() === groupName && isOtherAnimation,
+    socialEmote?.Armature?.animation.toLowerCase() === groupName && isMainAvatarAnimation,
+    !socialEmote?.Armature && !socialEmote?.Armature_Other && !socialEmote?.Armature_Prop,
+  ]
 
-  if (socialEmote?.Armature_Other?.animation.toLowerCase() === groupName && isOtherAnimation) {
-    return true
-  }
-
-  if (socialEmote?.Armature?.animation.toLowerCase() === groupName && isMainAvatarAnimation) {
-    return true
-  }
-
-  // If no social emote is specified, apply all animations
-  if (!socialEmote?.Armature && !socialEmote?.Armature_Other && !socialEmote?.Armature_Prop) {
-    return true
-  }
-
-  // Default: don't apply if not explicitly specified
-  return false
+  return conditions.some((condition) => condition)
 }
 
 // Helper: pair children by index to build a twin map (original -> clone)
