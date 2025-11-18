@@ -42,9 +42,15 @@ import { createSceneController } from '../scene'
 import { startAutoRotateBehavior } from './camera'
 
 // needed for debugging
-const showInspector = process.env.REACT_APP_DEBUG
-if (showInspector) {
-  require('@babylonjs/inspector')
+const showInspector = process.env.VITE_REACT_APP_DEBUG
+
+// Load inspector asynchronously if needed
+let inspectorLoaded = false
+const loadInspector = async (): Promise<void> => {
+  if (showInspector && !inspectorLoaded) {
+    await import('@babylonjs/inspector')
+    inspectorLoaded = true
+  }
 }
 
 export type Asset = {
@@ -90,7 +96,7 @@ function refreshBoundingInfo(parent: Mesh) {
 let engine: Engine
 export async function createScene(
   canvas: HTMLCanvasElement,
-  config: PreviewConfig
+  config: PreviewConfig,
 ): Promise<[Scene, ISceneController]> {
   // Create engine
   if (engine) {
@@ -230,6 +236,7 @@ export async function createScene(
 
   // Dev tools
   if (showInspector) {
+    await loadInspector()
     root.debugLayer.show({ showExplorer: true, embedMode: true })
   }
 
@@ -239,7 +246,7 @@ export async function createScene(
 export async function loadMask(
   scene: Scene,
   wearable: WearableDefinition,
-  bodyShape: BodyShape
+  bodyShape: BodyShape,
 ): Promise<Texture | null> {
   const name = wearable.id
   const representation = getWearableRepresentation(wearable, bodyShape)
@@ -260,12 +267,12 @@ export async function loadMask(
 export async function loadTexture(
   scene: Scene,
   wearable: WearableDefinition,
-  bodyShape: BodyShape
+  bodyShape: BodyShape,
 ): Promise<Texture | null> {
   const name = wearable.id
   const representation = getWearableRepresentation(wearable, bodyShape)
   const file = representation.contents.find(
-    (file) => file.key.toLowerCase().endsWith('.png') && !file.key.toLowerCase().endsWith('_mask.png')
+    (file) => file.key.toLowerCase().endsWith('.png') && !file.key.toLowerCase().endsWith('_mask.png'),
   )
   if (file) {
     return new Promise((resolve, reject) => {
@@ -280,10 +287,18 @@ export async function loadTexture(
   return null
 }
 
-export function loadSound(scene: Scene, representation: EmoteRepresentationDefinition): Promise<Sound | null> {
+export function loadSound(
+  scene: Scene,
+  representation: EmoteRepresentationDefinition,
+  selectedSound?: string | null,
+): Promise<Sound | null> {
   return new Promise((resolve, reject) => {
-    const soundUrl = representation.contents.find(
-      (content) => content.key.toLowerCase().endsWith('.mp3') || content.key.toLowerCase().endsWith('ogg')
+    const soundUrl = representation.contents.find((content) =>
+      selectedSound !== null
+        ? selectedSound
+          ? content.key.toLowerCase().endsWith(selectedSound.toLowerCase())
+          : null
+        : content.key.toLowerCase().endsWith('.mp3') || content.key.toLowerCase().endsWith('ogg'),
     )?.url
 
     if (!soundUrl) {
@@ -295,7 +310,7 @@ export function loadSound(scene: Scene, representation: EmoteRepresentationDefin
       resolve(
         new Sound('music', task.data, scene, null, {
           spatialSound: true,
-        })
+        }),
       )
     const onError = (message?: string) => reject(message)
     task.run(scene, onSuccess, onError)

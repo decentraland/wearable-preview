@@ -14,6 +14,14 @@ This webapp renders an interactive 3D preview of a wearable or an avatar. It can
 - `eyes`: a color to be used by the eyes tint, it must be in hex.
 - `bodyShape`: which body shape to use, possible values are `urn:decentraland:off-chain:base-avatars:BaseMale` or `urn:decentraland:off-chain:base-avatars:BaseFemale`.
 - `emote`: the emote that the avatar will play. Default value is `idle`, other possible values are: `clap`, `dab`, `dance`, `fashion`, `fashion-2`, `fashion-3`,`fashion-4`, `love`, `money`, `fist-pump` and `head-explode`.
+- `socialEmote`: when specified, duplicates the avatar and plays different animations on each avatar to create a social interaction scenario. The structure should be a JSON object with the following properties:
+  - `title` (required): a string describing the social emote (e.g., `"High Five"`)
+  - `loop` (required): a boolean indicating if the animation should loop (e.g., `true`)
+  - `audio` (optional): a string URL for audio to play with the animation
+  - `Armature` (optional): animation for the main avatar (e.g., `{"animation": "HighFive_Start"}`)
+  - `Armature_Prop` (optional): animation for props/objects (e.g., `{"animation": "HighFive_Prop_Start"}`)
+  - `Armature_Other` (optional): animation for the duplicated avatar using AvatarOther\_ nodes (e.g., `{"animation": "HighFive_Other_Start"}`)
+  - Example: `{"title": "High Five", "loop": true, "Armature": {"animation": "HighFive_Start"}, "Armature_Other": {"animation": "HighFive_Other_Start"}}`
 - `zoom`: the level of zoom, it must be a number between 1 and 100.
 - `zoomScale`: a multiplier for the zoom level. By default is `1` but it can be increased to get extra zoom.
 - `camera`: which camera type to use, either `interactive` or `static`. By default it uses the `interactive` one.
@@ -146,7 +154,7 @@ const promises = new Map<string, IFuture<any>>()
 function sendRequest<T>(
   namespace: 'scene' | 'emote',
   method: 'getScreenshot' | 'getMetrics' | 'getLength' | 'isPlaying' | 'goTo' | 'play' | 'pause' | 'stop',
-  params: any[]
+  params: any[],
 ) {
   // create promise
   const promise = future<T>()

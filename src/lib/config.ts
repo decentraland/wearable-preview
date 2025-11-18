@@ -17,6 +17,7 @@ import {
   WearableRepresentationWithBlobs,
   WearableWithBlobs,
 } from '@dcl/schemas'
+import { SocialEmoteAnimation } from '@dcl/schemas/dist/dapps/preview/social-emote-animation'
 import { config } from '../config'
 import { nftApi } from './api/nft'
 import { peerApi } from './api/peer'
@@ -275,7 +276,9 @@ async function fetchWearablesAndEmotes(
   return [wearables, emotes]
 }
 
-export async function createConfig(options: PreviewOptions = {}): Promise<PreviewConfig> {
+export async function createConfig(
+  options: PreviewOptions & { socialEmote?: SocialEmoteAnimation | null } = {},
+): Promise<PreviewConfig> {
   const { contractAddress, tokenId, itemId } = options
 
   const peerUrl = options.peerUrl || config.get('PEER_URL')
@@ -482,6 +485,7 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
     lockAlpha: !!options.lockAlpha,
     lockBeta: !!options.lockBeta,
     lockRadius: !!options.lockRadius,
+    socialEmote: options.socialEmote || undefined,
   }
 }
 
@@ -511,6 +515,7 @@ function fromBlob(itemWithBlobs: WearableWithBlobs | EmoteWithBlobs): WearableDe
       },
     }
   }
+
   return {
     ...itemWithBlobs,
     data: {

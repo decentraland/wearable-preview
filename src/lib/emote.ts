@@ -1,5 +1,5 @@
 import mitt from 'mitt'
-import { IEmoteController, WearableDefinition, EmoteDefinition } from '@dcl/schemas'
+import { WearableDefinition, EmoteDefinition, IEmoteController } from '@dcl/schemas'
 
 export function isEmote(definition: WearableDefinition | EmoteDefinition | void): definition is EmoteDefinition {
   return !!definition && 'emoteDataADR74' in definition
@@ -38,6 +38,13 @@ export function createInvalidEmoteController(): IEmoteController {
       throw new InvalidEmoteError()
     },
     hasSound() {
+      throw new InvalidEmoteError()
+    },
+    emote: null,
+    isSocialEmote() {
+      throw new InvalidEmoteError()
+    },
+    getSocialEmoteAnimations() {
       throw new InvalidEmoteError()
     },
     events: mitt(),

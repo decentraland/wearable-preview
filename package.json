@@ -9,7 +9,7 @@
     "@babylonjs/inspector": "^4.2.2",
     "@babylonjs/loaders": "^4.2.2",
     "@babylonjs/materials": "^4.2.2",
-    "@dcl/schemas": "^18.1.0",
+    "@dcl/schemas": "^20.1.1",
     "@dcl/ui-env": "^1.5.1",
     "classnames": "^2.3.1",
     "decentraland-ui": "^6.17.1",

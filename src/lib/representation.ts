@@ -14,7 +14,7 @@ export function isFemale(representation: WearableRepresentationDefinition) {
 
 export function getEmoteRepresentation(emote: EmoteDefinition, bodyShape = BodyShape.MALE) {
   const representation = emote.emoteDataADR74.representations.find((representation) =>
-    representation.bodyShapes.includes(bodyShape)
+    representation.bodyShapes.includes(bodyShape),
   )
   if (!representation) {
     throw new Error(`Could not find a representation of bodyShape=${bodyShape} for emote="${emote.id}"`)
