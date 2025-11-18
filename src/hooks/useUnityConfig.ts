@@ -9,11 +9,12 @@ import {
   EmoteDefinition,
   PreviewType,
   Avatar,
+  PreviewUnityMode,
 } from '@dcl/schemas'
 import { config } from '../config'
 import { colorToHex, formatHex } from '../lib/color'
 import { fetchItemFromContract, fetchProfile, fetchProfileEntity, sanitizeProfile } from '../lib/config'
-import { UnityPreviewMode, useOptions } from './useOptions'
+import { useOptions } from './useOptions'
 import { isWearable } from '../lib/wearable'
 import { isTexture } from '../lib/representation'
 import { getWearableRepresentationOrDefault } from '../lib/representation'
@@ -21,7 +22,7 @@ import { getRandomDefaultProfile } from '../lib/profile'
 
 export interface UnityPreviewConfig {
   background: Background
-  mode: UnityPreviewMode | null
+  mode: PreviewUnityMode | null
   type: PreviewType
   base64: string | null
   bodyShape: BodyShape | null
@@ -59,7 +60,7 @@ type QueryParams = {
   eyeColor: string
   hairColor: string
   skinColor: string
-  mode: UnityPreviewMode | string
+  mode: PreviewUnityMode | string
   camera: PreviewCamera
   projection: PreviewProjection
   emote: string
@@ -198,7 +199,7 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
         })
 
         // Get camera settings
-        const mode = options.mode || null
+        const mode = options.unityMode || null
         const camera =
           options.camera && Object.values(PreviewCamera).includes(options.camera as PreviewCamera)
             ? (options.camera as PreviewCamera)
@@ -248,7 +249,7 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
             const base64s = toQueryArray(options.base64s)
 
             // For configurator mode, only add mode parameter
-            if (mode === 'configurator') {
+            if (mode === PreviewUnityMode.CONFIG) {
               const queryParams: Partial<QueryParams> = {
                 mode: toQueryValue(mode || ''),
               }

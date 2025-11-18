@@ -1,19 +1,19 @@
 import { useMemo, useRef, useEffect, useState } from 'react'
-import { BodyShape, PreviewCamera, PreviewEmote, PreviewOptions, PreviewProjection, PreviewType } from '@dcl/schemas'
+import {
+  BodyShape,
+  PreviewCamera,
+  PreviewEmote,
+  PreviewOptions,
+  PreviewProjection,
+  PreviewType,
+  PreviewUnityMode,
+} from '@dcl/schemas'
 import { SocialEmoteAnimation } from '@dcl/schemas/dist/dapps/preview/social-emote-animation'
 import { parseZoom } from '../lib/zoom'
 import { useOverrides } from './useOverrides'
 
-export enum UnityPreviewMode {
-  PROFILE = 'profile',
-  MARKETPLACE = 'marketplace',
-  AUTHENTICATION = 'authentication',
-  BUILDER = 'builder',
-  CONFIGURATOR = 'configurator',
-}
-
 export interface OptionsWithSource {
-  options: PreviewOptions & { mode: UnityPreviewMode | null; disableLoader: boolean }
+  options: PreviewOptions
   overrideSources: Record<string, boolean>
 }
 
@@ -30,13 +30,7 @@ export const useOptions = (): OptionsWithSource => {
     }
   })
 
-  const options = useMemo<
-    PreviewOptions & {
-      mode: UnityPreviewMode | null
-      disableLoader: boolean
-      socialEmote?: SocialEmoteAnimation | null
-    }
-  >(() => {
+  const options = useMemo<PreviewOptions>(() => {
     const autoRotateSpeedParam = searchParams.get('autoRotateSpeed') as string | null
     const offsetXParam = searchParams.get('offsetX') as string | null
     const offsetYParam = searchParams.get('offsetY') as string | null
@@ -62,11 +56,7 @@ export const useOptions = (): OptionsWithSource => {
     }
     const centerBoundingBox = searchParams.get('centerBoundingBox') !== 'false'
 
-    const options: PreviewOptions & {
-      mode: UnityPreviewMode | null
-      disableLoader: boolean
-      socialEmote?: SocialEmoteAnimation | null
-    } = {
+    const options: PreviewOptions = {
       contractAddress: searchParams.get('contract')!,
       tokenId: searchParams.get('token'),
       itemId: searchParams.get('item'),
@@ -115,7 +105,7 @@ export const useOptions = (): OptionsWithSource => {
       lockAlpha: lockAlpha === 'true',
       lockBeta: lockBeta === 'true',
       lockRadius: lockRadius === 'true',
-      mode: searchParams.get('mode') as UnityPreviewMode | null,
+      unityMode: searchParams.get('mode') as PreviewUnityMode | null,
       disableLoader: searchParams.has('disableLoader'),
       username: searchParams.get('username'),
       socialEmote: (() => {
