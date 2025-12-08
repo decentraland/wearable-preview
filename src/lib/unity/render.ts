@@ -33,7 +33,7 @@ export async function render(canvas: HTMLCanvasElement): Promise<IPreviewControl
       '/emotes',
       'Decentraland',
       'AangRenderer',
-      '2.0.3',
+      '2.2.1',
       true,
       [],
     )) as UnityInstance
