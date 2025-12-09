@@ -38,7 +38,7 @@ This webapp renders an interactive 3D preview of a wearable or an avatar. It can
 - `background`: the color of the background in hex, ie: `ff0000`.
 - `peerUrl`: set a custom url for a Catalyst peer.
 - `nftServerUrl`: set a custom url for the NFT API.
-- `type`: set a custom PreviewType to render standalone items passed as urn, url or base64. currently only supports `wearable`.
+- `type`: set a custom PreviewType to render standalone items passed as urn, url or base64. currently only supports `wearable | texture`.
 - `disableBackground`: if `true` it will make the background transparent.
 - `disableAutoRotate`: if `true` it will disable the auto-rotate behaviour of the camera.
 - `disableAutoCenter`: if `true` it will disable the auto-center around the bounding box.
