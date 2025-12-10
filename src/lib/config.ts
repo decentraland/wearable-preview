@@ -282,7 +282,7 @@ export async function createConfig(
   const { contractAddress, tokenId, itemId } = options
 
   const peerUrl = options.peerUrl || config.get('PEER_URL')
-  const nftServerUrl = options.nftServerUrl || config.get('NFT_SERVER_URL')
+  const nftServerUrl = options.nftServerUrl || config.get('MARKETPLACE_SERVER_URL')
 
   // load item to preview
   let itemPromise: Promise<WearableDefinition | EmoteDefinition | void> = Promise.resolve()
