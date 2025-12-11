@@ -8,7 +8,7 @@ import {
   EmoteDefinition,
   PreviewEmoteEventType,
 } from '@dcl/schemas'
-import { isEmote } from '../emote'
+import { isEmote, isSocialEmote } from '../emote'
 import { startAutoRotateBehavior } from './camera'
 import { Asset, loadAssetContainer, loadSound } from './scene'
 import { getEmoteRepresentation } from '../representation'
@@ -333,18 +333,12 @@ function createController(
     Engine.audioEngine.setGlobalVolume(0)
   }
 
-  async function isSocialEmote() {
-    return (
-      emote &&
-      emote.emoteDataADR74 &&
-      !!emote.emoteDataADR74.startAnimation &&
-      !!emote.emoteDataADR74.outcomes &&
-      emote.emoteDataADR74.outcomes.length > 0
-    )
+  async function checkIsSocialEmote() {
+    return isSocialEmote(emote)
   }
 
   async function getSocialEmoteAnimations() {
-    return (await isSocialEmote())
+    return (await checkIsSocialEmote())
       ? [
           {
             title: 'Start Animation',
@@ -436,7 +430,7 @@ function createController(
     hasSound,
     events,
     emote,
-    isSocialEmote,
+    isSocialEmote: checkIsSocialEmote,
     getSocialEmoteAnimations,
   }
 }
