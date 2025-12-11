@@ -99,6 +99,7 @@ export const useOptions = (): OptionsWithSource => {
       disableDefaultEmotes: searchParams.has('disableDefaultEmotes'),
       disableFadeEffect: searchParams.has('disableFadeEffect'),
       peerUrl: searchParams.get('peerUrl'),
+      marketplaceServerUrl: searchParams.get('marketplaceServerUrl'),
       nftServerUrl: searchParams.get('nftServerUrl'),
       type: searchParams.get('type') as PreviewType | null,
       panning: panning === 'true' || panning === null,

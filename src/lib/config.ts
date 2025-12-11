@@ -201,9 +201,9 @@ export async function fetchItemFromContract(options: {
   itemId?: string | null
   tokenId?: string | null
   peerUrl: string
-  nftServerUrl: string
+  marketplaceServerUrl: string
 }) {
-  const { contractAddress, itemId, tokenId, peerUrl, nftServerUrl } = options
+  const { contractAddress, itemId, tokenId, peerUrl, marketplaceServerUrl } = options
   if (!itemId && !tokenId) {
     throw new Error(`You need to provide an itemId or a tokenId`)
   }
@@ -213,7 +213,7 @@ export async function fetchItemFromContract(options: {
   if (!itemId && !tokenId) {
     throw new Error(`You must provide either tokenId or itemId`)
   } else if (!itemId && tokenId) {
-    const nft = await nftApi.fetchNFT(contractAddress, tokenId, nftServerUrl)
+    const nft = await nftApi.fetchNFT(contractAddress, tokenId, marketplaceServerUrl)
     urn =
       nft.network !== Network.ETHEREUM
         ? `urn:decentraland:${network}:collections-v2:${contractAddress}:${nft.itemId}`
@@ -282,12 +282,12 @@ export async function createConfig(
   const { contractAddress, tokenId, itemId } = options
 
   const peerUrl = options.peerUrl || config.get('PEER_URL')
-  const nftServerUrl = options.nftServerUrl || config.get('MARKETPLACE_SERVER_URL')
+  const marketplaceServerUrl = options.marketplaceServerUrl || options.nftServerUrl || config.get('MARKETPLACE_SERVER_URL')
 
   // load item to preview
   let itemPromise: Promise<WearableDefinition | EmoteDefinition | void> = Promise.resolve()
   if (contractAddress) {
-    itemPromise = fetchItemFromContract({ contractAddress, tokenId, itemId, peerUrl, nftServerUrl })
+    itemPromise = fetchItemFromContract({ contractAddress, tokenId, itemId, peerUrl, marketplaceServerUrl })
   }
 
   // load profile

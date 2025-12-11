@@ -37,7 +37,8 @@ This webapp renders an interactive 3D preview of a wearable or an avatar. It can
 - `wheelStart`: a value between 0 and 100 which determines how zoomed in or out the wheel starts. By default is `50`, so the user can zoom in or out. If the value were `0` the zoom would start at minimum and the user would be able to zoom in. If the value were `100` the zoom would start at max and the user would be able to zoom out.
 - `background`: the color of the background in hex, ie: `ff0000`.
 - `peerUrl`: set a custom url for a Catalyst peer.
-- `nftServerUrl`: set a custom url for the NFT API.
+- `marketplaceServerUrl`: set a custom url for the Marketplace API
+- `nftServerUrl`: set a custom url for the Marketplace API (legacy, marketplaceServerUrl takes priority)
 - `type`: set a custom PreviewType to render standalone items passed as urn, url or base64. currently only supports `wearable`.
 - `disableBackground`: if `true` it will make the background transparent.
 - `disableAutoRotate`: if `true` it will disable the auto-rotate behaviour of the camera.
