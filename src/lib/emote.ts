@@ -98,6 +98,9 @@ export function createInvalidEmoteController(): IEmoteController {
     getSocialEmoteAnimations() {
       throw new InvalidEmoteError()
     },
+    getPlayingSocialEmoteAnimation() {
+      throw new InvalidEmoteError()
+    },
     events: mitt(),
   }
 }

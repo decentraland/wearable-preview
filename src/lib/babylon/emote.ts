@@ -8,6 +8,7 @@ import {
   EmoteDefinition,
   PreviewEmoteEventType,
 } from '@dcl/schemas'
+import { SocialEmoteAnimation } from '@dcl/schemas/dist/dapps/preview/social-emote-animation'
 import { isEmote, isSocialEmote } from '../emote'
 import { startAutoRotateBehavior } from './camera'
 import { Asset, loadAssetContainer, loadSound } from './scene'
@@ -232,7 +233,13 @@ export async function playEmote(
 
     // play animation group and apply
     emoteAnimationGroup.onAnimationGroupEndObservable.addOnce(onAnimationEnd)
-    const controller = createController(emoteAnimationGroup, loop, sound, config.item as EmoteDefinition)
+    const controller = createController(
+      emoteAnimationGroup,
+      loop,
+      sound,
+      config.item as EmoteDefinition,
+      config.socialEmote,
+    )
 
     if (config.camera === PreviewCamera.STATIC) {
       controller.stop() // we call the stop here to freeze the animation at frame 0, otherwise the avatar would be on T-pose
@@ -249,6 +256,7 @@ function createController(
   loop: boolean,
   sound: Sound | null,
   emote: EmoteDefinition,
+  playingAnimation: SocialEmoteAnimation | undefined,
 ): IEmoteController {
   Engine.audioEngine.useCustomUnlockedButton = true
   Engine.audioEngine.setGlobalVolume(1)
@@ -354,6 +362,14 @@ function createController(
       : null
   }
 
+  /**
+   * Returns the currently playing animation configuration.
+   * This is useful when the animation was auto-selected from blockchain data.
+   */
+  async function getPlayingSocialEmoteAnimation() {
+    return playingAnimation ?? null
+  }
+
   // Temporary typed events.
   type Events = {
     [PreviewEmoteEventType.ANIMATION_PLAY]: void
@@ -432,5 +448,6 @@ function createController(
     emote,
     isSocialEmote: checkIsSocialEmote,
     getSocialEmoteAnimations,
+    getPlayingSocialEmoteAnimation,
   }
 }
