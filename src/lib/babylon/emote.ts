@@ -251,7 +251,7 @@ function createController(
   emote: EmoteDefinition,
 ): IEmoteController {
   Engine.audioEngine.useCustomUnlockedButton = true
-  Engine.audioEngine.setGlobalVolume(0)
+  Engine.audioEngine.setGlobalVolume(1)
   let fromSecond: number | undefined = undefined
   let fromGoTo = false
 
