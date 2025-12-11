@@ -139,7 +139,7 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
 
         // Initialize URLs
         const peerUrl = options.peerUrl || config.get('PEER_URL')
-        const nftServerUrl = options.nftServerUrl || config.get('NFT_SERVER_URL')
+        const marketplaceServerUrl = options.marketplaceServerUrl || options.nftServerUrl || config.get('MARKETPLACE_SERVER_URL')
 
         // Initialize basic config
         let type = PreviewType.WEARABLE
@@ -176,7 +176,7 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
             tokenId: options.tokenId,
             itemId: options.itemId,
             peerUrl,
-            nftServerUrl,
+            marketplaceServerUrl,
           })
 
           if (item && isWearable(item)) {
