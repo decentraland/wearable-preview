@@ -17,13 +17,13 @@ import {
   WearableRepresentationWithBlobs,
   WearableWithBlobs,
 } from '@dcl/schemas'
-import { SocialEmoteAnimation } from '@dcl/schemas/dist/dapps/preview/social-emote-animation'
+
 import { config } from '../config'
 import { nftApi } from './api/nft'
 import { peerApi } from './api/peer'
 import { createMemo } from './cache'
 import { colorToHex, formatHex } from './color'
-import { isEmote } from './emote'
+import { isEmote, getRandomSocialEmoteAnimation } from './emote'
 import { getWearableRepresentationOrDefault, hasWearableRepresentation, isTexture } from './representation'
 import {
   getDefaultCategories,
@@ -276,13 +276,12 @@ async function fetchWearablesAndEmotes(
   return [wearables, emotes]
 }
 
-export async function createConfig(
-  options: PreviewOptions & { socialEmote?: SocialEmoteAnimation | null } = {},
-): Promise<PreviewConfig> {
+export async function createConfig(options: PreviewOptions = {}): Promise<PreviewConfig> {
   const { contractAddress, tokenId, itemId } = options
 
   const peerUrl = options.peerUrl || config.get('PEER_URL')
-  const marketplaceServerUrl = options.marketplaceServerUrl || options.nftServerUrl || config.get('MARKETPLACE_SERVER_URL')
+  const marketplaceServerUrl =
+    options.marketplaceServerUrl || options.nftServerUrl || config.get('MARKETPLACE_SERVER_URL')
 
   // load item to preview
   let itemPromise: Promise<WearableDefinition | EmoteDefinition | void> = Promise.resolve()
@@ -450,6 +449,8 @@ export async function createConfig(
   // the zoom scale values is used to achieve extra zoom. It was implemented as a separate option to don't break the behavior of the zoom property. By default is 1 and it makes no change to the regular zoom.
   const zoomScale =
     typeof options.zoomScale !== 'number' || isNaN(options.zoomScale) || options.zoomScale <= 0 ? 1 : options.zoomScale
+  // Use provided socialEmote, or auto-detect from blockchain data if item is a social emote
+  const socialEmote = options.socialEmote ?? getRandomSocialEmoteAnimation(isEmote(item) ? item : null) ?? undefined
 
   return {
     // item is the most important prop, if not preset we use the blob prop, and if none, we use the last emote from the list (if any)
@@ -485,7 +486,7 @@ export async function createConfig(
     lockAlpha: !!options.lockAlpha,
     lockBeta: !!options.lockBeta,
     lockRadius: !!options.lockRadius,
-    socialEmote: options.socialEmote || undefined,
+    socialEmote,
   }
 }
 
