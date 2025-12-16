@@ -1,5 +1,15 @@
 import mitt from 'mitt'
-import { AnimationGroup, ArcRotateCamera, AssetContainer, Scene, TransformNode, Sound, Engine } from '@babylonjs/core'
+import {
+  AnimationGroup,
+  ArcRotateCamera,
+  AssetContainer,
+  Scene,
+  TransformNode,
+  CreateAudioEngineAsync,
+  AudioEngineV2,
+  StaticSound,
+  IStaticSoundPlayOptions,
+} from '@babylonjs/core'
 import {
   IEmoteController,
   PreviewCamera,
@@ -70,17 +80,19 @@ export async function playEmote(
   assets: Asset[],
   config: PreviewConfig,
   twinMap: Map<TransformNode, TransformNode> | undefined,
-): Promise<IEmoteController | undefined> {
+): Promise<EmoteControllerWithDispose | undefined> {
   // load asset container for emote
   let container: AssetContainer | undefined
   let loop = !!config.emote && isLooped(config.emote)
   let sound = null
+  let audioEngine: AudioEngineV2 | null = null
 
   // if target item is emote, play that one
   if (config.item && isEmote(config.item)) {
     try {
       container = await loadEmoteFromWearable(scene, config.item as EmoteDefinition, config)
       loop = config.socialEmote ? config.socialEmote.loop : config.item.emoteDataADR74.loop
+      audioEngine = await CreateAudioEngineAsync()
       sound = await loadEmoteSound(scene, config.item as EmoteDefinition, config)
     } catch (error) {
       console.warn(`Could not load emote=${config.item.id}`)
@@ -236,6 +248,7 @@ export async function playEmote(
     const controller = createController(
       emoteAnimationGroup,
       loop,
+      audioEngine,
       sound,
       config.item as EmoteDefinition,
       config.socialEmote,
@@ -251,15 +264,16 @@ export async function playEmote(
   }
 }
 
+export type EmoteControllerWithDispose = IEmoteController & { dispose: () => Promise<void> }
+
 function createController(
   animationGroup: AnimationGroup,
   loop: boolean,
-  sound: Sound | null,
+  audioEngine: AudioEngineV2 | null,
+  sound: StaticSound | null,
   emote: EmoteDefinition,
   playingAnimation: SocialEmoteAnimation | undefined,
-): IEmoteController {
-  Engine.audioEngine.useCustomUnlockedButton = true
-  Engine.audioEngine.setGlobalVolume(1)
+): EmoteControllerWithDispose {
   let fromSecond: number | undefined = undefined
   let fromGoTo = false
 
@@ -296,22 +310,30 @@ function createController(
   }
 
   async function play() {
-    if (!(await isPlaying())) {
-      if (fromSecond) {
-        animationGroup.start(loop, 1, fromSecond, await getLength(), false)
-        if (sound) {
-          sound.stop()
-          // This is a hack to solve a bug in babylonjs version. This was finally fixed in Babylon PR: #13455.
-          // TODO: update babylon major version
-          sound['_startOffset'] = fromSecond
-          sound.play()
-        }
-        fromSecond = 0
-      } else {
-        animationGroup.play(loop)
-        sound?.play()
-      }
+    if (await isPlaying()) return
+    const startOffset = fromSecond || 0
+
+    if (fromSecond) {
+      animationGroup.start(loop, 1, fromSecond, await getLength(), false)
+      fromSecond = 0
+    } else {
+      animationGroup.play(loop)
     }
+
+    // Play sound at the start offset in seconds
+    playSound({ waitTime: 0, startOffset: startOffset / 100 })
+  }
+
+  async function playSound(options?: Partial<IStaticSoundPlayOptions>) {
+    if (!sound) return null
+
+    await audioEngine?.unlockAsync()
+
+    if (sound.activeInstancesCount > 0) {
+      sound.stop()
+    }
+
+    sound.play(options)
   }
 
   async function pause() {
@@ -329,16 +351,23 @@ function createController(
 
   async function enableSound() {
     if (!sound) return
-    Engine.audioEngine.unlock()
-    Engine.audioEngine.setGlobalVolume(1)
-    if (animationGroup.isPlaying && !sound.isPlaying) {
-      sound.play(undefined, animationGroup.targetedAnimations[0].animation.runtimeAnimations[0].currentFrame)
-    }
+    sound.setVolume(1)
   }
 
   async function disableSound() {
     if (!sound) return
-    Engine.audioEngine.setGlobalVolume(0)
+    sound.setVolume(0)
+  }
+
+  async function dispose() {
+    if (intervalId) {
+      clearInterval(intervalId)
+    }
+    animationGroup.stop()
+    animationGroup.dispose()
+    sound?.stop()
+    sound?.dispose()
+    audioEngine?.dispose()
   }
 
   async function checkIsSocialEmote() {
@@ -410,9 +439,11 @@ function createController(
     intervalId = emitPlayingEvent()
     return events.emit(PreviewEmoteEventType.ANIMATION_PLAY)
   })
+
   animationGroup.onAnimationGroupPauseObservable.add(() => {
     events.emit(PreviewEmoteEventType.ANIMATION_PAUSE)
   })
+
   animationGroup.onAnimationGroupLoopObservable.add(() => {
     sound?.stop()
     sound?.play()
@@ -425,6 +456,7 @@ function createController(
     }
     return events.emit(PreviewEmoteEventType.ANIMATION_LOOP)
   })
+
   animationGroup.onAnimationGroupEndObservable.add(() => {
     // Send the last frame when the animation ends and the event: end is not emitted by a goTo
     clearEmitPlayingEvent()
@@ -449,5 +481,6 @@ function createController(
     isSocialEmote: checkIsSocialEmote,
     getSocialEmoteAnimations,
     getPlayingSocialEmoteAnimation,
+    dispose,
   }
 }
