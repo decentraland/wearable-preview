@@ -1,63 +1,150 @@
 # Wearable Preview
 
-This webapp renders an interactive 3D preview of a wearable or an avatar. It can be configured via query params or via `postMessage`:
+A webapp that renders interactive 3D previews of Decentraland wearables, emotes, and avatars. It can be embedded as an iframe and controlled via query parameters or `postMessage` API.
 
-- `contract`: The contract address of the wearable collection.
-- `item`: The id of the item in the collection.
-- `token`: The id of the token (to preview a specific NFT).
-- `profile`: an ethereum address of a profile to load as the base avatar. It can be set to `default` or a numbered default profile like `default15` to use a default profile.
-- `urn`: a URN of a wearable or an emote to load. If it is a wearable, it will override anything loaded from a profile. It can be used many times.
-- `url`: a URL of a wearable or an emote to load. If it is a wearable, it will override anything loaded from a profile. It can be used many times. The url will be fetched and must return a valid definition following the [`WearableDefinition`](https://github.com/decentraland/common-schemas/blob/main/src/dapps/preview/wearable-definition.ts) or [`EmoteDefinition`](https://github.com/decentraland/common-schemas/blob/main/src/dapps/preview/emote-definition.ts) types.
-- `base64`: a wearable or an emote to load, encoded in base64. If it is a wearable, it will override anything loaded from a profile. It can be used many times. Once parsed it should be a valid definition following the [`WearableDefinition`](https://github.com/decentraland/common-schemas/blob/main/src/dapps/preview/wearable-definition.ts) or [`EmoteDefinition`](https://github.com/decentraland/common-schemas/blob/main/src/dapps/preview/emote-definition.ts) types.
-- `skin`: a color to be used by the skin material, it must be in hex.
-- `hair`: a color to be used by the hair material, it must be in hex.
-- `eyes`: a color to be used by the eyes tint, it must be in hex.
-- `bodyShape`: which body shape to use, possible values are `urn:decentraland:off-chain:base-avatars:BaseMale` or `urn:decentraland:off-chain:base-avatars:BaseFemale`.
-- `emote`: the emote that the avatar will play. Default value is `idle`, other possible values are: `clap`, `dab`, `dance`, `fashion`, `fashion-2`, `fashion-3`,`fashion-4`, `love`, `money`, `fist-pump` and `head-explode`.
-- `socialEmote`: when specified, duplicates the avatar and plays different animations on each avatar to create a social interaction scenario. The structure should be a JSON object with the following properties:
-  - `title` (required): a string describing the social emote (e.g., `"High Five"`)
-  - `loop` (required): a boolean indicating if the animation should loop (e.g., `true`)
-  - `audio` (optional): a string URL for audio to play with the animation
-  - `Armature` (optional): animation for the main avatar (e.g., `{"animation": "HighFive_Start"}`)
-  - `Armature_Prop` (optional): animation for props/objects (e.g., `{"animation": "HighFive_Prop_Start"}`)
-  - `Armature_Other` (optional): animation for the duplicated avatar using AvatarOther\_ nodes (e.g., `{"animation": "HighFive_Other_Start"}`)
-  - Example: `{"title": "High Five", "loop": true, "Armature": {"animation": "HighFive_Start"}, "Armature_Other": {"animation": "HighFive_Other_Start"}}`
-- `zoom`: the level of zoom, it must be a number between 1 and 100.
-- `zoomScale`: a multiplier for the zoom level. By default is `1` but it can be increased to get extra zoom.
-- `camera`: which camera type to use, either `interactive` or `static`. By default it uses the `interactive` one.
-- `projection`: which projection type to use, either `orthographic` or `perspective`. By default it uses the `perspective` one.
-- `offsetX`: apply an offset in the X position of the scene. By default is `0`.
-- `offsetY`: apply an offset in the Y position of the scene. By default is `0`.
-- `offsetZ`: apply an offset in the Z position of the scene. By default is `0`.
-- `cameraX`: set the X position of the camera.
-- `cameraY`: set the Y position of the camera.
-- `cameraZ`: set the Z position of the camera.
-- `wheelZoom`: a multiplier of how much the user can zoom with the mouse wheel. By default is `1`, which means the wheel doesn't do any zoom. If the value were `2` the user would be able to zoom up to 2x.
-- `wheelPrecision`: the higher the value, the slower the wheel zooms when scrolled. By default is `100`.
-- `wheelStart`: a value between 0 and 100 which determines how zoomed in or out the wheel starts. By default is `50`, so the user can zoom in or out. If the value were `0` the zoom would start at minimum and the user would be able to zoom in. If the value were `100` the zoom would start at max and the user would be able to zoom out.
-- `background`: the color of the background in hex, ie: `ff0000`.
-- `peerUrl`: set a custom url for a Catalyst peer.
-- `marketplaceServerUrl`: set a custom url for the Marketplace API
-- `nftServerUrl`: set a custom url for the Marketplace API (legacy, marketplaceServerUrl takes priority)
-- `type`: set a custom PreviewType to render standalone items passed as urn, url or base64. currently only supports `wearable`.
-- `disableBackground`: if `true` it will make the background transparent.
-- `disableAutoRotate`: if `true` it will disable the auto-rotate behaviour of the camera.
-- `disableAutoCenter`: if `true` it will disable the auto-center around the bounding box.
-- `disableFace`: if `true` it will disable the facial features.
-- `disableDefaultWearables`: if `true` it will not load the default wearables (it will only load the base body shape).
-- `disableFadeEffect`: if `true` it will disable css transitions (the fade in / fade out effect). This is useful for automation tests.
-- `disableDefaultEmotes`: if `true` and `emote` is not passed, it will not load the default IDLE emote.
-- `showSceneBoundaries`: if `true` it will show a cylinder representing the recommended scene boundaries.
-- `showThumbnailBoundaries`: if `true` it will show a square representing the thumbnail boundaries.
-- `panning`: If `true`, enables the panning capability. By default it's `true`.
-- `lockAlpha`: If `true`, locks the alpha rotation, preventing the users from rotating the camera around alpha (in simpler terms, "horizontally").
-- `lockBeta`: If `true`, locks the beta rotation, preventing the users from rotating the camera around beta (in simpler terms, "vertically").
-- `lockRadius`: If `true`, locks the radius rotation, preventing the users from rotating the camera around radius (in simpler terms, "how far or close it is").
-- `env`: The environment to use, it can be `prod` (uses mainnet wearables and catalysts) or `dev` (uses testnet wearables and catalysts).
+## Table of Contents
 
-Example: https://wearable-preview.decentraland.org?contract=0xee8ae4c668edd43b34b98934d6d2ff82e41e6488&item=5
+- [Features](#features)
+- [Dependencies & Related Services](#dependencies--related-services)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Development](#development)
+  - [Build](#build)
+- [Usage](#usage)
+  - [Query Parameters](#query-parameters)
+  - [iframe API](#iframe-api)
+  - [iframe Events](#iframe-events)
+  - [Controller RPC](#controller-rpc)
+- [Testing](#testing)
 
-### `iframe` API:
+## Features
+
+- **3D Avatar Preview**: Render full avatars with equipped wearables
+- **Wearable Preview**: Preview individual wearables on an avatar
+- **Emote Preview**: Play and control emote animations
+- **Social Emotes**: Preview two-person social interaction emotes
+- **Interactive Camera**: Pan, zoom, and rotate around the preview
+- **Screenshot Capture**: Programmatically capture screenshots via RPC
+- **iframe Embeddable**: Easy integration via iframe with postMessage API
+- **Multiple Input Sources**: Load items via URN, URL, base64, or contract/item IDs
+
+## Dependencies & Related Services
+
+This webapp interacts with the following services:
+
+- **[Peer/Catalyst Server](https://github.com/decentraland/catalyst)**: Fetches wearable/emote entities, profiles, and content
+- **[Marketplace API](https://github.com/decentraland/marketplace)**: Retrieves item and NFT data by contract address
+
+## Getting Started
+
+### Prerequisites
+
+- **Node.js**: Version 22.x
+- **npm**: Latest version compatible with Node.js 22.x
+
+### Installation
+
+```bash
+npm ci
+```
+
+### Development
+
+Start the development server:
+
+```bash
+npm run start
+```
+
+### Build
+
+Build for production:
+
+```bash
+npm run build
+```
+
+## Usage
+
+### Query Parameters
+
+Configure the preview via URL query parameters:
+
+#### Item Loading
+
+| Parameter  | Description                                                                                                                                                                                                                                                                                                                                          |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `contract` | The contract address of the wearable collection                                                                                                                                                                                                                                                                                                      |
+| `item`     | The id of the item in the collection                                                                                                                                                                                                                                                                                                                 |
+| `token`    | The id of the token (to preview a specific NFT)                                                                                                                                                                                                                                                                                                      |
+| `profile`  | An ethereum address of a profile to load as the base avatar. It can be set to `default` or a numbered default profile like `default15`                                                                                                                                                                                                               |
+| `urn`      | A URN of a wearable or emote to load. If it is a wearable, it will override anything loaded from a profile. Can be used multiple times                                                                                                                                                                                                               |
+| `url`      | A URL of a wearable or emote to load. Must return a valid [`WearableDefinition`](https://github.com/decentraland/common-schemas/blob/main/src/dapps/preview/wearable-definition.ts) or [`EmoteDefinition`](https://github.com/decentraland/common-schemas/blob/main/src/dapps/preview/emote-definition.ts). Can be used multiple times               |
+| `base64`   | A wearable or emote encoded in base64. Once parsed it should be a valid [`WearableDefinition`](https://github.com/decentraland/common-schemas/blob/main/src/dapps/preview/wearable-definition.ts) or [`EmoteDefinition`](https://github.com/decentraland/common-schemas/blob/main/src/dapps/preview/emote-definition.ts). Can be used multiple times |
+
+#### Avatar Customization
+
+| Parameter   | Description                                                                                                                         |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `skin`      | A color to be used by the skin material, must be in hex                                                                             |
+| `hair`      | A color to be used by the hair material, must be in hex                                                                             |
+| `eyes`      | A color to be used by the eyes tint, must be in hex                                                                                 |
+| `bodyShape` | Which body shape to use: `urn:decentraland:off-chain:base-avatars:BaseMale` or `urn:decentraland:off-chain:base-avatars:BaseFemale` |
+
+#### Emote & Animation
+
+| Parameter     | Description                                                                                                                                                                                                                                                          |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `emote`       | The emote that the avatar will play. Default: `idle`. Options: `clap`, `dab`, `dance`, `fashion`, `fashion-2`, `fashion-3`, `fashion-4`, `love`, `money`, `fist-pump`, `head-explode`                                                                                |
+| `socialEmote` | When specified, duplicates the avatar and plays different animations on each to create a social interaction. JSON object with: `title` (required), `loop` (required), `audio` (optional), `Armature`, `Armature_Prop`, `Armature_Other` (optional animation configs) |
+
+#### Camera & View
+
+| Parameter        | Description                                                                                                                  |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `zoom`           | The level of zoom, must be a number between 1 and 100                                                                        |
+| `zoomScale`      | A multiplier for the zoom level. Default: `1`, can be increased for extra zoom                                               |
+| `camera`         | Which camera type to use: `interactive` or `static`. Default: `interactive`                                                  |
+| `projection`     | Which projection type to use: `orthographic` or `perspective`. Default: `perspective`                                        |
+| `offsetX/Y/Z`    | Apply an offset in the X/Y/Z position of the scene. Default: `0`                                                             |
+| `cameraX/Y/Z`    | Set the X/Y/Z position of the camera                                                                                         |
+| `wheelZoom`      | A multiplier of how much the user can zoom with the mouse wheel. Default: `1` (no zoom). Value of `2` allows zoom up to 2x   |
+| `wheelPrecision` | The higher the value, the slower the wheel zooms when scrolled. Default: `100`                                               |
+| `wheelStart`     | A value between 0 and 100 determining initial zoom. Default: `50`. Value of `0` starts at min zoom, `100` starts at max zoom |
+| `panning`        | If `true`, enables panning capability. Default: `true`                                                                       |
+| `lockAlpha`      | If `true`, locks the alpha rotation (horizontal rotation)                                                                    |
+| `lockBeta`       | If `true`, locks the beta rotation (vertical rotation)                                                                       |
+| `lockRadius`     | If `true`, locks the radius (zoom distance)                                                                                  |
+
+#### Display Options
+
+| Parameter                 | Description                                                                           |
+| ------------------------- | ------------------------------------------------------------------------------------- |
+| `background`              | The color of the background in hex, e.g.: `ff0000`                                    |
+| `disableBackground`       | If `true`, makes the background transparent                                           |
+| `disableAutoRotate`       | If `true`, disables the auto-rotate behaviour of the camera                           |
+| `disableAutoCenter`       | If `true`, disables the auto-center around the bounding box                           |
+| `disableFace`             | If `true`, disables the facial features                                               |
+| `disableDefaultWearables` | If `true`, will not load default wearables (only loads the base body shape)           |
+| `disableFadeEffect`       | If `true`, disables CSS transitions (fade in/out effect). Useful for automation tests |
+| `disableDefaultEmotes`    | If `true` and `emote` is not passed, will not load the default IDLE emote             |
+| `showSceneBoundaries`     | If `true`, shows a cylinder representing the recommended scene boundaries             |
+| `showThumbnailBoundaries` | If `true`, shows a square representing the thumbnail boundaries                       |
+
+#### Configuration
+
+| Parameter              | Description                                                                                                 |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `peerUrl`              | Set a custom URL for a Catalyst peer                                                                        |
+| `marketplaceServerUrl` | Set a custom URL for the Marketplace API                                                                    |
+| `nftServerUrl`         | Set a custom URL for the Marketplace API (legacy, `marketplaceServerUrl` takes priority)                    |
+| `type`                 | Set a custom PreviewType for standalone items passed as urn/url/base64. Currently only supports: `wearable` |
+| `env`                  | The environment to use: `prod` (mainnet wearables and catalysts) or `dev` (testnet)                         |
+
+**Example:** https://wearable-preview.decentraland.org?contract=0xee8ae4c668edd43b34b98934d6d2ff82e41e6488&item=5
+
+### iframe API
 
 It's possible to load the `wearable-preview` in an iframe and communicate with it via `postMessage`:
 
@@ -75,7 +162,7 @@ sendMessage(iframe.contentWindow, PreviewMessageType.UPDATE, {
 })
 ```
 
-### `iframe` events:
+### iframe Events
 
 You can listen to events sent by the iframe via `postMessage`.
 
@@ -121,7 +208,7 @@ function handleMessage(event) {
 window.addEventListener('message', handleMessage)
 ```
 
-### `controller` RPC
+### Controller RPC
 
 The `controller` allows to take screenshots and get metrics from the scene, and also control the emote animations (play/pause/stop/goTo).
 
@@ -196,20 +283,16 @@ Now you can use it like this:
 const screenshot = await sendRequest('scene', 'getScreenshot', [512, 512]) // "data:image/png;base64..."
 ```
 
-### Setup
+## Testing
 
-```
-npm ci
-```
+Run tests:
 
-### Development
-
-```
-npm run start
+```bash
+npm run test
 ```
 
-### Build
+## AI Agent Context
 
-```
-npm run build
-```
+For detailed AI Agent context, see [docs/ai-agent-context.md](docs/ai-agent-context.md).
+
+---
