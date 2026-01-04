@@ -7,6 +7,7 @@ import {
   Camera,
   Color3,
   Color4,
+  CreateSoundAsync,
   DirectionalLight,
   Engine,
   GlowLayer,
@@ -15,9 +16,9 @@ import {
   MeshBuilder,
   Scene,
   SceneLoader,
-  Sound,
   SpotLight,
   StandardMaterial,
+  StaticSound,
   Texture,
   TextureAssetTask,
   Vector3,
@@ -106,6 +107,7 @@ export async function createScene(
     preserveDrawingBuffer: true,
     stencil: true,
     antialias: true,
+    audioEngine: true,
   })
 
   // Setup scene
@@ -288,11 +290,11 @@ export async function loadTexture(
 }
 
 export function loadSound(
-  scene: Scene,
+  _scene: Scene,
   representation: EmoteRepresentationDefinition,
   selectedSound?: string | null,
-): Promise<Sound | null> {
-  return new Promise((resolve, reject) => {
+): Promise<StaticSound | null> {
+  return new Promise(async (resolve, reject) => {
     const soundUrl = representation.contents.find((content) =>
       selectedSound !== null
         ? selectedSound
@@ -305,15 +307,15 @@ export function loadSound(
       return resolve(null)
     }
 
-    const task = new BinaryFileAssetTask('Sound task', soundUrl)
-    const onSuccess = () =>
-      resolve(
-        new Sound('music', task.data, scene, null, {
-          spatialSound: true,
-        }),
-      )
-    const onError = (message?: string) => reject(message)
-    task.run(scene, onSuccess, onError)
+    try {
+      const sound = await CreateSoundAsync('music', soundUrl, {
+        spatialEnabled: true,
+        maxInstances: 1,
+      })
+      return resolve(sound)
+    } catch (error) {
+      return reject(error)
+    }
   })
 }
 

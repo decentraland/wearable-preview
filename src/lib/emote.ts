@@ -62,7 +62,7 @@ export class InvalidEmoteError extends Error {
   }
 }
 
-export function createInvalidEmoteController(): IEmoteController {
+export function createInvalidEmoteController(): IEmoteController & { dispose: () => Promise<void> } {
   return {
     getLength() {
       throw new InvalidEmoteError()
@@ -102,5 +102,8 @@ export function createInvalidEmoteController(): IEmoteController {
       throw new InvalidEmoteError()
     },
     events: mitt(),
+    async dispose() {
+      // No-op for invalid emote controller
+    },
   }
 }

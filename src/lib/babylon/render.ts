@@ -1,14 +1,17 @@
 import { Color4, Mesh, TransformNode, Color3 } from '@babylonjs/core'
-import { PreviewConfig, PreviewType, BodyShape, IPreviewController, IEmoteController } from '@dcl/schemas'
+import { PreviewConfig, PreviewType, BodyShape, IPreviewController } from '@dcl/schemas'
 import { createInvalidEmoteController, isEmote } from '../emote'
 import { getBodyShape } from './body'
 import { getSlots } from './slots'
-import { playEmote } from './emote'
+import { playEmote, EmoteControllerWithDispose } from './emote'
 import { applyFacialFeatures, getFacialFeatures } from './face'
 import { setupMappings } from './mappings'
 import { Asset, center, createScene } from './scene'
 import { buildTwinMapFromContainer, isFacialFeature, isModel, isSuccesful, processOtherAvatarMaterials } from './utils'
 import { loadWearable } from './wearable'
+
+// Track the current emote controller to ensure only one instance exists at a time
+let currentEmoteController: EmoteControllerWithDispose | null = null
 
 /**
  * Initializes Babylon, creates the scene and loads a list of wearables in it
@@ -23,7 +26,7 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
     setupMappings(config)
 
     // emote controller
-    let emoteController: IEmoteController
+    let emoteController: EmoteControllerWithDispose
 
     // load all the wearables into the root scene
     const promises: Promise<void | Asset>[] = []
@@ -84,8 +87,15 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
         applyFacialFeatures(scene, bodyShape, eyes, eyebrows, mouth, config)
       }
 
+      // Dispose previous emote controller before creating a new one
+      if (currentEmoteController) {
+        await currentEmoteController.dispose()
+        currentEmoteController = null
+      }
+
       // play emote
       emoteController = (await playEmote(scene, assets, config, twinMap)) || createInvalidEmoteController() // default to invalid emote controller if there is an issue with the emote, but let the rest of the preview keep working
+      currentEmoteController = emoteController
     } else {
       const wearable = config.item
       if (wearable && !isEmote(wearable)) {
@@ -106,8 +116,15 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
         }
       }
 
+      // Dispose previous emote controller before creating a new one
+      if (currentEmoteController) {
+        await currentEmoteController.dispose()
+        currentEmoteController = null
+      }
+
       // can't use emote controller if PreviewType is not "avatar"
       emoteController = createInvalidEmoteController()
+      currentEmoteController = emoteController
     }
 
     // center the root scene into the camera

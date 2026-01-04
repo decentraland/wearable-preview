@@ -12,6 +12,7 @@ import { useWindowSize } from '../../hooks/useWindowSize'
 import { useConfig } from '../../hooks/useConfig'
 import { useReady } from '../../hooks/useReady'
 import { useController } from '../../hooks/useController'
+import { EmoteControllerWithDispose } from '../../lib/babylon/emote'
 import { render } from '../../lib/babylon/render'
 import { handleEmoteEvents } from '../../lib/emote-events'
 import { getParent } from '../../lib/parent'
@@ -77,6 +78,8 @@ const Preview: React.FC = () => {
 
     return () => {
       removeEmoteEvents()
+      // Dispose emote controller to stop sounds and free resources
+      ;(controller.current?.emote as EmoteControllerWithDispose)?.dispose?.()
     }
   }, [canvasRef.current, config]) // eslint-disable-line
 
