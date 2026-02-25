@@ -21,6 +21,9 @@ export enum UnityMethod {
   // Control methods
   RELOAD = 'Reload',
   CLEANUP = 'Cleanup',
+
+  // Query methods
+  GET_ELEMENT_BOUNDS = 'GetElementBounds',
 }
 
 // Property mapping to Unity JSBridge methods
