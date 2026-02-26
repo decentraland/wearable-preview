@@ -2,13 +2,14 @@ import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import classNames from 'classnames'
 import { PreviewType, PreviewMessageType, sendMessage, PreviewRenderer } from '@dcl/schemas'
 
-import { sendIndividualOverrideMessages } from '../../lib/unity/messages'
+import { sendIndividualOverrideMessages, sendUnityMessage, UnityMethod } from '../../lib/unity/messages'
 import { getParent } from '../../lib/parent'
 import { render } from '../../lib/unity/render'
 import { getRandomDefaultProfile } from '../../lib/profile'
 import { useWindowSize } from '../../hooks/useWindowSize'
 import { useUnityConfig } from '../../hooks/useUnityConfig'
 import { useReady } from '../../hooks/useReady'
+import { useMessage } from '../../hooks/useMessage'
 import { useController } from '../../hooks/useController'
 import { useOptions } from '../../hooks/useOptions'
 
@@ -45,7 +46,13 @@ export enum UnityMessageType {
   ERROR = 'error',
   SCREENSHOT = 'screenshot',
   CUSTOMIZATION_DONE = 'customization-done',
+  ELEMENT_BOUNDS = 'element-bounds',
 }
+
+// Message type sent by the parent to request element bounds
+const GET_ELEMENT_BOUNDS_REQUEST = 'get_element_bounds'
+// Message type sent back to the parent with the element bounds result
+const ELEMENT_BOUNDS_RESPONSE = 'element_bounds_response'
 
 // Custom hook for Unity initialization and state management
 const useUnityRenderer = (
@@ -76,6 +83,8 @@ const useUnityRenderer = (
           ok: true,
           result: JSON.parse(event.data.payload.payload),
         })
+      } else if (type === UnityMessageType.ELEMENT_BOUNDS) {
+        sendMessage(getParent(), ELEMENT_BOUNDS_RESPONSE as any, payload)
       } else if (type === UnityMessageType.ERROR) {
         setRenderingState((prev) => ({ ...prev, error: payload }))
         sendMessage(getParent(), PreviewMessageType.ERROR, { message: 'Error loading the wearable. Please try again.' })
@@ -246,6 +255,16 @@ const UnityPreview: React.FC = () => {
     }),
     [],
   )
+
+  // Handle GetElementBounds requests from the parent window
+  useMessage((event: MessageEvent) => {
+    if (event.data?.type === GET_ELEMENT_BOUNDS_REQUEST && unityInstanceRef.current) {
+      const elementName = event.data.payload?.elementName
+      if (elementName) {
+        sendUnityMessage(unityInstanceRef.current, UnityMethod.GET_ELEMENT_BOUNDS, elementName)
+      }
+    }
+  })
 
   // Custom hooks
   const renderingState = useUnityRenderer(refs, controller, config, isLoadingConfig)
