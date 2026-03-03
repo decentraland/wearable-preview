@@ -10,7 +10,6 @@ export default defineConfig(({ command, mode }) => {
       'process.env': {
         VITE_REACT_APP_DCL_DEFAULT_ENV: envVariables.VITE_REACT_APP_DCL_DEFAULT_ENV,
         VITE_BASE_URL: envVariables.VITE_BASE_URL,
-        VITE_SENTRY_DSN: envVariables.VITE_SENTRY_DSN,
       },
     },
     ...(command === 'build' ? { base: envVariables.VITE_BASE_URL } : undefined),
