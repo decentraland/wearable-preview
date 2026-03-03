@@ -1,5 +1,6 @@
 import mitt from 'mitt'
 import { AnimationGroup, ArcRotateCamera, AssetContainer, Scene, TransformNode, Sound, Engine } from '@babylonjs/core'
+import { captureException } from '../sentry'
 import {
   IEmoteController,
   PreviewCamera,
@@ -84,6 +85,7 @@ export async function playEmote(
       sound = await loadEmoteSound(scene, config.item as EmoteDefinition, config)
     } catch (error) {
       console.warn(`Could not load emote=${config.item.id}`)
+      captureException(error, { phase: 'loadEmoteFromWearable', emoteId: config.item.id })
     }
   }
   if (!container && config.emote) {
@@ -248,6 +250,7 @@ export async function playEmote(
     return controller
   } catch (error) {
     console.warn(`Could not play emote=${config.emote}`, error)
+    captureException(error, { phase: 'playEmote', emote: config.emote })
   }
 }
 

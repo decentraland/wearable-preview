@@ -11,6 +11,7 @@
     "@babylonjs/materials": "^4.2.2",
     "@dcl/schemas": "^20.3.3",
     "@dcl/ui-env": "^1.5.1",
+    "@sentry/browser": "^10.42.0",
     "classnames": "^2.3.1",
     "decentraland-ui": "^6.17.1",
     "fast-deep-equal": "^3.1.3",

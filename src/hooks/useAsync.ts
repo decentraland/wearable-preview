@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { captureException } from '../lib/sentry'
 
 /* 
  ids and nonces are used to identity the order on which async functions are called, 
@@ -32,6 +33,7 @@ export function useAsync<T>(id: string, asyncFunction: (...args: any[]) => Promi
         }
       })
       .catch((error) => {
+        captureException(error, { phase: 'useAsync', id })
         if (isValid(id, nonce)) {
           setError(error.message)
         }

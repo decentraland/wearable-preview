@@ -2,6 +2,7 @@ import { IPreviewController } from '@dcl/schemas'
 import { loadUnityInstance } from './loader'
 import { createSceneController } from './scene'
 import { createEmoteController } from './emote'
+import { captureException } from '../sentry'
 
 export interface UnityInstance {
   SendMessage: (objectName: string, methodName: string, value: string) => void
@@ -57,6 +58,7 @@ export async function render(canvas: HTMLCanvasElement): Promise<IPreviewControl
         instance.Quit()
       } catch (e) {
         console.error('Error quitting Unity instance:', e)
+        captureException(e, { phase: 'unityQuit' })
       }
     }
     throw error
