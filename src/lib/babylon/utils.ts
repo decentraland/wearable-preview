@@ -2,7 +2,18 @@ import { BodyPartCategory, HideableWearableCategory, WearableCategory, WearableD
 import { SocialEmoteAnimation } from '@dcl/schemas/dist/dapps/preview/social-emote-animation'
 import { AnimationGroup, TransformNode, Color3, PBRMaterial, StandardMaterial } from '@babylonjs/core'
 import { getWearableRepresentationOrDefault, isTexture } from '../representation'
+import { parseHex } from '../color'
 import { Asset } from './scene'
+
+export function hexToColor(hex: string) {
+  const parsed = parseHex(hex)
+  const color = new Color3(
+    parseInt(parsed.slice(0, 2), 16) / 256,
+    parseInt(parsed.slice(2, 4), 16) / 256,
+    parseInt(parsed.slice(4, 6), 16) / 256
+  )
+  return color
+}
 
 export function isCategory(category: WearableCategory) {
   return (wearable: WearableDefinition) => wearable.data.category === category

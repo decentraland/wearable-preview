@@ -35,7 +35,7 @@ import {
   PreviewType,
   WearableDefinition,
 } from '@dcl/schemas'
-import { hexToColor } from '../color'
+import { hexToColor } from './utils'
 import { isIOs } from '../env'
 import { getWearableRepresentation } from '../representation'
 import { createSceneController } from '../scene'
