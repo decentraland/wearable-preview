@@ -11,12 +11,12 @@ import { Env } from '@dcl/ui-env'
 let sentryClient: ReturnType<typeof Sentry.init>
 
 export function initSentry() {
-  const SENTRY_DSN = config.get('SENTRY_DNS')
+  const SENTRY_DSN = config.get('SENTRY_DSN')
 
   sentryClient = Sentry.init({
     dsn: SENTRY_DSN,
     environment: config.get('ENVIRONMENT'),
-    release: `${config.get('SENTRY_RELEASE_PREFIX', 'auth')}@${import.meta.env.VITE_REACT_APP_WEBSITE_VERSION}`,
+    release: `${config.get('SENTRY_RELEASE_PREFIX', 'wearable-preview')}@${import.meta.env.VITE_REACT_APP_WEBSITE_VERSION}`,
     enabled: !config.is(Env.DEVELOPMENT),
     defaultIntegrations: false,
     integrations: [
