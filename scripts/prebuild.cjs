@@ -13,7 +13,7 @@ const packageJson = JSON.parse(fs.readFileSync('./package.json').toString())
 const publicPackageJson = JSON.parse(fs.readFileSync('./public/package.json').toString())
 
 // set version
-ENV_CONTENT['REACT_APP_WEBSITE_VERSION'] = packageJson.version
+ENV_CONTENT['VITE_REACT_APP_WEBSITE_VERSION'] = packageJson.version
 publicPackageJson.version = packageJson.version
 
 // set public url

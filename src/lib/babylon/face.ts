@@ -1,6 +1,6 @@
 import { AbstractMesh, Color3, Orientation, PBRMaterial, Scene, StandardMaterial, Texture } from '@babylonjs/core'
 import { PreviewConfig, BodyShape, WearableCategory, WearableDefinition } from '@dcl/schemas'
-import { hexToColor } from '../color'
+import { hexToColor } from './utils'
 import { Asset, loadMask, loadTexture } from './scene'
 import { isCategory } from './utils'
 
