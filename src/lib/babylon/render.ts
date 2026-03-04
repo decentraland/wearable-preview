@@ -1,5 +1,6 @@
 import { Color4, Mesh, TransformNode, Color3 } from '@babylonjs/core'
 import { PreviewConfig, PreviewType, BodyShape, IPreviewController, IEmoteController } from '@dcl/schemas'
+import { captureException } from '../sentry'
 import { createInvalidEmoteController, isEmote } from '../emote'
 import { getBodyShape } from './body'
 import { getSlots } from './slots'
@@ -38,6 +39,7 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
       for (const wearable of wearables.filter(isModel)) {
         const promise = loadWearable(scene, wearable, config.bodyShape, config.skin, config.hair).catch((error) => {
           console.warn(error.message)
+          captureException(error, { phase: 'loadWearable', bodyShape: config.bodyShape })
         })
         promises.push(promise)
       }

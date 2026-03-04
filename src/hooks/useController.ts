@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { IPreviewController, PreviewMessagePayload, PreviewMessageType, sendMessage } from '@dcl/schemas'
 import { useMessage } from './useMessage'
 import { getParent } from '../lib/parent'
+import { captureException } from '../lib/sentry'
 
 function sendResult(id: string, result: any) {
   sendMessage(getParent(), PreviewMessageType.CONTROLLER_RESPONSE, { id, ok: true, result })
@@ -36,6 +37,7 @@ export const useController = () => {
               const result = await fn.apply(null, params)
               sendResult(id, result)
             } catch (error: any) {
+              captureException(error, { phase: 'controller', namespace, method })
               sendError(id, error.message)
             }
           } else {

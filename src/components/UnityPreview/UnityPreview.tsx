@@ -4,6 +4,7 @@ import { PreviewType, PreviewMessageType, sendMessage, PreviewRenderer } from '@
 
 import { sendIndividualOverrideMessages, sendUnityMessage, UnityMethod } from '../../lib/unity/messages'
 import { getParent } from '../../lib/parent'
+import { captureException } from '../../lib/sentry'
 import { render } from '../../lib/unity/render'
 import { getRandomDefaultProfile } from '../../lib/profile'
 import { useWindowSize } from '../../hooks/useWindowSize'
@@ -86,6 +87,7 @@ const useUnityRenderer = (
       } else if (type === UnityMessageType.ELEMENT_BOUNDS) {
         sendMessage(getParent(), ELEMENT_BOUNDS_RESPONSE as any, payload)
       } else if (type === UnityMessageType.ERROR) {
+        captureException(new Error(payload), { component: 'UnityPreview', phase: 'unityMessage' })
         setRenderingState((prev) => ({ ...prev, error: payload }))
         sendMessage(getParent(), PreviewMessageType.ERROR, { message: 'Error loading the wearable. Please try again.' })
       }
@@ -116,6 +118,7 @@ const useUnityRenderer = (
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : DEFAULT_ERROR_MESSAGE
       console.error('Unity init failed:', err)
+      captureException(err, { component: 'UnityPreview', phase: 'initializeUnity' })
       setRenderingState((prev) => ({ ...prev, error: errorMessage }))
       sendMessage(getParent(), PreviewMessageType.ERROR, { message: errorMessage })
     } finally {

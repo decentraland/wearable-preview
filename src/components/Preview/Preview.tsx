@@ -15,6 +15,7 @@ import { useController } from '../../hooks/useController'
 import { render } from '../../lib/babylon/render'
 import { handleEmoteEvents } from '../../lib/emote-events'
 import { getParent } from '../../lib/parent'
+import { captureException } from '../../lib/sentry'
 import './Preview.css'
 
 const Preview: React.FC = () => {
@@ -67,7 +68,10 @@ const Preview: React.FC = () => {
             // handle emote events and forward them as messages
             removeEmoteEvents = handleEmoteEvents(controller.current)
           })
-          .catch((error) => setPreviewError(error.message))
+          .catch((error) => {
+            captureException(error, { component: 'Preview', phase: 'render' })
+            setPreviewError(error.message)
+          })
           .finally(() => {
             setIsLoadingModel(false)
             setIsLoaded(true)
@@ -90,6 +94,7 @@ const Preview: React.FC = () => {
           controller.current?.emote.play()
         }
       } else if (error) {
+        captureException(new Error(error), { component: 'Preview', phase: 'sendErrorToParent' })
         sendMessage(getParent(), PreviewMessageType.ERROR, { message: error })
         setIsMessageSent(true)
       }

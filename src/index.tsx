@@ -5,7 +5,11 @@ import { UnityPreview } from './components/UnityPreview'
 import { WebGPUProvider } from './contexts/WebGPUContext'
 import { useWebGPU } from './hooks/useWebGPU'
 import { detectWebGPU } from './lib/webgpu'
+import { initSentry } from './lib/sentry'
 import './index.css'
+
+// Initialize Sentry as early as possible to capture all errors
+initSentry()
 
 const App = () => {
   const search = new URLSearchParams(window.location.search)

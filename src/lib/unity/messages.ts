@@ -1,3 +1,5 @@
+import { captureException, captureMessage } from '../sentry'
+
 export enum UnityMethod {
   // Property setters
   SET_MODE = 'SetMode',
@@ -75,6 +77,7 @@ export const sendUnityMessage = (unityInstance: any, method: UnityMethod | strin
 
       if (!isValidMethod) {
         console.warn(`Unknown Unity method: ${methodString}. Sending anyway...`)
+        captureMessage(`Unknown Unity method: ${methodString}`, { method: methodString, value })
       }
 
       if (value !== undefined) {
@@ -84,9 +87,11 @@ export const sendUnityMessage = (unityInstance: any, method: UnityMethod | strin
       }
     } catch (error) {
       console.error(`Failed to send Unity message ${method}:`, error)
+      captureException(error, { method: String(method), value })
     }
   } else {
     console.warn(`Unity instance not ready, cannot send message: ${method}`)
+    captureMessage(`Unity instance not ready, cannot send message: ${method}`, { method: String(method) })
   }
 }
 
@@ -97,6 +102,7 @@ export const sendIndividualOverrideMessages = (
 ) => {
   if (!unityInstance) {
     console.warn('Unity instance not available, cannot send override messages')
+    captureMessage('Unity instance not available, cannot send override messages')
     return
   }
 
@@ -131,6 +137,7 @@ export const sendIndividualOverrideMessages = (
         messagesSent++
       } else {
         console.warn(`No Unity method mapping found for property: ${key}`)
+        captureMessage(`No Unity method mapping found for property: ${key}`, { property: key, value })
       }
     }
   })

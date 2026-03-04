@@ -21,6 +21,7 @@ import {
 import { config } from '../config'
 import { nftApi } from './api/nft'
 import { peerApi } from './api/peer'
+import { captureException } from './sentry'
 import { createMemo } from './cache'
 import { colorToHex, formatHex } from './color'
 import { isEmote, getRandomSocialEmoteAnimation } from './emote'
@@ -181,7 +182,10 @@ export async function fetchProfile(profile: string, peerUrl: string) {
     const resp = await peerApi
       .fetchProfile(profile, peerUrl)
       .then((profile) => (profile && profile.avatars.length > 0 ? profile.avatars[0] : null))
-      .catch((error: Error) => console.log(`Failed to load profile="${profile}"`, error))
+      .catch((error: Error) => {
+        console.log(`Failed to load profile="${profile}"`, error)
+        captureException(error, { phase: 'fetchProfile', profile })
+      })
     return resp || null
   })
 }
@@ -191,7 +195,10 @@ export async function fetchProfileEntity(profile: string, peerUrl: string) {
     const resp = await peerApi
       .fetchProfileEntity(profile, peerUrl)
       .then((profile) => (profile && profile.avatars.length > 0 ? profile.avatars[0] : null))
-      .catch((error: Error) => console.log(`Failed to load profile="${profile}"`, error))
+      .catch((error: Error) => {
+        console.log(`Failed to load profile="${profile}"`, error)
+        captureException(error, { phase: 'fetchProfileEntity', profile })
+      })
     return resp || null
   })
 }

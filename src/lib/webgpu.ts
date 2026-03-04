@@ -31,6 +31,8 @@ declare global {
   type GPUFeatureName = string
 }
 
+import { captureException } from './sentry'
+
 export interface WebGPUSupport {
   isSupported: boolean
   isAvailable: boolean
@@ -182,6 +184,7 @@ export const detectWebGPU = async (): Promise<WebGPUSupport> => {
     }
   } catch (error) {
     console.error('❌ WebGPU detection error:', error)
+    captureException(error, { phase: 'detectWebGPU' })
     return {
       isSupported: true,
       isAvailable: false,
