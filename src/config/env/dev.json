@@ -1,4 +1,5 @@
 {
+  "ENVIRONMENT": "development",
   "MARKETPLACE_SERVER_URL": "https://marketplace-api.decentraland.zone",
   "SENTRY_DSN": "https://fc6203205a7c4a0e1408cc9e7fdad2be@o4504361728212992.ingest.us.sentry.io/4510982059130880",
   "PEER_URL": "https://peer-ap1.decentraland.zone",
