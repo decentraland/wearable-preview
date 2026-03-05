@@ -12,12 +12,15 @@ let sentryClient: ReturnType<typeof Sentry.init>
 
 export function initSentry() {
   const SENTRY_DSN = config.get('SENTRY_DSN')
+  const ENVIRONMENT = config.get('ENVIRONMENT')
+  const release = `${config.get('SENTRY_RELEASE_PREFIX', 'wearable-preview')}@${import.meta.env.VITE_REACT_APP_WEBSITE_VERSION}`
+  const enabled = !config.is(Env.DEVELOPMENT)
 
   sentryClient = Sentry.init({
     dsn: SENTRY_DSN,
-    environment: config.get('ENVIRONMENT'),
-    release: `${config.get('SENTRY_RELEASE_PREFIX', 'wearable-preview')}@${import.meta.env.VITE_REACT_APP_WEBSITE_VERSION}`,
-    enabled: !config.is(Env.DEVELOPMENT),
+    environment: ENVIRONMENT,
+    release,
+    enabled,
     defaultIntegrations: false,
     integrations: [
       globalHandlersIntegration(),
@@ -37,6 +40,12 @@ export function initSentry() {
         parentUrl: document.referrer || 'unknown',
       },
     },
+  })
+
+  console.log('Sentry initialized', {
+    environment: ENVIRONMENT,
+    dsn: SENTRY_DSN,
+    release,
   })
 }
 
