@@ -47,6 +47,7 @@ export enum UnityMessageType {
   ERROR = 'error',
   SCREENSHOT = 'screenshot',
   CUSTOMIZATION_DONE = 'customization-done',
+  CUSTOMIZATION_STEP = 'avatar-customization-step',
   ELEMENT_BOUNDS = 'element-bounds',
 }
 
@@ -83,6 +84,12 @@ const useUnityRenderer = (
           id: UnityMessageType.CUSTOMIZATION_DONE,
           ok: true,
           result: JSON.parse(event.data.payload.payload),
+        })
+      } else if (type === UnityMessageType.CUSTOMIZATION_STEP) {
+        sendMessage(getParent(), PreviewMessageType.CONTROLLER_RESPONSE, {
+          id: UnityMessageType.CUSTOMIZATION_STEP,
+          ok: true,
+          result: { step: event.data.payload.payload },
         })
       } else if (type === UnityMessageType.ELEMENT_BOUNDS) {
         sendMessage(getParent(), ELEMENT_BOUNDS_RESPONSE as any, payload)
