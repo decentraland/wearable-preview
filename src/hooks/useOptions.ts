@@ -47,6 +47,19 @@ export const useOptions = (): OptionsWithSource => {
     const lockAlpha = searchParams.get('lockAlpha')
     const lockBeta = searchParams.get('lockBeta')
     const lockRadius = searchParams.get('lockRadius')
+    const showSceneBoundariesParam = searchParams.get('showSceneBoundaries')
+    const showThumbnailBoundariesParam = searchParams.get('showThumbnailBoundaries')
+    const disableBackgroundParam = searchParams.get('disableBackground')
+    const disableAutoCenterParam = searchParams.get('disableAutoCenter')
+    const disableAutoRotateParam = searchParams.get('disableAutoRotate')
+    const disableFaceParam = searchParams.get('disableFace')
+    const disableDefaultWearablesParam = searchParams.get('disableDefaultWearables')
+    const disableDefaultEmotesParam = searchParams.get('disableDefaultEmotes')
+    const disableFadeEffectParam = searchParams.get('disableFadeEffect')
+
+    const parseBooleanParam = (param: string | null | undefined): boolean => {
+      return !!param && param !== 'false'
+    }
 
     const transparentBackground = searchParams.has('transparentBackground')
     if (transparentBackground) {
@@ -89,15 +102,15 @@ export const useOptions = (): OptionsWithSource => {
       urls: searchParams.getAll('url'),
       base64s: searchParams.getAll('base64'),
       profile: searchParams.get('profile'),
-      showSceneBoundaries: searchParams.has('showSceneBoundaries') || false,
-      showThumbnailBoundaries: searchParams.has('showThumbnailBoundaries') || false,
-      disableBackground: searchParams.has('disableBackground') || transparentBackground,
-      disableAutoCenter: searchParams.has('disableAutoCenter') || !centerBoundingBox,
-      disableAutoRotate: searchParams.has('disableAutoRotate') || !centerBoundingBox,
-      disableFace: searchParams.has('disableFace'),
-      disableDefaultWearables: searchParams.has('disableDefaultWearables'),
-      disableDefaultEmotes: searchParams.has('disableDefaultEmotes'),
-      disableFadeEffect: searchParams.has('disableFadeEffect'),
+      showSceneBoundaries: parseBooleanParam(showSceneBoundariesParam),
+      showThumbnailBoundaries: parseBooleanParam(showThumbnailBoundariesParam),
+      disableBackground: parseBooleanParam(disableBackgroundParam) || transparentBackground,
+      disableAutoCenter: parseBooleanParam(disableAutoCenterParam) || !centerBoundingBox,
+      disableAutoRotate: parseBooleanParam(disableAutoRotateParam) || !centerBoundingBox,
+      disableFace: parseBooleanParam(disableFaceParam),
+      disableDefaultWearables: parseBooleanParam(disableDefaultWearablesParam),
+      disableDefaultEmotes: parseBooleanParam(disableDefaultEmotesParam),
+      disableFadeEffect: parseBooleanParam(disableFadeEffectParam),
       peerUrl: searchParams.get('peerUrl'),
       marketplaceServerUrl: searchParams.get('marketplaceServerUrl'),
       nftServerUrl: searchParams.get('nftServerUrl'),
