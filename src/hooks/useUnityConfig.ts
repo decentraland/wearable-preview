@@ -11,6 +11,7 @@ import {
   Avatar,
   PreviewUnityMode,
 } from '@dcl/schemas'
+import { SocialEmoteAnimation } from '@dcl/schemas/dist/dapps/preview/social-emote-animation'
 import { config } from '../config'
 import { colorToHex, formatHex } from '../lib/color'
 import { fetchItemFromContract, fetchProfile, fetchProfileEntity, sanitizeProfile } from '../lib/config'
@@ -38,6 +39,8 @@ export interface UnityPreviewConfig {
   skinColor: string
   token: string | null
   urn: string[] | null
+  itemDefinition: WearableDefinition | EmoteDefinition | null
+  socialEmote: SocialEmoteAnimation | null
 }
 
 interface Background {
@@ -139,7 +142,8 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
 
         // Initialize URLs
         const peerUrl = options.peerUrl || config.get('PEER_URL')
-        const marketplaceServerUrl = options.marketplaceServerUrl || options.nftServerUrl || config.get('MARKETPLACE_SERVER_URL')
+        const marketplaceServerUrl =
+          options.marketplaceServerUrl || options.nftServerUrl || config.get('MARKETPLACE_SERVER_URL')
 
         // Initialize basic config
         let type = PreviewType.WEARABLE
@@ -234,6 +238,8 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
           token: options.tokenId || null,
           urn: options.urns || null,
           showAnimationReference: null,
+          itemDefinition: item,
+          socialEmote: options.socialEmote || null,
         }
 
         // Only update if config has changed

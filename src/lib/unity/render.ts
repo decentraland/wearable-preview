@@ -1,4 +1,5 @@
-import { IPreviewController } from '@dcl/schemas'
+import { EmoteDefinition, IPreviewController } from '@dcl/schemas'
+import { SocialEmoteAnimation } from '@dcl/schemas/dist/dapps/preview/social-emote-animation'
 import { loadUnityInstance } from './loader'
 import { createSceneController } from './scene'
 import { createEmoteController } from './emote'
@@ -17,9 +18,14 @@ export interface UnityInstance {
 /**
  * Initializes Unity and creates the scene with the given configuration
  * @param canvas The canvas element where Unity will render
- * @param config The preview configuration
+ * @param emote The emote definition being previewed (if any)
+ * @param socialEmote The selected social emote animation (if any)
  */
-export async function render(canvas: HTMLCanvasElement): Promise<IPreviewController & { unity: UnityInstance }> {
+export async function render(
+  canvas: HTMLCanvasElement,
+  emote: EmoteDefinition | null,
+  socialEmote?: SocialEmoteAnimation,
+): Promise<IPreviewController & { unity: UnityInstance }> {
   let instance: UnityInstance | null = null
 
   try {
@@ -44,7 +50,7 @@ export async function render(canvas: HTMLCanvasElement): Promise<IPreviewControl
     }
 
     const sceneController = createSceneController(instance)
-    const emoteController = createEmoteController(instance)
+    const emoteController = createEmoteController(instance, emote, socialEmote)
 
     return {
       scene: sceneController,

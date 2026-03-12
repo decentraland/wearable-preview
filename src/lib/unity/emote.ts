@@ -1,5 +1,7 @@
-import { IEmoteController, PreviewEmoteEventType } from '@dcl/schemas'
+import { EmoteDefinition, IEmoteController, PreviewEmoteEventType } from '@dcl/schemas'
 import mitt from 'mitt'
+import { SocialEmoteAnimation } from '@dcl/schemas/dist/dapps/preview/social-emote-animation'
+import { isSocialEmote as isSocialEmoteHelper } from '../emote'
 import { UnityInstance } from './render'
 
 type EmoteEvents = {
@@ -16,7 +18,11 @@ enum UnityMessagePayload {
   HAS_SOUND = 'hasSound',
 }
 
-export function createEmoteController(instance: UnityInstance): IEmoteController {
+export function createEmoteController(
+  instance: UnityInstance,
+  emote: EmoteDefinition | null,
+  playingAnimation?: SocialEmoteAnimation,
+): IEmoteController {
   const events = mitt<EmoteEvents>()
   return {
     getLength: async () => {
@@ -101,6 +107,29 @@ export function createEmoteController(instance: UnityInstance): IEmoteController
         })
       })
     },
+    isSocialEmote: async () => {
+      return isSocialEmoteHelper(emote)
+    },
+    getSocialEmoteAnimations: async () => {
+      if (!emote || !isSocialEmoteHelper(emote)) return null
+
+      return [
+        {
+          title: 'Start Animation',
+          ...emote.emoteDataADR74.startAnimation!,
+        },
+        ...emote.emoteDataADR74.outcomes!.map((outcome) => ({
+          title: outcome.title,
+          loop: outcome.loop,
+          audio: outcome.audio,
+          ...outcome.clips,
+        })),
+      ]
+    },
+    getPlayingSocialEmoteAnimation: async () => {
+      return playingAnimation ?? null
+    },
+    emote,
     events,
   }
 }

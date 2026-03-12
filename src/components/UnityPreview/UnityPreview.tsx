@@ -8,11 +8,12 @@ import { captureException } from '../../lib/sentry'
 import { render } from '../../lib/unity/render'
 import { getRandomDefaultProfile } from '../../lib/profile'
 import { useWindowSize } from '../../hooks/useWindowSize'
-import { useUnityConfig } from '../../hooks/useUnityConfig'
+import { UnityPreviewConfig, useUnityConfig } from '../../hooks/useUnityConfig'
 import { useReady } from '../../hooks/useReady'
 import { useMessage } from '../../hooks/useMessage'
 import { useController } from '../../hooks/useController'
 import { useOptions } from '../../hooks/useOptions'
+import { isEmote } from '../../lib/emote'
 
 import './UnityPreview.css'
 
@@ -94,37 +95,45 @@ const useUnityRenderer = (
     }
   }, [])
 
-  const initializeUnity = useCallback(async () => {
-    if (!refs.canvas.current || refs.isInitializing.current || refs.unityInstance.current) {
-      return
-    }
+  const initializeUnity = useCallback(
+    async (config: UnityPreviewConfig) => {
+      if (!refs.canvas.current || refs.isInitializing.current || refs.unityInstance.current) {
+        return
+      }
 
-    refs.isInitializing.current = true
-    setRenderingState((prev) => ({ ...prev, isLoaded: false, error: null }))
+      refs.isInitializing.current = true
+      setRenderingState((prev) => ({ ...prev, isLoaded: false, error: null }))
 
-    try {
-      const { unity, scene, emote } = await render(refs.canvas.current)
-      refs.unityInstance.current = unity
-      controller.current = { scene, emote }
+      try {
+        const emoteDefinition = config?.itemDefinition && isEmote(config.itemDefinition) ? config.itemDefinition : null
+        const { unity, scene, emote } = await render(
+          refs.canvas.current,
+          emoteDefinition,
+          config?.socialEmote || undefined,
+        )
+        refs.unityInstance.current = unity
+        controller.current = { scene, emote }
 
-      // Unity instance is ready, set loaded state
-      // TODO: get loaded state from unity once unity sent it
-      setRenderingState((prev) => ({
-        ...prev,
-        isLoaded: true,
-        isInitialized: true,
-      }))
-      sendMessage(getParent(), PreviewMessageType.LOAD, { renderer: PreviewRenderer.UNITY })
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : DEFAULT_ERROR_MESSAGE
-      console.error('Unity init failed:', err)
-      captureException(err, { component: 'UnityPreview', phase: 'initializeUnity' })
-      setRenderingState((prev) => ({ ...prev, error: errorMessage }))
-      sendMessage(getParent(), PreviewMessageType.ERROR, { message: errorMessage })
-    } finally {
-      refs.isInitializing.current = false
-    }
-  }, [refs, controller])
+        // Unity instance is ready, set loaded state
+        // TODO: get loaded state from unity once unity sent it
+        setRenderingState((prev) => ({
+          ...prev,
+          isLoaded: true,
+          isInitialized: true,
+        }))
+        sendMessage(getParent(), PreviewMessageType.LOAD, { renderer: PreviewRenderer.UNITY })
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : DEFAULT_ERROR_MESSAGE
+        console.error('Unity init failed:', err)
+        captureException(err, { component: 'UnityPreview', phase: 'initializeUnity' })
+        setRenderingState((prev) => ({ ...prev, error: errorMessage }))
+        sendMessage(getParent(), PreviewMessageType.ERROR, { message: errorMessage })
+      } finally {
+        refs.isInitializing.current = false
+      }
+    },
+    [refs, controller],
+  )
 
   // Separate effect for Unity initialization
   useEffect(() => {
@@ -132,7 +141,7 @@ const useUnityRenderer = (
       return
     }
 
-    initializeUnity()
+    initializeUnity(config)
   }, [config, isLoadingConfig, renderingState.isInitialized, initializeUnity])
 
   // Separate effect for event listener management - always listening when config is available
