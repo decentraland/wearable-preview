@@ -114,14 +114,11 @@ const useUnityRenderer = (
         refs.unityInstance.current = unity
         controller.current = { scene, emote }
 
-        // Unity instance is ready, set loaded state
-        // TODO: get loaded state from unity once unity sent it
+        // Unity instance is initialized; wait for Unity LOADED message to mark as loaded and notify parent
         setRenderingState((prev) => ({
           ...prev,
-          isLoaded: true,
           isInitialized: true,
         }))
-        sendMessage(getParent(), PreviewMessageType.LOAD, { renderer: PreviewRenderer.UNITY })
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : DEFAULT_ERROR_MESSAGE
         console.error('Unity init failed:', err)
