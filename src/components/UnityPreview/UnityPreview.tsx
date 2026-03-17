@@ -316,8 +316,8 @@ const UnityPreview: React.FC = () => {
 
   const canvasDimensions = useMemo(
     () => ({
-      width: Math.round(width * previewState.pixelRatio),
-      height: Math.round(height * previewState.pixelRatio),
+      width: Math.max(1, Math.round(width * previewState.pixelRatio)),
+      height: Math.max(1, Math.round(height * previewState.pixelRatio)),
     }),
     [width, height, previewState.pixelRatio],
   )
