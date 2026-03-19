@@ -23,8 +23,13 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
     // setup the mappings for all the contents
     setupMappings(config)
 
-    // emote controller
     let emoteController: IEmoteController
+    const physicsController = {
+      // Noop. Spring bones are not supported in Babylon.
+      setSpringBonesParams(): Promise<void> {
+        return Promise.resolve()
+      },
+    }
 
     // load all the wearables into the root scene
     const promises: Promise<void | Asset>[] = []
@@ -121,6 +126,7 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
     const controller: IPreviewController = {
       scene: sceneController,
       emote: emoteController,
+      physics: physicsController,
     }
     return controller
   } catch (error) {

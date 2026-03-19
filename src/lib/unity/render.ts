@@ -4,6 +4,7 @@ import { loadUnityInstance } from './loader'
 import { createSceneController } from './scene'
 import { createEmoteController } from './emote'
 import { captureException } from '../sentry'
+import { createPhysicsController } from './physics'
 
 export interface UnityInstance {
   SendMessage: (objectName: string, methodName: string, value: string) => void
@@ -83,10 +84,12 @@ export async function render(
 
     const sceneController = createSceneController(instance)
     const emoteController = createEmoteController(instance, emote, socialEmote)
+    const physicsController = createPhysicsController(instance)
 
     return {
       scene: sceneController,
       emote: emoteController,
+      physics: physicsController,
       unity: instance,
     }
   } catch (error) {
