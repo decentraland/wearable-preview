@@ -1,5 +1,12 @@
 import { Color4, Mesh, TransformNode, Color3 } from '@babylonjs/core'
-import { PreviewConfig, PreviewType, BodyShape, IPreviewController, IEmoteController } from '@dcl/schemas'
+import {
+  PreviewConfig,
+  PreviewType,
+  BodyShape,
+  IPreviewController,
+  IEmoteController,
+  IPhysicsController,
+} from '@dcl/schemas'
 import { captureException } from '../sentry'
 import { createInvalidEmoteController, isEmote } from '../emote'
 import { getBodyShape } from './body'
@@ -24,7 +31,7 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
     setupMappings(config)
 
     let emoteController: IEmoteController
-    const physicsController = {
+    const physicsController: IPhysicsController = {
       // Noop. Spring bones are not supported in Babylon.
       setSpringBonesParams(): Promise<void> {
         return Promise.resolve()
