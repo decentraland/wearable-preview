@@ -113,13 +113,13 @@ const useUnityRenderer = (
 
       try {
         const emoteDefinition = config?.itemDefinition && isEmote(config.itemDefinition) ? config.itemDefinition : null
-        const { unity, scene, emote } = await render(
+        const { unity, ...previewController } = await render(
           refs.canvas.current,
           emoteDefinition,
           config?.socialEmote || undefined,
         )
         refs.unityInstance.current = unity
-        controller.current = { scene, emote }
+        controller.current = previewController
 
         // Unity instance is initialized; wait for Unity LOADED message to mark as loaded and notify parent
         setRenderingState((prev) => ({
