@@ -6,6 +6,7 @@ import {
   IPreviewController,
   IEmoteController,
   IPhysicsController,
+  SpringBoneParams,
 } from '@dcl/schemas'
 import { captureException } from '../sentry'
 import { createInvalidEmoteController, isEmote } from '../emote'
@@ -33,7 +34,7 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
     let emoteController: IEmoteController
     const physicsController: IPhysicsController = {
       // Noop. Spring bones are not supported in Babylon.
-      setSpringBonesParams(): Promise<void> {
+      setSpringBonesParams(_itemHash: string, _params: Record<string, SpringBoneParams>): Promise<void> {
         return Promise.resolve()
       },
     }
