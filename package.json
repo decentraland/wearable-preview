@@ -9,7 +9,7 @@
     "@babylonjs/inspector": "^4.2.2",
     "@babylonjs/loaders": "^4.2.2",
     "@babylonjs/materials": "^4.2.2",
-    "@dcl/schemas": "^25.3.0",
+    "@dcl/schemas": "https://sdk-team-cdn.decentraland.org/@dcl/schemas/branch/fix/spring-bones/dcl-schemas-25.3.1-23851022981.commit-2847dd1.tgz",
     "@dcl/ui-env": "^1.5.1",
     "@sentry/browser": "^10.42.0",
     "classnames": "^2.3.1",
