@@ -70,6 +70,7 @@ const useUnityRenderer = (
     isInitialized: false,
     error: null,
   })
+  const emoteCleanupRef = useRef<(() => void) | null>(null)
 
   const handleUnityMessage = useCallback((event: MessageEvent) => {
     if (event.data.type === UNITY_MESSAGE_TYPE) {
@@ -132,7 +133,11 @@ const useUnityRenderer = (
         handleEmoteEvents(controller.current)
 
         // Forward emote events as postMessages to the parent iframe
-        handleEmoteEvents(controller.current)
+        // Store cleanup to avoid listener leaks on re-init
+        if (emoteCleanupRef.current) {
+          emoteCleanupRef.current()
+        }
+        emoteCleanupRef.current = handleEmoteEvents(controller.current!)
 
         // Unity instance is initialized; wait for Unity LOADED message to mark as loaded and notify parent
         setRenderingState((prev) => ({
@@ -160,6 +165,15 @@ const useUnityRenderer = (
 
     initializeUnity(config)
   }, [config, isLoadingConfig, renderingState.isInitialized, initializeUnity])
+
+  // Clean up emote event listeners on unmount
+  useEffect(() => {
+    return () => {
+      if (emoteCleanupRef.current) {
+        emoteCleanupRef.current()
+      }
+    }
+  }, [])
 
   // Separate effect for event listener management - always listening when config is available
   useEffect(() => {
