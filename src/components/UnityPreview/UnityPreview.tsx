@@ -14,6 +14,7 @@ import { useMessage } from '../../hooks/useMessage'
 import { useController } from '../../hooks/useController'
 import { useOptions } from '../../hooks/useOptions'
 import { isEmote } from '../../lib/emote'
+import { handleEmoteEvents } from '../../lib/emote-events'
 
 import './UnityPreview.css'
 
@@ -80,6 +81,12 @@ const useUnityRenderer = (
           isInitialized: true,
         }))
         sendMessage(getParent(), PreviewMessageType.LOAD, { renderer: PreviewRenderer.UNITY })
+
+        // Start JS-side playback tracking so EmoteControls receives events.
+        // This runs on every OnLoadComplete (initial load + after each Reload).
+        if (controller.current) {
+          controller.current.emote.play()
+        }
       } else if (type === UnityMessageType.CUSTOMIZATION_DONE) {
         sendMessage(getParent(), PreviewMessageType.CONTROLLER_RESPONSE, {
           id: UnityMessageType.CUSTOMIZATION_DONE,
@@ -120,6 +127,9 @@ const useUnityRenderer = (
         )
         refs.unityInstance.current = unity
         controller.current = { scene, emote }
+
+        // Forward emote events as postMessages to the parent iframe
+        handleEmoteEvents(controller.current)
 
         // Unity instance is initialized; wait for Unity LOADED message to mark as loaded and notify parent
         setRenderingState((prev) => ({
