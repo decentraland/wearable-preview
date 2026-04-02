@@ -29,5 +29,11 @@ yarn-error.log*
 
 static-local
 
-.cursor 
+.cursor
 .claude
+
+# Uncompressed Unity build files (dev only, synced via sync-dev-unity-renderer)
+public/unity/Build/aang-renderer.data
+public/unity/Build/aang-renderer.framework.js
+public/unity/Build/aang-renderer.symbols.json
+public/unity/Build/aang-renderer.wasm
