@@ -7,6 +7,7 @@ import {
   IEmoteController,
   IPhysicsController,
   SpringBoneParams,
+  WearableDefinition,
 } from '@dcl/schemas'
 import { captureException } from '../sentry'
 import { createInvalidEmoteController, isEmote } from '../emote'
@@ -18,6 +19,9 @@ import { setupMappings } from './mappings'
 import { Asset, center, createScene } from './scene'
 import { buildTwinMapFromContainer, isFacialFeature, isModel, isSuccesful, processOtherAvatarMaterials } from './utils'
 import { loadWearable } from './wearable'
+import { getWearableRepresentation } from '../representation'
+import { SpringBoneSimulation } from './springBones'
+import './springBoneExtension'
 
 /**
  * Initializes Babylon, creates the scene and loads a list of wearables in it
@@ -32,12 +36,7 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
     setupMappings(config)
 
     let emoteController: IEmoteController
-    const physicsController: IPhysicsController = {
-      // Noop. Spring bones are not supported in Babylon.
-      setSpringBonesParams(_itemHash: string, _params: Record<string, SpringBoneParams>): Promise<void> {
-        return Promise.resolve()
-      },
-    }
+    const simulation = new SpringBoneSimulation()
 
     // load all the wearables into the root scene
     const promises: Promise<void | Asset>[] = []
@@ -69,7 +68,11 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
         // 1) Add originals to the scene
         asset.container.addAllToScene()
 
-        // 2) If we need the "other" avatar now, instantiate a duplicate hierarchy
+        // 2) Register spring bones (must happen after addAllToScene, before playEmote)
+        const itemHash = getItemHash(asset.wearable, config.bodyShape)
+        simulation.registerWearable(scene, asset.container, itemHash)
+
+        // 3) If we need the "other" avatar now, instantiate a duplicate hierarchy
         if (parentOther) {
           const inst = asset.container.instantiateModelsToScene((name) => `${name}_Other`)
           const otherAvatarColor = '#c9c9c9'
@@ -104,26 +107,31 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
     } else {
       const wearable = config.item
       if (wearable && !isEmote(wearable)) {
+        let loadedAsset: Asset
         try {
           // try loading with the required body shape
-          const asset = await loadWearable(scene, wearable, config.bodyShape, config.skin, config.hair)
-          asset.container.addAllToScene()
-        } catch (error) {
+          loadedAsset = await loadWearable(scene, wearable, config.bodyShape, config.skin, config.hair)
+        } catch {
           // default to other body shape if failed
-          const asset = await loadWearable(
+          loadedAsset = await loadWearable(
             scene,
             wearable,
             config.bodyShape === BodyShape.MALE ? BodyShape.FEMALE : BodyShape.MALE,
             config.skin,
             config.hair,
           )
-          asset.container.addAllToScene()
         }
+        loadedAsset.container.addAllToScene()
+        const itemHash = getItemHash(loadedAsset.wearable, config.bodyShape)
+        simulation.registerWearable(scene, loadedAsset.container, itemHash)
       }
 
       // can't use emote controller if PreviewType is not "avatar"
       emoteController = createInvalidEmoteController()
     }
+
+    // start spring bone simulation
+    simulation.start(scene)
 
     // center the root scene into the camera
     if (config.centerBoundingBox) {
@@ -131,6 +139,14 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
     }
 
     // return preview controller
+    const physicsController: IPhysicsController = {
+      setSpringBonesParams(itemHash: string, params: Record<string, SpringBoneParams>): Promise<void> {
+        console.log('[physics] Updating spring bone params for', itemHash, params)
+        simulation.updateParams(itemHash, params)
+        return Promise.resolve()
+      },
+    }
+
     const controller: IPreviewController = {
       scene: sceneController,
       emote: emoteController,
@@ -142,4 +158,18 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
     scene.clearColor = new Color4(0, 0, 0, 0)
     throw error
   }
+}
+
+function getItemHash(wearable: WearableDefinition, bodyShape: BodyShape): string {
+  try {
+    const representation = getWearableRepresentation(wearable, bodyShape)
+    const mainFile = representation.contents.find((c) => c.key === representation.mainFile)
+    if (mainFile?.url) {
+      const segments = mainFile.url.split('/')
+      return segments[segments.length - 1] || wearable.id
+    }
+  } catch (_error) {
+    // fall through
+  }
+  return wearable.id
 }

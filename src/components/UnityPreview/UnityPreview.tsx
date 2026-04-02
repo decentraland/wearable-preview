@@ -130,9 +130,6 @@ const useUnityRenderer = (
         controller.current = previewController
 
         // Forward emote events as postMessages to the parent iframe
-        handleEmoteEvents(controller.current)
-
-        // Forward emote events as postMessages to the parent iframe
         // Store cleanup to avoid listener leaks on re-init
         if (emoteCleanupRef.current) {
           emoteCleanupRef.current()
