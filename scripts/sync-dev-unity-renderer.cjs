@@ -52,8 +52,7 @@ FILE_MAPPINGS.forEach(({ source, dest }) => {
   try {
     // Check if source file exists
     if (!fs.existsSync(sourcePath)) {
-      console.log(`⚠️  Source file not found: ${source}`)
-      errorCount++
+      console.log(`⚠️  Source file not found (skipped): ${source}`)
       return
     }
 
