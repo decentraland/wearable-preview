@@ -57,8 +57,8 @@ export const useOptions = (): OptionsWithSource => {
     const disableDefaultEmotesParam = searchParams.get('disableDefaultEmotes')
     const disableFadeEffectParam = searchParams.get('disableFadeEffect')
 
-    const parseBooleanParam = (param: string | null | undefined): boolean => {
-      return !!param && param !== 'false'
+    const parseBooleanParam = (param: string | null): boolean => {
+      return param !== null && param !== 'false'
     }
 
     const transparentBackground = searchParams.has('transparentBackground')
