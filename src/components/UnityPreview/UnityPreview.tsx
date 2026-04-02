@@ -131,6 +131,9 @@ const useUnityRenderer = (
         // Forward emote events as postMessages to the parent iframe
         handleEmoteEvents(controller.current)
 
+        // Forward emote events as postMessages to the parent iframe
+        handleEmoteEvents(controller.current)
+
         // Unity instance is initialized; wait for Unity LOADED message to mark as loaded and notify parent
         setRenderingState((prev) => ({
           ...prev,
