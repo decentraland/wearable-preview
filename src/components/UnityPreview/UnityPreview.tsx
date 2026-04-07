@@ -129,14 +129,11 @@ const useUnityRenderer = (
         refs.unityInstance.current = unity
         controller.current = previewController
 
-        // Forward emote events as postMessages to the parent iframe
-        handleEmoteEvents(controller.current)
-
-        // Forward emote events as postMessages to the parent iframe
         // Store cleanup to avoid listener leaks on re-init
         if (emoteCleanupRef.current) {
           emoteCleanupRef.current()
         }
+        // Forward emote events as postMessages to the parent iframe
         emoteCleanupRef.current = handleEmoteEvents(controller.current!)
 
         // Unity instance is initialized; wait for Unity LOADED message to mark as loaded and notify parent
