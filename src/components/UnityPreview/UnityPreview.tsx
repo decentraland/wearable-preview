@@ -8,11 +8,13 @@ import { captureException } from '../../lib/sentry'
 import { render } from '../../lib/unity/render'
 import { getRandomDefaultProfile } from '../../lib/profile'
 import { useWindowSize } from '../../hooks/useWindowSize'
-import { useUnityConfig } from '../../hooks/useUnityConfig'
+import { UnityPreviewConfig, useUnityConfig } from '../../hooks/useUnityConfig'
 import { useReady } from '../../hooks/useReady'
 import { useMessage } from '../../hooks/useMessage'
 import { useController } from '../../hooks/useController'
 import { useOptions } from '../../hooks/useOptions'
+import { isEmote } from '../../lib/emote'
+import { handleEmoteEvents } from '../../lib/emote-events'
 
 import './UnityPreview.css'
 
@@ -68,6 +70,7 @@ const useUnityRenderer = (
     isInitialized: false,
     error: null,
   })
+  const emoteCleanupRef = useRef<(() => void) | null>(null)
 
   const handleUnityMessage = useCallback((event: MessageEvent) => {
     if (event.data.type === UNITY_MESSAGE_TYPE) {
@@ -79,6 +82,12 @@ const useUnityRenderer = (
           isInitialized: true,
         }))
         sendMessage(getParent(), PreviewMessageType.LOAD, { renderer: PreviewRenderer.UNITY })
+
+        // Start JS-side playback tracking so EmoteControls receives events.
+        // This runs on every OnLoadComplete (initial load + after each Reload).
+        if (controller.current) {
+          controller.current.emote.play()
+        }
       } else if (type === UnityMessageType.CUSTOMIZATION_DONE) {
         sendMessage(getParent(), PreviewMessageType.CONTROLLER_RESPONSE, {
           id: UnityMessageType.CUSTOMIZATION_DONE,
@@ -101,37 +110,49 @@ const useUnityRenderer = (
     }
   }, [])
 
-  const initializeUnity = useCallback(async () => {
-    if (!refs.canvas.current || refs.isInitializing.current || refs.unityInstance.current) {
-      return
-    }
+  const initializeUnity = useCallback(
+    async (config: UnityPreviewConfig) => {
+      if (!refs.canvas.current || refs.isInitializing.current || refs.unityInstance.current) {
+        return
+      }
 
-    refs.isInitializing.current = true
-    setRenderingState((prev) => ({ ...prev, isLoaded: false, error: null }))
+      refs.isInitializing.current = true
+      setRenderingState((prev) => ({ ...prev, isLoaded: false, error: null }))
 
-    try {
-      const { unity, scene, emote } = await render(refs.canvas.current)
-      refs.unityInstance.current = unity
-      controller.current = { scene, emote }
+      try {
+        const emoteDefinition = config?.itemDefinition && isEmote(config.itemDefinition) ? config.itemDefinition : null
+        const { unity, scene, emote } = await render(
+          refs.canvas.current,
+          emoteDefinition,
+          config?.socialEmote || undefined,
+        )
+        refs.unityInstance.current = unity
+        controller.current = { scene, emote }
 
-      // Unity instance is ready, set loaded state
-      // TODO: get loaded state from unity once unity sent it
-      setRenderingState((prev) => ({
-        ...prev,
-        isLoaded: true,
-        isInitialized: true,
-      }))
-      sendMessage(getParent(), PreviewMessageType.LOAD, { renderer: PreviewRenderer.UNITY })
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : DEFAULT_ERROR_MESSAGE
-      console.error('Unity init failed:', err)
-      captureException(err, { component: 'UnityPreview', phase: 'initializeUnity' })
-      setRenderingState((prev) => ({ ...prev, error: errorMessage }))
-      sendMessage(getParent(), PreviewMessageType.ERROR, { message: errorMessage })
-    } finally {
-      refs.isInitializing.current = false
-    }
-  }, [refs, controller])
+        // Forward emote events as postMessages to the parent iframe
+        // Store cleanup to avoid listener leaks on re-init
+        if (emoteCleanupRef.current) {
+          emoteCleanupRef.current()
+        }
+        emoteCleanupRef.current = handleEmoteEvents(controller.current!)
+
+        // Unity instance is initialized; wait for Unity LOADED message to mark as loaded and notify parent
+        setRenderingState((prev) => ({
+          ...prev,
+          isInitialized: true,
+        }))
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : DEFAULT_ERROR_MESSAGE
+        console.error('Unity init failed:', err)
+        captureException(err, { component: 'UnityPreview', phase: 'initializeUnity' })
+        setRenderingState((prev) => ({ ...prev, error: errorMessage }))
+        sendMessage(getParent(), PreviewMessageType.ERROR, { message: errorMessage })
+      } finally {
+        refs.isInitializing.current = false
+      }
+    },
+    [refs, controller],
+  )
 
   // Separate effect for Unity initialization
   useEffect(() => {
@@ -139,8 +160,17 @@ const useUnityRenderer = (
       return
     }
 
-    initializeUnity()
+    initializeUnity(config)
   }, [config, isLoadingConfig, renderingState.isInitialized, initializeUnity])
+
+  // Clean up emote event listeners on unmount
+  useEffect(() => {
+    return () => {
+      if (emoteCleanupRef.current) {
+        emoteCleanupRef.current()
+      }
+    }
+  }, [])
 
   // Separate effect for event listener management - always listening when config is available
   useEffect(() => {

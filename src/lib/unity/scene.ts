@@ -15,6 +15,8 @@ enum UnityMessagePayload {
   SCREENSHOT = 'screenshot',
 }
 
+const BASE64_IMAGE_HEADER = 'data:image/png;base64,'
+
 export function createSceneController(instance: UnityInstance): ISceneController {
   return {
     getScreenshot: () => {
@@ -29,7 +31,7 @@ export function createSceneController(instance: UnityInstance): ISceneController
             const { type, payload } = event.data.payload
             if (type === UnityMessagePayload.SCREENSHOT) {
               window.removeEventListener('message', onScreenshot)
-              resolve(payload)
+              resolve(BASE64_IMAGE_HEADER + payload)
             }
           }
         })

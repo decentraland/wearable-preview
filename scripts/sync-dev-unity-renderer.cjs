@@ -18,6 +18,11 @@ const FILE_MAPPINGS = [
   { source: 'aang-renderer.loader.js', dest: 'aang-renderer.loader.js' },
   { source: 'aang-renderer.symbols.json.br', dest: 'aang-renderer.symbols.json.br' },
   { source: 'aang-renderer.wasm.br', dest: 'aang-renderer.wasm.br' },
+  // Optional uncompressed variants for local development
+  { source: 'aang-renderer.data', dest: 'aang-renderer.data' },
+  { source: 'aang-renderer.framework.js', dest: 'aang-renderer.framework.js' },
+  { source: 'aang-renderer.symbols.json', dest: 'aang-renderer.symbols.json' },
+  { source: 'aang-renderer.wasm', dest: 'aang-renderer.wasm' },
 ]
 
 // Ensure destination directory exists
@@ -47,8 +52,7 @@ FILE_MAPPINGS.forEach(({ source, dest }) => {
   try {
     // Check if source file exists
     if (!fs.existsSync(sourcePath)) {
-      console.log(`⚠️  Source file not found: ${source}`)
-      errorCount++
+      console.log(`⚠️  Source file not found (skipped): ${source}`)
       return
     }
 
