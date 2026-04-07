@@ -121,19 +121,19 @@ const useUnityRenderer = (
 
       try {
         const emoteDefinition = config?.itemDefinition && isEmote(config.itemDefinition) ? config.itemDefinition : null
-        const { unity, scene, emote } = await render(
+        const { unity, ...previewController } = await render(
           refs.canvas.current,
           emoteDefinition,
           config?.socialEmote || undefined,
         )
         refs.unityInstance.current = unity
-        controller.current = { scene, emote }
+        controller.current = previewController
 
-        // Forward emote events as postMessages to the parent iframe
         // Store cleanup to avoid listener leaks on re-init
         if (emoteCleanupRef.current) {
           emoteCleanupRef.current()
         }
+        // Forward emote events as postMessages to the parent iframe
         emoteCleanupRef.current = handleEmoteEvents(controller.current!)
 
         // Unity instance is initialized; wait for Unity LOADED message to mark as loaded and notify parent

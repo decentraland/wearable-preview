@@ -1,5 +1,13 @@
 import { Color4, Mesh, TransformNode, Color3 } from '@babylonjs/core'
-import { PreviewConfig, PreviewType, BodyShape, IPreviewController, IEmoteController } from '@dcl/schemas'
+import {
+  PreviewConfig,
+  PreviewType,
+  BodyShape,
+  IPreviewController,
+  IEmoteController,
+  IPhysicsController,
+  SpringBoneParams,
+} from '@dcl/schemas'
 import { captureException } from '../sentry'
 import { createInvalidEmoteController, isEmote } from '../emote'
 import { getBodyShape } from './body'
@@ -23,8 +31,13 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
     // setup the mappings for all the contents
     setupMappings(config)
 
-    // emote controller
     let emoteController: IEmoteController
+    const physicsController: IPhysicsController = {
+      // Noop. Spring bones are not supported in Babylon.
+      setSpringBonesParams(_itemHash: string, _params: Record<string, SpringBoneParams>): Promise<void> {
+        return Promise.resolve()
+      },
+    }
 
     // load all the wearables into the root scene
     const promises: Promise<void | Asset>[] = []
@@ -121,6 +134,7 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
     const controller: IPreviewController = {
       scene: sceneController,
       emote: emoteController,
+      physics: physicsController,
     }
     return controller
   } catch (error) {

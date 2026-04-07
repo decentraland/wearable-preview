@@ -26,6 +26,9 @@ export enum UnityMethod {
 
   // Query methods
   GET_ELEMENT_BOUNDS = 'GetElementBounds',
+
+  // Physics
+  SET_SPRING_BONES_PARAMS = 'SetSpringBonesParams',
 }
 
 // Property mapping to Unity JSBridge methods
