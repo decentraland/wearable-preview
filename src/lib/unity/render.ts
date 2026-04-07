@@ -1,10 +1,11 @@
-import { EmoteDefinition, IPreviewController } from '@dcl/schemas'
-import { SocialEmoteAnimation } from '@dcl/schemas/dist/dapps/preview/social-emote-animation'
+import { IPreviewController, PreviewEmote } from '@dcl/schemas'
 import { loadUnityInstance } from './loader'
 import { createSceneController } from './scene'
 import { createEmoteController } from './emote'
-import { captureException } from '../sentry'
 import { createPhysicsController } from './physics'
+import { isEmote } from '../emote'
+import { captureException } from '../sentry'
+import { UnityPreviewConfig } from '../../hooks/useUnityConfig'
 
 export interface UnityInstance {
   SendMessage: (objectName: string, methodName: string, value: string) => void
@@ -49,13 +50,11 @@ function getAangBuildConfig(): AangBuildConfig {
 /**
  * Initializes Unity and creates the scene with the given configuration
  * @param canvas The canvas element where Unity will render
- * @param emote The emote definition being previewed (if any)
- * @param socialEmote The selected social emote animation (if any)
+ * @param config The configuration for the preview (wearables, emote, etc.)
  */
 export async function render(
   canvas: HTMLCanvasElement,
-  emote: EmoteDefinition | null,
-  socialEmote?: SocialEmoteAnimation,
+  config?: UnityPreviewConfig,
 ): Promise<IPreviewController & { unity: UnityInstance }> {
   let instance: UnityInstance | null = null
 
@@ -82,8 +81,12 @@ export async function render(
       throw new Error('Failed to load Unity instance')
     }
 
+    const emoteDefinition = config?.itemDefinition && isEmote(config.itemDefinition) ? config.itemDefinition : null
+    const socialEmote = config?.socialEmote || undefined
+    const previewEmote = (config?.emote as PreviewEmote) || null
+
     const sceneController = createSceneController(instance)
-    const emoteController = createEmoteController(instance, emote, socialEmote)
+    const emoteController = createEmoteController(instance, emoteDefinition, socialEmote, previewEmote)
     const physicsController = createPhysicsController(instance)
 
     return {
