@@ -29,11 +29,10 @@ import './springBoneExtension'
 export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): Promise<IPreviewController> {
   // create the root scene
   const [scene, sceneController] = await createScene(canvas, config)
+  const simulation = new SpringBoneSimulation()
   try {
     // setup the mappings for all the contents
     setupMappings(config)
-
-    const simulation = new SpringBoneSimulation()
     let emoteController: IEmoteController
     const physicsController: IPhysicsController = {
       setSpringBonesParams(itemId: string, params: Record<string, SpringBoneParams>): Promise<void> {
@@ -132,8 +131,9 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
       emoteController = createInvalidEmoteController()
     }
 
-    // start spring bone simulation
+    // start spring bone simulation and tie its lifecycle to the scene
     simulation.start(scene)
+    scene.onDisposeObservable.addOnce(() => simulation.dispose(scene))
 
     // center the root scene into the camera
     if (config.centerBoundingBox) {
@@ -147,6 +147,8 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
     }
     return controller
   } catch (error) {
+    // clean up simulation before re-throwing
+    simulation.dispose(scene)
     // remove background on error
     scene.clearColor = new Color4(0, 0, 0, 0)
     throw error

@@ -367,6 +367,9 @@ export class SpringBoneSimulation {
     // Node lookup is scoped to the wearable's AssetContainer to avoid matching
     // nodes from other wearables that may share the same name.
     //
+    // NOTE: Unlike registerWearable(), we intentionally skip isSpringBoneName()
+    // and GLTF extension checks here. This method is the editor's mechanism for
+    // dynamically adding spring bones to arbitrary nodes via external params.
     // KNOWN LIMITATION: buildChain() captures the current pose as the rest pose.
     // If an animation is playing, the "rest" will be the current animated position,
     // not the bind/T-pose. This can cause visual artifacts where the spring bone
@@ -378,6 +381,7 @@ export class SpringBoneSimulation {
 
       for (const [boneName, boneParams] of Object.entries(params)) {
         if (existingNames.has(boneName)) continue
+        if (chains && chains.length >= MAX_CHAINS_PER_WEARABLE) break
 
         const node = container.transformNodes.find((n) => n.name === boneName)
         if (!node) continue
