@@ -344,17 +344,23 @@ export class SpringBoneSimulation {
   updateParams(itemHash: string, params: Record<string, SpringBoneParams>): void {
     let chains = this.wearables.get(itemHash)
 
-    // Update existing chains
+    // Update existing chains, removing and restoring pose for any not in params
     if (chains) {
-      for (const chain of chains) {
+      chains = chains.filter((chain) => {
         const raw = params[chain.rootName]
         if (raw) {
           chain.params = validateParams(raw, chain.params)
         } else {
-          // Chain not in incoming params — reset to defaults (bone was removed)
-          chain.params = { ...DEFAULT_PARAMS }
+          // Restore all joints to their initial rest pose before discarding the chain
+          for (const joint of chain.joints) {
+            if (joint.node.rotationQuaternion) {
+              joint.node.rotationQuaternion.copyFrom(joint.initialLocalRotation)
+            }
+          }
         }
-      }
+        return !!raw
+      })
+      this.wearables.set(itemHash, chains)
     }
 
     // Build new chains for bone names in params that have no existing chain.

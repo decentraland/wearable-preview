@@ -35,8 +35,15 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
     // setup the mappings for all the contents
     setupMappings(config)
 
-    let emoteController: IEmoteController
     const simulation = new SpringBoneSimulation()
+    let emoteController: IEmoteController
+    const physicsController: IPhysicsController = {
+      setSpringBonesParams(itemHash: string, params: Record<string, SpringBoneParams>): Promise<void> {
+        console.log('[physics] Updating spring bone params for', itemHash, params)
+        simulation.updateParams(itemHash, params)
+        return Promise.resolve()
+      },
+    }
 
     // load all the wearables into the root scene
     const promises: Promise<void | Asset>[] = []
@@ -136,15 +143,6 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
     // center the root scene into the camera
     if (config.centerBoundingBox) {
       center(scene)
-    }
-
-    // return preview controller
-    const physicsController: IPhysicsController = {
-      setSpringBonesParams(itemHash: string, params: Record<string, SpringBoneParams>): Promise<void> {
-        console.log('[physics] Updating spring bone params for', itemHash, params)
-        simulation.updateParams(itemHash, params)
-        return Promise.resolve()
-      },
     }
 
     const controller: IPreviewController = {
