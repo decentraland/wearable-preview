@@ -9,7 +9,7 @@ const MAX_DELTA_TIME = 0.05 // 50ms cap to prevent physics explosion after tab b
 
 const DEFAULT_PARAMS: SpringBoneParams = {
   stiffness: 1,
-  gravityPower: 1,
+  gravityPower: 0,
   gravityDir: [0, -1, 0],
   drag: 0.5,
 }
@@ -121,10 +121,7 @@ function buildChain(root: TransformNode, scene: Scene, params: SpringBoneParams)
   const chainNodes: TransformNode[] = [root]
   let current: TransformNode = root
   while (chainNodes.length < MAX_JOINTS_PER_CHAIN + 1) {
-    const children = current.getChildren(
-      (child) => child instanceof TransformNode,
-      false
-    ) as TransformNode[]
+    const children = current.getChildren((child) => child instanceof TransformNode, false) as TransformNode[]
     if (children.length === 0) break
     chainNodes.push(children[0])
     current = children[0]

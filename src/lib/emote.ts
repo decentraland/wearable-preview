@@ -1,6 +1,15 @@
 import mitt from 'mitt'
-import { WearableDefinition, EmoteDefinition, IEmoteController } from '@dcl/schemas'
+import { WearableDefinition, EmoteDefinition, IEmoteController, PreviewEmote } from '@dcl/schemas'
 import { SocialEmoteAnimation } from '@dcl/schemas/dist/dapps/preview/social-emote-animation'
+
+export const LOOPED_EMOTES_LIST = [
+  PreviewEmote.IDLE,
+  PreviewEmote.MONEY,
+  PreviewEmote.CLAP,
+  PreviewEmote.WALK,
+  PreviewEmote.RUN,
+  PreviewEmote.JUMP,
+]
 
 export function isEmote(definition: WearableDefinition | EmoteDefinition | void): definition is EmoteDefinition {
   return !!definition && 'emoteDataADR74' in definition

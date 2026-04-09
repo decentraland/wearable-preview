@@ -1,11 +1,11 @@
 import { IPreviewController, PreviewEmote } from '@dcl/schemas'
+import { UnityPreviewConfig } from '../../hooks/useUnityConfig'
+import { captureException } from '../sentry'z
+import { isEmote } from '../emote'
 import { loadUnityInstance } from './loader'
 import { createSceneController } from './scene'
 import { createEmoteController } from './emote'
 import { createPhysicsController } from './physics'
-import { isEmote } from '../emote'
-import { captureException } from '../sentry'
-import { UnityPreviewConfig } from '../../hooks/useUnityConfig'
 
 export interface UnityInstance {
   SendMessage: (objectName: string, methodName: string, value: string) => void

@@ -10,25 +10,16 @@ import {
   PreviewEmoteEventType,
 } from '@dcl/schemas'
 import { SocialEmoteAnimation } from '@dcl/schemas/dist/dapps/preview/social-emote-animation'
-import { isEmote, isSocialEmote } from '../emote'
+import { isEmote, isSocialEmote, LOOPED_EMOTES_LIST } from '../emote'
 import { startAutoRotateBehavior } from './camera'
 import { Asset, loadAssetContainer, loadSound } from './scene'
 import { getEmoteRepresentation } from '../representation'
 import { shouldApplySocialEmoteAnimation } from './utils'
 
-const loopedEmotes = [
-  PreviewEmote.IDLE,
-  PreviewEmote.MONEY,
-  PreviewEmote.CLAP,
-  PreviewEmote.WALK,
-  PreviewEmote.RUN,
-  PreviewEmote.JUMP,
-]
-
 let intervalId: number | undefined
 
 function isLooped(emote: PreviewEmote) {
-  return loopedEmotes.includes(emote)
+  return LOOPED_EMOTES_LIST.includes(emote)
 }
 
 export function buildEmoteUrl(emote: PreviewEmote) {

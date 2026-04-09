@@ -1,17 +1,8 @@
 import { EmoteDefinition, IEmoteController, PreviewEmote, PreviewEmoteEventType } from '@dcl/schemas'
 import mitt from 'mitt'
 import { SocialEmoteAnimation } from '@dcl/schemas/dist/dapps/preview/social-emote-animation'
-import { isSocialEmote as isSocialEmoteHelper } from '../emote'
+import { isSocialEmote as isSocialEmoteHelper, LOOPED_EMOTES_LIST } from '../emote'
 import { UnityInstance } from './render'
-
-const loopedEmotes = [
-  PreviewEmote.IDLE,
-  PreviewEmote.MONEY,
-  PreviewEmote.CLAP,
-  PreviewEmote.WALK,
-  PreviewEmote.RUN,
-  PreviewEmote.JUMP,
-]
 
 type EmoteEvents = {
   [PreviewEmoteEventType.ANIMATION_PLAY]: void
@@ -51,7 +42,7 @@ export function createEmoteController(
   const isLooping = (): boolean => {
     if (playingAnimation) return playingAnimation.loop
     if (emote?.emoteDataADR74?.loop) return true
-    if (previewEmote && loopedEmotes.includes(previewEmote)) return true
+    if (previewEmote && LOOPED_EMOTES_LIST.includes(previewEmote)) return true
     return false
   }
 
