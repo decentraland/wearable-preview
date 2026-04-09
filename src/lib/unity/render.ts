@@ -1,6 +1,6 @@
 import { IPreviewController, PreviewEmote } from '@dcl/schemas'
 import { UnityPreviewConfig } from '../../hooks/useUnityConfig'
-import { captureException } from '../sentry'z
+import { captureException } from '../sentry'
 import { isEmote } from '../emote'
 import { loadUnityInstance } from './loader'
 import { createSceneController } from './scene'

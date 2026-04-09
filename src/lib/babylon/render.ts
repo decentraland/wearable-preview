@@ -7,11 +7,9 @@ import {
   IEmoteController,
   IPhysicsController,
   SpringBoneParams,
-  WearableDefinition,
 } from '@dcl/schemas'
 import { captureException } from '../sentry'
 import { createInvalidEmoteController, isEmote } from '../emote'
-import { getWearableRepresentation } from '../representation'
 import { getBodyShape } from './body'
 import { getSlots } from './slots'
 import { playEmote } from './emote'
@@ -38,9 +36,8 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
     const simulation = new SpringBoneSimulation()
     let emoteController: IEmoteController
     const physicsController: IPhysicsController = {
-      setSpringBonesParams(itemHash: string, params: Record<string, SpringBoneParams>): Promise<void> {
-        console.log('[physics] Updating spring bone params for', itemHash, params)
-        simulation.updateParams(itemHash, params)
+      setSpringBonesParams(itemId: string, params: Record<string, SpringBoneParams>): Promise<void> {
+        simulation.updateParams(itemId, params)
         return Promise.resolve()
       },
     }
@@ -76,8 +73,7 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
         asset.container.addAllToScene()
 
         // 2) Register spring bones (must happen after addAllToScene, before playEmote)
-        const itemHash = getItemHash(asset.wearable, config.bodyShape)
-        simulation.registerWearable(scene, asset.container, itemHash)
+        simulation.registerWearable(scene, asset.container, asset.wearable.id)
 
         // 3) If we need the "other" avatar now, instantiate a duplicate hierarchy
         if (parentOther) {
@@ -129,8 +125,7 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
           )
         }
         loadedAsset.container.addAllToScene()
-        const itemHash = getItemHash(loadedAsset.wearable, config.bodyShape)
-        simulation.registerWearable(scene, loadedAsset.container, itemHash)
+        simulation.registerWearable(scene, loadedAsset.container, loadedAsset.wearable.id)
       }
 
       // can't use emote controller if PreviewType is not "avatar"
@@ -156,18 +151,4 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
     scene.clearColor = new Color4(0, 0, 0, 0)
     throw error
   }
-}
-
-function getItemHash(wearable: WearableDefinition, bodyShape: BodyShape): string {
-  try {
-    const representation = getWearableRepresentation(wearable, bodyShape)
-    const mainFile = representation.contents.find((c) => c.key === representation.mainFile)
-    if (mainFile?.url) {
-      const segments = mainFile.url.split('/')
-      return segments[segments.length - 1] || wearable.id
-    }
-  } catch (_error) {
-    // fall through
-  }
-  return wearable.id
 }
