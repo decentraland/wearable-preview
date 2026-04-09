@@ -1,16 +1,8 @@
-import { EmoteDefinition, IEmoteController, PreviewEmote, PreviewEmoteEventType } from '@dcl/schemas'
+import { EmoteDefinition, EmoteEvents, IEmoteController, PreviewEmote, PreviewEmoteEventType } from '@dcl/schemas'
 import mitt from 'mitt'
 import { SocialEmoteAnimation } from '@dcl/schemas/dist/dapps/preview/social-emote-animation'
 import { isSocialEmote as isSocialEmoteHelper, LOOPED_EMOTES_LIST } from '../emote'
 import { UnityInstance } from './render'
-
-type EmoteEvents = {
-  [PreviewEmoteEventType.ANIMATION_PLAY]: void
-  [PreviewEmoteEventType.ANIMATION_PAUSE]: void
-  [PreviewEmoteEventType.ANIMATION_LOOP]: void
-  [PreviewEmoteEventType.ANIMATION_END]: void
-  [PreviewEmoteEventType.ANIMATION_PLAYING]: { length: number }
-}
 
 enum UnityMessagePayload {
   LENGTH = 'emoteLength',
@@ -39,7 +31,7 @@ export function createEmoteController(
   let playingIntervalId: ReturnType<typeof setInterval> | null = null
   let lastTickTime = 0
 
-  const isLooping = (): boolean => {
+  const isLooped = (): boolean => {
     if (playingAnimation) return playingAnimation.loop
     if (emote?.emoteDataADR74?.loop) return true
     if (previewEmote && LOOPED_EMOTES_LIST.includes(previewEmote)) return true
@@ -57,7 +49,7 @@ export function createEmoteController(
       currentTime += delta
 
       if (emoteLength > 0 && currentTime >= emoteLength) {
-        if (isLooping()) {
+        if (isLooped()) {
           currentTime = currentTime % emoteLength
           events.emit(PreviewEmoteEventType.ANIMATION_LOOP)
         } else {

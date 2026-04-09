@@ -8,6 +8,7 @@ import {
   PreviewEmote,
   EmoteDefinition,
   PreviewEmoteEventType,
+  EmoteEvents,
 } from '@dcl/schemas'
 import { SocialEmoteAnimation } from '@dcl/schemas/dist/dapps/preview/social-emote-animation'
 import { isEmote, isSocialEmote, LOOPED_EMOTES_LIST } from '../emote'
@@ -364,16 +365,7 @@ function createController(
     return playingAnimation ?? null
   }
 
-  // Temporary typed events.
-  type Events = {
-    [PreviewEmoteEventType.ANIMATION_PLAY]: void
-    [PreviewEmoteEventType.ANIMATION_PAUSE]: void
-    [PreviewEmoteEventType.ANIMATION_LOOP]: void
-    [PreviewEmoteEventType.ANIMATION_END]: void
-    [PreviewEmoteEventType.ANIMATION_PLAYING]: { length: number }
-  }
-
-  const events = mitt<Events>()
+  const events = mitt<EmoteEvents>()
 
   // Emit the PreviewEmoteEventType.ANIMATION_PLAYING event with the current playing frame
   const emitPlayingEvent = () => {
