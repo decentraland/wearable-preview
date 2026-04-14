@@ -13,7 +13,6 @@ import { useReady } from '../../hooks/useReady'
 import { useMessage } from '../../hooks/useMessage'
 import { useController } from '../../hooks/useController'
 import { useOptions } from '../../hooks/useOptions'
-import { isEmote } from '../../lib/emote'
 import { handleEmoteEvents } from '../../lib/emote-events'
 
 import './UnityPreview.css'
@@ -120,12 +119,7 @@ const useUnityRenderer = (
       setRenderingState((prev) => ({ ...prev, isLoaded: false, error: null }))
 
       try {
-        const emoteDefinition = config?.itemDefinition && isEmote(config.itemDefinition) ? config.itemDefinition : null
-        const { unity, ...previewController } = await render(
-          refs.canvas.current,
-          emoteDefinition,
-          config?.socialEmote || undefined,
-        )
+        const { unity, ...previewController } = await render(refs.canvas.current, config)
         refs.unityInstance.current = unity
         controller.current = previewController
 

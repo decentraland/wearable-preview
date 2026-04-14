@@ -1,16 +1,8 @@
-import { EmoteDefinition, IEmoteController, PreviewEmoteEventType } from '@dcl/schemas'
+import { EmoteDefinition, EmoteEvents, IEmoteController, PreviewEmote, PreviewEmoteEventType } from '@dcl/schemas'
 import mitt from 'mitt'
 import { SocialEmoteAnimation } from '@dcl/schemas/dist/dapps/preview/social-emote-animation'
-import { isSocialEmote as isSocialEmoteHelper } from '../emote'
+import { isSocialEmote as isSocialEmoteHelper, LOOPED_EMOTES_LIST } from '../emote'
 import { UnityInstance } from './render'
-
-type EmoteEvents = {
-  [PreviewEmoteEventType.ANIMATION_PLAY]: void
-  [PreviewEmoteEventType.ANIMATION_PAUSE]: void
-  [PreviewEmoteEventType.ANIMATION_LOOP]: void
-  [PreviewEmoteEventType.ANIMATION_END]: void
-  [PreviewEmoteEventType.ANIMATION_PLAYING]: { length: number }
-}
 
 enum UnityMessagePayload {
   LENGTH = 'emoteLength',
@@ -28,6 +20,7 @@ export function createEmoteController(
   instance: UnityInstance,
   emote: EmoteDefinition | null,
   playingAnimation?: SocialEmoteAnimation,
+  previewEmote?: PreviewEmote | null,
 ): IEmoteController {
   const events = mitt<EmoteEvents>()
 
@@ -37,6 +30,13 @@ export function createEmoteController(
   let state: PlaybackState = PlaybackState.STOPPED
   let playingIntervalId: ReturnType<typeof setInterval> | null = null
   let lastTickTime = 0
+
+  const isLooped = (): boolean => {
+    if (playingAnimation) return playingAnimation.loop
+    if (emote?.emoteDataADR74?.loop) return true
+    if (previewEmote && LOOPED_EMOTES_LIST.includes(previewEmote)) return true
+    return false
+  }
 
   const startPlayingInterval = () => {
     stopPlayingInterval()
@@ -49,13 +49,14 @@ export function createEmoteController(
       currentTime += delta
 
       if (emoteLength > 0 && currentTime >= emoteLength) {
-        if (emote?.emoteDataADR74?.loop) {
+        if (isLooped()) {
           currentTime = currentTime % emoteLength
           events.emit(PreviewEmoteEventType.ANIMATION_LOOP)
         } else {
           currentTime = emoteLength
           stopPlayingInterval()
           state = PlaybackState.STOPPED
+          instance.SendMessage('JSBridge', 'StopEmote', '')
           events.emit(PreviewEmoteEventType.ANIMATION_PLAYING, { length: currentTime })
           events.emit(PreviewEmoteEventType.ANIMATION_END)
           return
