@@ -7,6 +7,13 @@ const MAX_CHAINS_PER_WEARABLE = 32
 const MAX_JOINTS_PER_CHAIN = 64
 const MAX_DELTA_TIME = 0.05 // 50ms cap to prevent physics explosion after tab backgrounding
 
+const SPRING_BONE_STIFFNESS_MIN = 0
+const SPRING_BONE_STIFFNESS_MAX = 4
+const SPRING_BONE_GRAVITY_POWER_MIN = 0
+const SPRING_BONE_GRAVITY_POWER_MAX = 2
+const SPRING_BONE_DRAG_MIN = 0
+const SPRING_BONE_DRAG_MAX = 1
+
 const DEFAULT_PARAMS: SpringBoneParams = {
   stiffness: 1,
   gravityPower: 0,
@@ -90,10 +97,15 @@ function sanitizeGravityDir(dir: unknown): [number, number, number] {
 
 function validateParams(raw: Partial<SpringBoneParams>, fallback: SpringBoneParams = DEFAULT_PARAMS): SpringBoneParams {
   return {
-    stiffness: clampFinite(raw.stiffness, 0, 5, fallback.stiffness),
-    gravityPower: clampFinite(raw.gravityPower, 0, 10, fallback.gravityPower),
+    stiffness: clampFinite(raw.stiffness, SPRING_BONE_STIFFNESS_MIN, SPRING_BONE_STIFFNESS_MAX, fallback.stiffness),
+    gravityPower: clampFinite(
+      raw.gravityPower,
+      SPRING_BONE_GRAVITY_POWER_MIN,
+      SPRING_BONE_GRAVITY_POWER_MAX,
+      fallback.gravityPower,
+    ),
     gravityDir: sanitizeGravityDir(raw.gravityDir),
-    drag: clampFinite(raw.drag, 0, 1, fallback.drag),
+    drag: clampFinite(raw.drag, SPRING_BONE_DRAG_MIN, SPRING_BONE_DRAG_MAX, fallback.drag),
     center: typeof raw.center === 'string' ? raw.center : fallback.center,
   }
 }
