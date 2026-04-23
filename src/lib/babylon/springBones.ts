@@ -1,6 +1,5 @@
 import { AssetContainer, Matrix, Quaternion, Scene, TransformNode, Vector3 } from '@babylonjs/core'
 import { SpringBoneParams } from '@dcl/schemas'
-import { DCL_SPRING_BONE_EXTENSION, IDCLSpringBoneJoint } from './springBoneExtension'
 
 const SPRING_BONE_PREFIX = 'springbone'
 const MAX_CHAINS_PER_WEARABLE = 32
@@ -15,7 +14,7 @@ const SPRING_BONE_DRAG_MIN = 0
 const SPRING_BONE_DRAG_MAX = 1
 
 const DEFAULT_PARAMS: SpringBoneParams = {
-  stiffness: 1,
+  stiffness: 2,
   gravityPower: 0,
   gravityDir: [0, -1, 0],
   drag: 0.5,
@@ -40,10 +39,6 @@ type SpringChain = {
 
 function isSpringBoneName(name: string): boolean {
   return name.toLowerCase().includes(SPRING_BONE_PREFIX)
-}
-
-function getExtensionData(node: TransformNode): IDCLSpringBoneJoint | null {
-  return node.metadata?.gltf?.[DCL_SPRING_BONE_EXTENSION] ?? null
 }
 
 // Pre-allocated scratch objects to avoid per-frame heap allocations
@@ -108,10 +103,6 @@ function validateParams(raw: Partial<SpringBoneParams>, fallback: SpringBonePara
     drag: clampFinite(raw.drag, SPRING_BONE_DRAG_MIN, SPRING_BONE_DRAG_MAX, fallback.drag),
     center: typeof raw.center === 'string' ? raw.center : fallback.center,
   }
-}
-
-function extensionToParams(ext: IDCLSpringBoneJoint): SpringBoneParams {
-  return validateParams(ext)
 }
 
 function resolveCenter(centerName: string | undefined, scene: Scene): TransformNode | null {
@@ -337,11 +328,8 @@ export class SpringBoneSimulation {
     for (const node of container.transformNodes) {
       if (!isSpringBoneName(node.name)) continue
 
-      const ext = getExtensionData(node)
-      if (!ext) continue
-
-      const params = extensionToParams(ext)
-      const chain = buildChain(node, scene, params)
+      // Register spring bone nodes detected by naming convention with default params
+      const chain = buildChain(node, scene, { ...DEFAULT_PARAMS })
       if (chain) {
         chains.push(chain)
         if (chains.length >= MAX_CHAINS_PER_WEARABLE) break
@@ -380,7 +368,7 @@ export class SpringBoneSimulation {
     // nodes from other wearables that may share the same name.
     //
     // NOTE: Unlike registerWearable(), we intentionally skip isSpringBoneName()
-    // and GLTF extension checks here. This method is the editor's mechanism for
+    // checks here. This method is the editor's/metadata's mechanism for
     // dynamically adding spring bones to arbitrary nodes via external params.
     // KNOWN LIMITATION: buildChain() captures the current pose as the rest pose.
     // If an animation is playing, the "rest" will be the current animated position,
