@@ -106,16 +106,11 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
         // 1) Add originals to the scene
         asset.container.addAllToScene()
 
-        // 2) Register spring bones (must happen after addAllToScene, before playEmote)
-        simulation.registerWearable(scene, asset.container, asset.wearable.id)
-
-        // 3) Apply spring bone params from wearable metadata if available
+        // 2) Register spring bones with metadata params if available
         const metadataParams = getSpringBoneParamsFromMetadata(asset.wearable, config.bodyShape)
-        if (metadataParams) {
-          simulation.updateParams(asset.wearable.id, metadataParams)
-        }
+        simulation.registerWearable(scene, asset.container, asset.wearable.id, metadataParams ?? undefined)
 
-        // 4) If we need the "other" avatar now, instantiate a duplicate hierarchy
+        // 3) If we need the "other" avatar now, instantiate a duplicate hierarchy
         if (parentOther) {
           const inst = asset.container.instantiateModelsToScene((name) => `${name}_Other`)
           const otherAvatarColor = '#c9c9c9'
@@ -165,13 +160,8 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
           )
         }
         loadedAsset.container.addAllToScene()
-        simulation.registerWearable(scene, loadedAsset.container, loadedAsset.wearable.id)
-
-        // Apply spring bone params from wearable metadata (standalone preview)
         const metadataParams = getSpringBoneParamsFromMetadata(loadedAsset.wearable, config.bodyShape)
-        if (metadataParams) {
-          simulation.updateParams(loadedAsset.wearable.id, metadataParams)
-        }
+        simulation.registerWearable(scene, loadedAsset.container, loadedAsset.wearable.id, metadataParams ?? undefined)
       }
 
       // can't use emote controller if PreviewType is not "avatar"

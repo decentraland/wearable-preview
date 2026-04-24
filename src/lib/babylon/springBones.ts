@@ -320,19 +320,34 @@ export class SpringBoneSimulation {
   private beforeRenderCallback: (() => void) | null = null
   private scene: Scene | null = null
 
-  registerWearable(scene: Scene, container: AssetContainer, itemHash: string): void {
+  registerWearable(
+    scene: Scene,
+    container: AssetContainer,
+    itemHash: string,
+    metadataParams?: Record<string, SpringBoneParams>,
+  ): void {
     this.scene = scene
     this.containers.set(itemHash, container)
     const chains: SpringChain[] = []
 
-    for (const node of container.transformNodes) {
-      if (!isSpringBoneName(node.name)) continue
-
-      // Register spring bone nodes detected by naming convention with default params
-      const chain = buildChain(node, scene, { ...DEFAULT_PARAMS })
-      if (chain) {
-        chains.push(chain)
+    if (metadataParams) {
+      for (const [boneName, boneParams] of Object.entries(metadataParams)) {
         if (chains.length >= MAX_CHAINS_PER_WEARABLE) break
+        const node = container.transformNodes.find((n) => n.name === boneName)
+        if (!node) continue
+        const chain = buildChain(node, scene, validateParams(boneParams))
+        if (chain) {
+          chains.push(chain)
+        }
+      }
+    } else {
+      for (const node of container.transformNodes) {
+        if (!isSpringBoneName(node.name)) continue
+        const chain = buildChain(node, scene, { ...DEFAULT_PARAMS })
+        if (chain) {
+          chains.push(chain)
+          if (chains.length >= MAX_CHAINS_PER_WEARABLE) break
+        }
       }
     }
 
