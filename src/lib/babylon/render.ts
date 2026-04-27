@@ -19,42 +19,7 @@ import { Asset, center, createScene } from './scene'
 import { buildTwinMapFromContainer, isFacialFeature, isModel, isSuccesful, processOtherAvatarMaterials } from './utils'
 import { loadWearable } from './wearable'
 import { SpringBoneSimulation } from './springBones'
-import { getWearableRepresentation } from '../representation'
-
-/**
- * Extracts spring bone params from a wearable's metadata (data.springBones) for a given body shape.
- * Returns null if no spring bone metadata is present for this wearable/representation.
- */
-function getSpringBoneParamsFromMetadata(
-  wearable: { id: string; data: any },
-  bodyShape: BodyShape,
-): Record<string, SpringBoneParams> | null {
-  const springBones = wearable.data?.springBones
-  if (!springBones || !springBones.models) return null
-
-  // Determine the GLB filename from the representation's mainFile
-  let filename: string | null = null
-  try {
-    const representation = getWearableRepresentation(wearable as any, bodyShape)
-    filename = representation.mainFile
-  } catch {
-    // If representation lookup fails, try the other body shape
-    try {
-      const otherShape = bodyShape === BodyShape.MALE ? BodyShape.FEMALE : BodyShape.MALE
-      const representation = getWearableRepresentation(wearable as any, otherShape)
-      filename = representation.mainFile
-    } catch {
-      return null
-    }
-  }
-
-  if (!filename) return null
-
-  const modelParams = springBones.models[filename]
-  if (!modelParams || typeof modelParams !== 'object') return null
-
-  return modelParams as Record<string, SpringBoneParams>
-}
+import { getSpringBoneParamsFromMetadata } from '../wearable'
 
 /**
  * Initializes Babylon, creates the scene and loads a list of wearables in it
@@ -107,8 +72,8 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
         asset.container.addAllToScene()
 
         // 2) Register spring bones with metadata params if available
-        const metadataParams = getSpringBoneParamsFromMetadata(asset.wearable, config.bodyShape)
-        simulation.registerWearable(scene, asset.container, asset.wearable.id, metadataParams ?? undefined)
+        const springBonesParams = getSpringBoneParamsFromMetadata(asset.wearable, config.bodyShape)
+        simulation.registerWearable(scene, asset.container, asset.wearable.id, springBonesParams)
 
         // 3) If we need the "other" avatar now, instantiate a duplicate hierarchy
         if (parentOther) {
@@ -160,8 +125,8 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
           )
         }
         loadedAsset.container.addAllToScene()
-        const metadataParams = getSpringBoneParamsFromMetadata(loadedAsset.wearable, config.bodyShape)
-        simulation.registerWearable(scene, loadedAsset.container, loadedAsset.wearable.id, metadataParams ?? undefined)
+        const springBonesParams = getSpringBoneParamsFromMetadata(loadedAsset.wearable, config.bodyShape)
+        simulation.registerWearable(scene, loadedAsset.container, loadedAsset.wearable.id, springBonesParams)
       }
 
       // can't use emote controller if PreviewType is not "avatar"

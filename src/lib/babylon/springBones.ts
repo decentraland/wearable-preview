@@ -324,26 +324,20 @@ export class SpringBoneSimulation {
     scene: Scene,
     container: AssetContainer,
     itemHash: string,
-    metadataParams?: Record<string, SpringBoneParams>,
+    springBonesParams?: Record<string, SpringBoneParams>,
   ): void {
     this.scene = scene
     this.containers.set(itemHash, container)
     const chains: SpringChain[] = []
 
-    if (metadataParams) {
-      for (const [boneName, boneParams] of Object.entries(metadataParams)) {
-        if (chains.length >= MAX_CHAINS_PER_WEARABLE) break
-        const node = container.transformNodes.find((n) => n.name === boneName)
-        if (!node) continue
-        const chain = buildChain(node, scene, validateParams(boneParams))
-        if (chain) {
-          chains.push(chain)
-        }
-      }
-    } else {
+    if (springBonesParams) {
       for (const node of container.transformNodes) {
         if (!isSpringBoneName(node.name)) continue
-        const chain = buildChain(node, scene, { ...DEFAULT_PARAMS })
+
+        const params = springBonesParams[node.name]
+        if (!params) continue
+
+        const chain = buildChain(node, scene, validateParams(params))
         if (chain) {
           chains.push(chain)
           if (chains.length >= MAX_CHAINS_PER_WEARABLE) break
@@ -383,7 +377,7 @@ export class SpringBoneSimulation {
     // nodes from other wearables that may share the same name.
     //
     // NOTE: Unlike registerWearable(), we intentionally skip isSpringBoneName()
-    // checks here. This method is the editor's/metadata's mechanism for
+    // checks here. This method is the editor's mechanism for
     // dynamically adding spring bones to arbitrary nodes via external params.
     // KNOWN LIMITATION: buildChain() captures the current pose as the rest pose.
     // If an animation is playing, the "rest" will be the current animated position,

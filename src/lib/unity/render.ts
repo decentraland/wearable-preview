@@ -1,9 +1,8 @@
-import { BodyShape, IPreviewController, PreviewEmote, SpringBoneParams, WearableDefinition } from '@dcl/schemas'
+import { IPreviewController, PreviewEmote } from '@dcl/schemas'
 import { UnityPreviewConfig } from '../../hooks/useUnityConfig'
 import { captureException } from '../sentry'
 import { isEmote } from '../emote'
-import { isWearable } from '../wearable'
-import { getWearableRepresentation } from '../representation'
+import { getSpringBoneParamsFromMetadata, isWearable } from '../wearable'
 import { loadUnityInstance } from './loader'
 import { createSceneController } from './scene'
 import { createEmoteController } from './emote'
@@ -50,40 +49,6 @@ function getAangBuildConfig(): AangBuildConfig {
 }
 
 /**
- * Extracts spring bone params from a wearable's metadata (data.springBones) for a given body shape.
- * Returns null if no spring bone metadata is present for this wearable/representation.
- */
-function getSpringBoneParamsFromMetadata(
-  wearable: WearableDefinition,
-  bodyShape: BodyShape,
-): Record<string, SpringBoneParams> | null {
-  const data = wearable.data as any
-  const springBones = data?.springBones
-  if (!springBones || !springBones.models) return null
-
-  let filename: string | null = null
-  try {
-    const representation = getWearableRepresentation(wearable, bodyShape)
-    filename = representation.mainFile
-  } catch {
-    try {
-      const otherShape = bodyShape === BodyShape.MALE ? BodyShape.FEMALE : BodyShape.MALE
-      const representation = getWearableRepresentation(wearable, otherShape)
-      filename = representation.mainFile
-    } catch {
-      return null
-    }
-  }
-
-  if (!filename) return null
-
-  const modelParams = springBones.models[filename]
-  if (!modelParams || typeof modelParams !== 'object') return null
-
-  return modelParams as Record<string, SpringBoneParams>
-}
-
-/**
  * Initializes Unity and creates the scene with the given configuration
  * @param canvas The canvas element where Unity will render
  * @param config The configuration for the preview (wearables, emote, etc.)
@@ -126,11 +91,10 @@ export async function render(
     const physicsController = createPhysicsController(instance)
 
     // Apply spring bone params from wearable metadata if available (standalone preview)
-    if (config?.itemDefinition && isWearable(config.itemDefinition)) {
-      const bodyShape = (config.bodyShape as BodyShape) || BodyShape.MALE
-      const metadataParams = getSpringBoneParamsFromMetadata(config.itemDefinition, bodyShape)
-      if (metadataParams) {
-        physicsController.setSpringBonesParams(config.itemDefinition.id, metadataParams)
+    if (config?.itemDefinition && config.bodyShape && isWearable(config.itemDefinition)) {
+      const springBonesParams = getSpringBoneParamsFromMetadata(config.itemDefinition, config.bodyShape)
+      if (springBonesParams) {
+        physicsController.setSpringBonesParams(config.itemDefinition.id, springBonesParams)
       }
     }
 
