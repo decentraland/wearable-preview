@@ -80,11 +80,14 @@ export function getSpringBoneParamsFromMetadata(
   wearable: WearableDefinition,
   bodyShape: BodyShape,
 ): Record<string, SpringBoneParams> | undefined {
-  if (!wearable.data?.springBones?.models) return undefined
+  const models = wearable.data?.springBones?.models
+  if (!models) return undefined
 
   try {
     const representation = getWearableRepresentation(wearable, bodyShape)
-    return wearable.data.springBones.models[representation.mainFile]
+    const contentEntry = representation.contents.find((c) => c.key === representation.mainFile)
+    const hash = contentEntry?.url.split('/').pop() // The last path segment is the content hash
+    return hash ? models[hash] : undefined
   } catch {
     return undefined
   }
