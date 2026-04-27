@@ -323,11 +323,11 @@ export class SpringBoneSimulation {
   registerWearable(
     scene: Scene,
     container: AssetContainer,
-    itemHash: string,
+    itemId: string,
     springBonesParams?: Record<string, SpringBoneParams>,
   ): void {
     this.scene = scene
-    this.containers.set(itemHash, container)
+    this.containers.set(itemId, container)
     const chains: SpringChain[] = []
 
     if (springBonesParams) {
@@ -346,12 +346,12 @@ export class SpringBoneSimulation {
     }
 
     if (chains.length > 0) {
-      this.wearables.set(itemHash, chains)
+      this.wearables.set(itemId, chains)
     }
   }
 
-  updateParams(itemHash: string, params: Record<string, SpringBoneParams>): void {
-    let chains = this.wearables.get(itemHash)
+  updateParams(itemId: string, params: Record<string, SpringBoneParams>): void {
+    let chains = this.wearables.get(itemId)
 
     // Update existing chains, removing and restoring pose for any not in params
     if (chains) {
@@ -369,7 +369,7 @@ export class SpringBoneSimulation {
         }
         return !!raw
       })
-      this.wearables.set(itemHash, chains)
+      this.wearables.set(itemId, chains)
     }
 
     // Build new chains for bone names in params that have no existing chain.
@@ -384,7 +384,7 @@ export class SpringBoneSimulation {
     // not the bind/T-pose. This can cause visual artifacts where the spring bone
     // springs from the wrong base orientation. A full preview reload (save) does not
     // have this issue because chains are built before animation starts.
-    const container = this.containers.get(itemHash)
+    const container = this.containers.get(itemId)
     if (this.scene && container) {
       const existingNames = new Set(chains?.map((c) => c.rootName) ?? [])
 
@@ -399,7 +399,7 @@ export class SpringBoneSimulation {
         if (chain) {
           if (!chains) {
             chains = []
-            this.wearables.set(itemHash, chains)
+            this.wearables.set(itemId, chains)
           }
           chains.push(chain)
         }
