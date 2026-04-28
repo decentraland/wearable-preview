@@ -1,6 +1,5 @@
 import { AssetContainer, Matrix, Quaternion, Scene, TransformNode, Vector3 } from '@babylonjs/core'
 import { SpringBoneParams } from '@dcl/schemas'
-import { DCL_SPRING_BONE_EXTENSION, IDCLSpringBoneJoint } from './springBoneExtension'
 
 const SPRING_BONE_PREFIX = 'springbone'
 const MAX_CHAINS_PER_WEARABLE = 32
@@ -15,7 +14,7 @@ const SPRING_BONE_DRAG_MIN = 0
 const SPRING_BONE_DRAG_MAX = 1
 
 const DEFAULT_PARAMS: SpringBoneParams = {
-  stiffness: 1,
+  stiffness: 2,
   gravityPower: 0,
   gravityDir: [0, -1, 0],
   drag: 0.5,
@@ -40,10 +39,6 @@ type SpringChain = {
 
 function isSpringBoneName(name: string): boolean {
   return name.toLowerCase().includes(SPRING_BONE_PREFIX)
-}
-
-function getExtensionData(node: TransformNode): IDCLSpringBoneJoint | null {
-  return node.metadata?.gltf?.[DCL_SPRING_BONE_EXTENSION] ?? null
 }
 
 // Pre-allocated scratch objects to avoid per-frame heap allocations
@@ -108,10 +103,6 @@ function validateParams(raw: Partial<SpringBoneParams>, fallback: SpringBonePara
     drag: clampFinite(raw.drag, SPRING_BONE_DRAG_MIN, SPRING_BONE_DRAG_MAX, fallback.drag),
     center: typeof raw.center === 'string' ? raw.center : fallback.center,
   }
-}
-
-function extensionToParams(ext: IDCLSpringBoneJoint): SpringBoneParams {
-  return validateParams(ext)
 }
 
 function resolveCenter(centerName: string | undefined, scene: Scene): TransformNode | null {
@@ -329,32 +320,38 @@ export class SpringBoneSimulation {
   private beforeRenderCallback: (() => void) | null = null
   private scene: Scene | null = null
 
-  registerWearable(scene: Scene, container: AssetContainer, itemHash: string): void {
+  registerWearable(
+    scene: Scene,
+    container: AssetContainer,
+    itemId: string,
+    springBonesParams?: Record<string, SpringBoneParams>,
+  ): void {
     this.scene = scene
-    this.containers.set(itemHash, container)
+    this.containers.set(itemId, container)
     const chains: SpringChain[] = []
 
-    for (const node of container.transformNodes) {
-      if (!isSpringBoneName(node.name)) continue
+    if (springBonesParams) {
+      for (const node of container.transformNodes) {
+        if (!isSpringBoneName(node.name)) continue
 
-      const ext = getExtensionData(node)
-      if (!ext) continue
+        const params = springBonesParams[node.name]
+        if (!params) continue
 
-      const params = extensionToParams(ext)
-      const chain = buildChain(node, scene, params)
-      if (chain) {
-        chains.push(chain)
-        if (chains.length >= MAX_CHAINS_PER_WEARABLE) break
+        const chain = buildChain(node, scene, validateParams(params))
+        if (chain) {
+          chains.push(chain)
+          if (chains.length >= MAX_CHAINS_PER_WEARABLE) break
+        }
       }
     }
 
     if (chains.length > 0) {
-      this.wearables.set(itemHash, chains)
+      this.wearables.set(itemId, chains)
     }
   }
 
-  updateParams(itemHash: string, params: Record<string, SpringBoneParams>): void {
-    let chains = this.wearables.get(itemHash)
+  updateParams(itemId: string, params: Record<string, SpringBoneParams>): void {
+    let chains = this.wearables.get(itemId)
 
     // Update existing chains, removing and restoring pose for any not in params
     if (chains) {
@@ -372,7 +369,7 @@ export class SpringBoneSimulation {
         }
         return !!raw
       })
-      this.wearables.set(itemHash, chains)
+      this.wearables.set(itemId, chains)
     }
 
     // Build new chains for bone names in params that have no existing chain.
@@ -380,14 +377,14 @@ export class SpringBoneSimulation {
     // nodes from other wearables that may share the same name.
     //
     // NOTE: Unlike registerWearable(), we intentionally skip isSpringBoneName()
-    // and GLTF extension checks here. This method is the editor's mechanism for
+    // checks here. This method is the editor's mechanism for
     // dynamically adding spring bones to arbitrary nodes via external params.
     // KNOWN LIMITATION: buildChain() captures the current pose as the rest pose.
     // If an animation is playing, the "rest" will be the current animated position,
     // not the bind/T-pose. This can cause visual artifacts where the spring bone
     // springs from the wrong base orientation. A full preview reload (save) does not
     // have this issue because chains are built before animation starts.
-    const container = this.containers.get(itemHash)
+    const container = this.containers.get(itemId)
     if (this.scene && container) {
       const existingNames = new Set(chains?.map((c) => c.rootName) ?? [])
 
@@ -402,7 +399,7 @@ export class SpringBoneSimulation {
         if (chain) {
           if (!chains) {
             chains = []
-            this.wearables.set(itemHash, chains)
+            this.wearables.set(itemId, chains)
           }
           chains.push(chain)
         }

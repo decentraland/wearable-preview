@@ -19,7 +19,7 @@ import { Asset, center, createScene } from './scene'
 import { buildTwinMapFromContainer, isFacialFeature, isModel, isSuccesful, processOtherAvatarMaterials } from './utils'
 import { loadWearable } from './wearable'
 import { SpringBoneSimulation } from './springBones'
-import './springBoneExtension'
+import { getSpringBoneParamsFromMetadata } from '../wearable'
 
 /**
  * Initializes Babylon, creates the scene and loads a list of wearables in it
@@ -71,8 +71,9 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
         // 1) Add originals to the scene
         asset.container.addAllToScene()
 
-        // 2) Register spring bones (must happen after addAllToScene, before playEmote)
-        simulation.registerWearable(scene, asset.container, asset.wearable.id)
+        // 2) Register spring bones with metadata params if available
+        const springBonesParams = getSpringBoneParamsFromMetadata(asset.wearable, config.bodyShape)
+        simulation.registerWearable(scene, asset.container, asset.wearable.id, springBonesParams)
 
         // 3) If we need the "other" avatar now, instantiate a duplicate hierarchy
         if (parentOther) {
@@ -124,7 +125,8 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
           )
         }
         loadedAsset.container.addAllToScene()
-        simulation.registerWearable(scene, loadedAsset.container, loadedAsset.wearable.id)
+        const springBonesParams = getSpringBoneParamsFromMetadata(loadedAsset.wearable, config.bodyShape)
+        simulation.registerWearable(scene, loadedAsset.container, loadedAsset.wearable.id, springBonesParams)
       }
 
       // can't use emote controller if PreviewType is not "avatar"

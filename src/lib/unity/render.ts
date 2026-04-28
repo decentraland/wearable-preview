@@ -2,6 +2,7 @@ import { IPreviewController, PreviewEmote } from '@dcl/schemas'
 import { UnityPreviewConfig } from '../../hooks/useUnityConfig'
 import { captureException } from '../sentry'
 import { isEmote } from '../emote'
+import { getSpringBoneParamsFromMetadata, isWearable } from '../wearable'
 import { loadUnityInstance } from './loader'
 import { createSceneController } from './scene'
 import { createEmoteController } from './emote'
@@ -88,6 +89,14 @@ export async function render(
     const sceneController = createSceneController(instance)
     const emoteController = createEmoteController(instance, emoteDefinition, socialEmote, previewEmote)
     const physicsController = createPhysicsController(instance)
+
+    // Apply spring bone params from wearable metadata if available (standalone preview)
+    if (config?.itemDefinition && config.bodyShape && isWearable(config.itemDefinition)) {
+      const springBonesParams = getSpringBoneParamsFromMetadata(config.itemDefinition, config.bodyShape)
+      if (springBonesParams) {
+        physicsController.setSpringBonesParams(config.itemDefinition.id, springBonesParams)
+      }
+    }
 
     return {
       scene: sceneController,

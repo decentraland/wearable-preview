@@ -1,5 +1,6 @@
-import { BodyShape, EmoteDefinition, WearableCategory, WearableDefinition } from '@dcl/schemas'
+import { BodyShape, EmoteDefinition, SpringBoneParams, WearableCategory, WearableDefinition } from '@dcl/schemas'
 import { isEmote } from './emote'
+import { getWearableRepresentation } from './representation'
 
 export function getWearableByCategory(wearables: WearableDefinition[], category: WearableCategory) {
   return wearables.find((wearable) => wearable.data.category === category) || null
@@ -68,7 +69,26 @@ export function getBodyShape(definition: WearableDefinition): BodyShape {
   const bodyShapes = [BodyShape.MALE, BodyShape.FEMALE]
   return (
     bodyShapes.find((bodyShape) =>
-      definition.data.representations.some((representation) => representation.bodyShapes.includes(bodyShape))
+      definition.data.representations.some((representation) => representation.bodyShapes.includes(bodyShape)),
     ) || bodyShapes[0]
   )
+}
+
+/** Extracts spring bone params from a wearable's metadata for a given body shape.
+ * Returns undefined if no spring bone metadata is present for this wearable/representation. */
+export function getSpringBoneParamsFromMetadata(
+  wearable: WearableDefinition,
+  bodyShape: BodyShape,
+): Record<string, SpringBoneParams> | undefined {
+  const models = wearable.data?.springBones?.models
+  if (!models) return undefined
+
+  try {
+    const representation = getWearableRepresentation(wearable, bodyShape)
+    const contentEntry = representation.contents.find((c) => c.key === representation.mainFile)
+    const hash = contentEntry?.url.split('/').pop() // The last path segment is the content hash
+    return hash ? models[hash] : undefined
+  } catch {
+    return undefined
+  }
 }
