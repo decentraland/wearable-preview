@@ -18,6 +18,8 @@ declare function createUnityInstance(
 const unityLoaderCache = new Map<string, Promise<HTMLScriptElement>>()
 
 const joinUrls = (baseUrl: string, path: string): string => {
+  if (/^https?:\/\//i.test(path)) return path
+
   if (!baseUrl) return path
 
   if (!path) return baseUrl
