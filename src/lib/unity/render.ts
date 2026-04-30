@@ -23,13 +23,20 @@ type AangBuildConfig = {
   frameworkUrl: string
   codeUrl: string
   symbolUrl: string
+  loaderUrl: string
+  streamingAssetsUrl: string
 }
+
+// UPDATE THIS URL WITH LATEST AANG BUILD PREVIEW URL:
+const REMOTE_BASE_URL = 'https://aang-renderer-ffezp68nf-decentraland1.vercel.app/'
 
 const COMPRESSED_AANG_BUILD: AangBuildConfig = {
   dataUrl: '/unity/Build/aang-renderer.data.br',
   frameworkUrl: '/unity/Build/aang-renderer.framework.js.br',
   codeUrl: '/unity/Build/aang-renderer.wasm.br',
   symbolUrl: '/unity/Build/aang-renderer.symbols.json.br',
+  loaderUrl: '/unity/Build/aang-renderer.loader.js',
+  streamingAssetsUrl: '/emotes',
 }
 
 const UNCOMPRESSED_AANG_BUILD: AangBuildConfig = {
@@ -37,9 +44,26 @@ const UNCOMPRESSED_AANG_BUILD: AangBuildConfig = {
   frameworkUrl: '/unity/Build/aang-renderer.framework.js',
   codeUrl: '/unity/Build/aang-renderer.wasm',
   symbolUrl: '/unity/Build/aang-renderer.symbols.json',
+  loaderUrl: '/unity/Build/aang-renderer.loader.js',
+  streamingAssetsUrl: '/emotes',
+}
+
+function buildRemoteAangConfig(remoteBaseUrl: string): AangBuildConfig {
+  const base = remoteBaseUrl.replace(/\/$/, '')
+  return {
+    dataUrl: `${base}/Build/aang-renderer.data`,
+    frameworkUrl: `${base}/Build/aang-renderer.framework.js`,
+    codeUrl: `${base}/Build/aang-renderer.wasm`,
+    symbolUrl: `${base}/Build/aang-renderer.symbols.json`,
+    loaderUrl: `${base}/Build/aang-renderer.loader.js`,
+    streamingAssetsUrl: `${base}/StreamingAssets`,
+  }
 }
 
 function getAangBuildConfig(): AangBuildConfig {
+  // TODO: remove this remote config fallback before merging.
+  return buildRemoteAangConfig(REMOTE_BASE_URL)
+
   if (process.env.NODE_ENV !== 'production' && import.meta.env.VITE_AANG_USE_UNCOMPRESSED === 'true') {
     console.log('[UNITY] Using uncompressed Aang build')
     return UNCOMPRESSED_AANG_BUILD
@@ -65,12 +89,12 @@ export async function render(
     // Initialize Unity instance
     instance = (await loadUnityInstance(
       canvas,
-      '/unity/Build/aang-renderer.loader.js',
+      buildConfig.loaderUrl,
       buildConfig.dataUrl,
       buildConfig.frameworkUrl,
       buildConfig.codeUrl,
       buildConfig.symbolUrl,
-      '/emotes',
+      buildConfig.streamingAssetsUrl,
       'Decentraland',
       'AangRenderer',
       '2.2.2',
