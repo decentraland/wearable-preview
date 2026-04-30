@@ -62,7 +62,7 @@ function buildRemoteAangConfig(remoteBaseUrl: string): AangBuildConfig {
 
 function getAangBuildConfig(): AangBuildConfig {
   // TODO: remove this remote config fallback before merging.
-  return buildRemoteAangConfig(REMOTE_BASE_URL)
+  // return buildRemoteAangConfig(REMOTE_BASE_URL)
 
   if (process.env.NODE_ENV !== 'production' && import.meta.env.VITE_AANG_USE_UNCOMPRESSED === 'true') {
     console.log('[UNITY] Using uncompressed Aang build')
