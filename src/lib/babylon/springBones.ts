@@ -2,7 +2,7 @@ import { AssetContainer, Matrix, Quaternion, Scene, TransformNode, Vector3 } fro
 import { SpringBoneParams } from '@dcl/schemas'
 
 const SPRING_BONE_PREFIX = 'springbone'
-const MAX_CHAINS_PER_WEARABLE = 32
+const MAX_CHAINS_PER_WEARABLE = 12
 const MAX_JOINTS_PER_CHAIN = 64
 const MAX_DELTA_TIME = 0.05 // 50ms cap to prevent physics explosion after tab backgrounding
 
