@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/decentraland/wearable-preview.git"
+    "url": "git+https://github.com/decentraland/wearable-preview.git"
   },
   "keywords": [],
   "author": "",
