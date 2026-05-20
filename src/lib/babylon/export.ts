@@ -1,4 +1,4 @@
-import { Scene } from '@babylonjs/core'
+import { Scene, Vector3 } from '@babylonjs/core'
 import { GLTF2Export } from '@babylonjs/serializers/glTF'
 
 // Maps DCL avatar bone names to VRM 0.x humanoid bone names
@@ -169,20 +169,37 @@ function injectVRMExtension(json: any): void {
 }
 
 export async function exportVRM(scene: Scene): Promise<Blob> {
-  const glbData = await GLTF2Export.GLBAsync(scene, 'avatar', {
-    shouldExportNode: (node) => {
-      // Exclude social-emote duplicate and centering helper
-      if (node.name === 'parent' || node.name === 'parent_other') return false
-      if (node.name.endsWith('_Other')) return false
-      return true
-    },
-  })
+  // Temporarily undo the centering transform so the avatar exports at original scale
+  const parentMesh = scene.getMeshByName('parent')
+  let savedScale: Vector3 | null = null
+  let savedPosition: Vector3 | null = null
+  if (parentMesh) {
+    savedScale = parentMesh.scaling.clone()
+    savedPosition = parentMesh.position.clone()
+    parentMesh.scaling.copyFromFloats(1, 1, 1)
+    parentMesh.position.copyFromFloats(0, 0, 0)
+  }
 
-  const glbBlob = glbData.glTFFiles['avatar.glb'] as Blob
-  const buffer = await glbBlob.arrayBuffer()
-  const { json, binChunk } = readGLBChunks(buffer)
+  try {
+    const glbData = await GLTF2Export.GLBAsync(scene, 'avatar', {
+      shouldExportNode: (node) => {
+        if (node.name === 'parent_other') return false
+        if (node.name.endsWith('_Other')) return false
+        return true
+      },
+    })
 
-  injectVRMExtension(json)
+    const glbBlob = glbData.glTFFiles['avatar.glb'] as Blob
+    const buffer = await glbBlob.arrayBuffer()
+    const { json, binChunk } = readGLBChunks(buffer)
 
-  return new Blob([packGLB(json, binChunk)], { type: 'application/octet-stream' })
+    injectVRMExtension(json)
+
+    return new Blob([packGLB(json, binChunk)], { type: 'application/octet-stream' })
+  } finally {
+    if (parentMesh && savedScale && savedPosition) {
+      parentMesh.scaling.copyFrom(savedScale)
+      parentMesh.position.copyFrom(savedPosition)
+    }
+  }
 }
