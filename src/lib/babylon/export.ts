@@ -105,16 +105,6 @@ function packGLB(json: any, binChunk: ArrayBuffer | null): ArrayBuffer {
   return result
 }
 
-function fixCoordinateSpace(json: any): void {
-  if (!json.nodes) return
-  for (const node of json.nodes) {
-    if (node.name === 'parent') {
-      node.rotation = [0, 1, 0, 0]
-      break
-    }
-  }
-}
-
 function mergeSkeletons(json: any): void {
   if (!json.skins || json.skins.length <= 1 || !json.nodes) return
 
@@ -209,7 +199,6 @@ function injectVRMExtension(json: any): void {
 }
 
 export async function exportVRM(scene: Scene): Promise<Blob> {
-  // Temporarily undo the centering transform so the avatar exports at original scale
   const parentMesh = scene.getMeshByName('parent')
   let savedScale: Vector3 | null = null
   let savedPosition: Vector3 | null = null
@@ -218,6 +207,13 @@ export async function exportVRM(scene: Scene): Promise<Blob> {
     savedPosition = parentMesh.position.clone()
     parentMesh.scaling.copyFromFloats(1, 1, 1)
     parentMesh.position.copyFromFloats(0, 0, 0)
+  }
+
+  // Reparent parent under __root__ so the GLTF exporter treats meshes and bones
+  // in the same coordinate space (prevents partial coordinate conversion)
+  const rootNode = scene.transformNodes.find((n) => n.name === '__root__')
+  if (parentMesh && rootNode) {
+    parentMesh.setParent(rootNode)
   }
 
   try {
@@ -235,14 +231,16 @@ export async function exportVRM(scene: Scene): Promise<Blob> {
     const { json, binChunk } = readGLBChunks(buffer)
 
     mergeSkeletons(json)
-    fixCoordinateSpace(json)
     injectVRMExtension(json)
 
     return new Blob([packGLB(json, binChunk)], { type: 'application/octet-stream' })
   } finally {
-    if (parentMesh && savedScale && savedPosition) {
-      parentMesh.scaling.copyFrom(savedScale)
-      parentMesh.position.copyFrom(savedPosition)
+    if (parentMesh) {
+      parentMesh.setParent(null)
+      if (savedScale && savedPosition) {
+        parentMesh.scaling.copyFrom(savedScale)
+        parentMesh.position.copyFrom(savedPosition)
+      }
     }
   }
 }
