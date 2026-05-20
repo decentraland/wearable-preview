@@ -221,7 +221,7 @@ function applyOrientationFix(json: any): void {
 
   // Lift the avatar so feet sit on the viewer's ground plane. Tune if needed —
   // some viewers place their grid at chest/head height instead of Y=0.
-  const correctionTranslation = [0, 0.9, 0]
+  const correctionTranslation = [0, 1.8, 0]
 
   const scene = json.scenes[0]
   const originalRootIndices = [...scene.nodes]

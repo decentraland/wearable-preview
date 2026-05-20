@@ -66,6 +66,28 @@ Build for production:
 npm run build
 ```
 
+### Docker
+
+Run the dev server in a container without installing Node.js locally:
+
+```bash
+docker compose up
+```
+
+The app will be available at http://localhost:5173. Source files are mounted into the container, so changes on the host trigger hot-reload.
+
+To rebuild the image after changing `package.json` or the `Dockerfile`:
+
+```bash
+docker compose up --build
+```
+
+To stop and remove the container:
+
+```bash
+docker compose down
+```
+
 ## Usage
 
 ### Query Parameters
