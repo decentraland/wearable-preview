@@ -171,6 +171,54 @@ function mat4Invert(m: Float64Array): Float64Array {
   return out
 }
 
+function negateAccessorComponent(json: any, binChunk: ArrayBuffer, accessorIdx: number, componentIdx: number): void {
+  const accessor = json.accessors[accessorIdx]
+  if (accessor.componentType !== 5126) return
+  const bufferView = json.bufferViews[accessor.bufferView]
+  const baseOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0)
+  const numComponents = accessor.type === 'VEC2' ? 2 : accessor.type === 'VEC3' ? 3 : accessor.type === 'VEC4' ? 4 : 0
+  if (componentIdx >= numComponents) return
+  const componentSize = 4
+  const stride = bufferView.byteStride || (numComponents * componentSize)
+  const view = new DataView(binChunk)
+  for (let i = 0; i < accessor.count; i++) {
+    const offset = baseOffset + i * stride + componentIdx * componentSize
+    view.setFloat32(offset, -view.getFloat32(offset, true), true)
+  }
+}
+
+function undoVertexConversion(json: any, binChunk: ArrayBuffer): void {
+  if (!json.nodes || !json.meshes || !json.accessors || !json.bufferViews) return
+  const skinnedMeshIndices = new Set<number>()
+  for (const node of json.nodes) {
+    if (node.mesh !== undefined && node.skin !== undefined) {
+      skinnedMeshIndices.add(node.mesh)
+    }
+  }
+  for (const meshIdx of Array.from(skinnedMeshIndices)) {
+    const mesh = json.meshes[meshIdx]
+    for (const prim of mesh.primitives || []) {
+      for (const attr of ['POSITION', 'NORMAL', 'TANGENT']) {
+        if (prim.attributes?.[attr] !== undefined) {
+          negateAccessorComponent(json, binChunk, prim.attributes[attr], 2)
+        }
+      }
+    }
+  }
+}
+
+function resetSkinnedMeshTransforms(json: any): void {
+  if (!json.nodes) return
+  for (const node of json.nodes) {
+    if (node.mesh !== undefined && node.skin !== undefined) {
+      delete node.translation
+      delete node.rotation
+      delete node.scale
+      delete node.matrix
+    }
+  }
+}
+
 function rewriteInverseBindMatrices(json: any, binChunk: ArrayBuffer | null): ArrayBuffer | null {
   if (!json.skins || !json.nodes) return binChunk
 
@@ -375,6 +423,10 @@ export async function exportVRM(scene: Scene): Promise<Blob> {
 
     mergeSkeletons(json)
     const fixedBin = rewriteInverseBindMatrices(json, binChunk)
+    if (fixedBin) {
+      undoVertexConversion(json, fixedBin)
+    }
+    resetSkinnedMeshTransforms(json)
     injectVRMExtension(json)
 
     return new Blob([packGLB(json, fixedBin)], { type: 'application/octet-stream' })
