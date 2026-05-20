@@ -185,6 +185,7 @@ export async function exportVRM(scene: Scene): Promise<Blob> {
       shouldExportNode: (node) => {
         if (node.name === 'parent_other') return false
         if (node.name.endsWith('_Other')) return false
+        if ('isEnabled' in node && typeof node.isEnabled === 'function' && !node.isEnabled()) return false
         return true
       },
     })
