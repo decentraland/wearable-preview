@@ -11,6 +11,7 @@ A webapp that renders interactive 3D previews of Decentraland wearables, emotes,
   - [Installation](#installation)
   - [Development](#development)
   - [Build](#build)
+  - [Docker](#docker)
 - [Usage](#usage)
   - [Query Parameters](#query-parameters)
   - [iframe API](#iframe-api)

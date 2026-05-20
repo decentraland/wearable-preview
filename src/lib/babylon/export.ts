@@ -1,4 +1,4 @@
-import { AbstractMesh, Quaternion, Scene, Vector3 } from '@babylonjs/core'
+import { AbstractMesh, Bone, Matrix, Quaternion, Scene, Skeleton, TransformNode, Vector3 } from '@babylonjs/core'
 import { GLTF2Export } from '@babylonjs/serializers/glTF'
 
 // Maps DCL avatar bone names to VRM 0.x humanoid bone names
@@ -105,6 +105,73 @@ function packGLB(json: any, binChunk: ArrayBuffer | null): ArrayBuffer {
   return result
 }
 
+/**
+ * Bakes the current visible pose (whatever the live preview shows) as the new
+ * bind pose of the exported glTF. Without this, the .vrm encodes the rig's
+ * authored bind pose (fingers spread, Mixamo-style feet) — which is what most
+ * VRM viewers render when no animation is applied.
+ *
+ * For each bone in the skin, overwrites:
+ *   - the node's TRS with the bone's current local matrix
+ *   - the inverseBindMatrices accessor entry with inverse(current absolute)
+ *
+ * Math sanity-check: at viewer rest, jointWorld_i × IBM_i must equal identity
+ * so the mesh renders at its mesh-local vertex positions. Since we set
+ *   node_i.TRS = bone_i.localMatrix → jointWorld_i = bone_i.absoluteMatrix
+ *   IBM_i = inverse(bone_i.absoluteMatrix)
+ * the product is identity by construction.
+ */
+function rebakeBindPose(
+  json: any,
+  binChunk: ArrayBuffer | null,
+  snapshotByName: Map<string, { local: Matrix; absolute: Matrix }>,
+): void {
+  if (!binChunk || !json.skins || !json.nodes || !json.accessors || !json.bufferViews) return
+
+  // 1) Overwrite each bone-node's TRS with the snapshot's local matrix.
+  const boneNodeIndices = new Set<number>()
+  for (const skin of json.skins) {
+    for (const idx of skin.joints) boneNodeIndices.add(idx)
+  }
+
+  const tmpScale = new Vector3()
+  const tmpRotation = new Quaternion()
+  const tmpTranslation = new Vector3()
+  for (const idx of boneNodeIndices) {
+    const node = json.nodes[idx]
+    if (!node?.name) continue
+    const snap = snapshotByName.get(node.name)
+    if (!snap) continue
+
+    snap.local.decompose(tmpScale, tmpRotation, tmpTranslation)
+    node.translation = tmpTranslation.asArray()
+    node.rotation = tmpRotation.asArray()
+    node.scale = tmpScale.asArray()
+    delete node.matrix
+  }
+
+  // 2) Overwrite each skin's inverseBindMatrices in-place. The accessor's data
+  //    is Float32 column-major 4x4 matrices packed back-to-back in the binary
+  //    chunk; we mutate via a Float32Array view over the underlying buffer.
+  for (const skin of json.skins) {
+    if (skin.inverseBindMatrices === undefined) continue
+    const accessor = json.accessors[skin.inverseBindMatrices]
+    if (!accessor || accessor.bufferView === undefined) continue
+    const bufferView = json.bufferViews[accessor.bufferView]
+    if (!bufferView) continue
+    const totalOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0)
+    if (totalOffset % 4 !== 0) continue
+
+    const ibmView = new Float32Array(binChunk, totalOffset, skin.joints.length * 16)
+    for (let i = 0; i < skin.joints.length; i++) {
+      const jointNode = json.nodes[skin.joints[i]]
+      const snap = jointNode?.name ? snapshotByName.get(jointNode.name) : undefined
+      if (!snap) continue
+      Matrix.Invert(snap.absolute).copyToArray(ibmView, i * 16)
+    }
+  }
+}
+
 function mergeSkeletons(json: any): void {
   if (!json.skins || json.skins.length <= 1 || !json.nodes) return
 
@@ -133,6 +200,43 @@ function mergeSkeletons(json: any): void {
       }
     }
   }
+}
+
+/**
+ * Wraps all top-level scene nodes in a new "VRMRoot" node with a corrective
+ * rotation. This is applied AFTER Babylon's serializer has done its handedness
+ * conversion, so it's purely additive — we're not fighting the serializer,
+ * just rotating the final result.
+ *
+ * VRM 0.x convention: avatar standing upright (Y-up), facing +Z.
+ * If the exported avatar comes out upside-down or mirrored, adjust the
+ * quaternion below empirically.
+ */
+function applyOrientationFix(json: any): void {
+  if (!json.nodes || !json.scenes || json.scenes.length === 0) return
+
+  // 180° rotation around Y so the avatar faces the camera (+Z), matching the
+  // VRM 0.x facing convention. Babylon exports the avatar facing -Z by default.
+  const correctionRotation = [0, 1, 0, 0]
+
+  // Lift the avatar so feet sit on the viewer's ground plane. Tune if needed —
+  // some viewers place their grid at chest/head height instead of Y=0.
+  const correctionTranslation = [0, 0.9, 0]
+
+  const scene = json.scenes[0]
+  const originalRootIndices = [...scene.nodes]
+
+  // Create the new wrapper node
+  const wrapperIndex = json.nodes.length
+  json.nodes.push({
+    name: 'VRMRoot',
+    rotation: correctionRotation,
+    translation: correctionTranslation,
+    children: originalRootIndices,
+  })
+
+  // Replace scene roots with just the wrapper
+  scene.nodes = [wrapperIndex]
 }
 
 function injectVRMExtension(json: any): void {
@@ -199,6 +303,54 @@ function injectVRMExtension(json: any): void {
 }
 
 export async function exportVRM(scene: Scene): Promise<Blob> {
+  console.group('[VRM EXPORT DEBUG]')
+  console.log('Scene handedness:', scene.useRightHandedSystem ? 'right' : 'left')
+
+  const fmt = (arr: ArrayLike<number> | undefined) =>
+    arr ? JSON.stringify(Array.from(arr).map((v) => +v.toFixed(4))) : 'undefined'
+
+  const allRoots = scene.transformNodes.filter((n: TransformNode) => n.name === '__root__')
+  console.log(`Found ${allRoots.length} __root__ node(s):`)
+  allRoots.forEach((r: TransformNode, i: number) => {
+    console.log(
+      `  __root__[${i}]  scaling=${fmt(r.scaling.asArray())}  pos=${fmt(r.position.asArray())}  rot=${fmt(
+        r.rotationQuaternion?.asArray() ?? r.rotation.asArray(),
+      )}  parent=${r.parent?.name ?? '(scene root)'}  children=${r.getChildren().length}`,
+    )
+  })
+
+  const debugParent = scene.getMeshByName('parent')
+  if (debugParent) {
+    console.log(
+      `parent mesh: scaling=${fmt(debugParent.scaling.asArray())}  pos=${fmt(
+        debugParent.position.asArray(),
+      )}  rot=${fmt(
+        debugParent.rotationQuaternion?.asArray() ?? debugParent.rotation.asArray(),
+      )}  parent=${debugParent.parent?.name ?? '(scene root)'}  absPos=${fmt(
+        debugParent.getAbsolutePosition().asArray(),
+      )}`,
+    )
+  }
+
+  console.log(
+    'Top-level transform nodes:',
+    scene.transformNodes.filter((n: TransformNode) => !n.parent).map((n: TransformNode) => n.name),
+  )
+  console.log(
+    'Top-level meshes:',
+    scene.meshes.filter((m: AbstractMesh) => !m.parent).map((m: AbstractMesh) => m.name),
+  )
+
+  const probeBones = ['Avatar_Hips', 'Avatar_LeftHand', 'Avatar_RightHand', 'Avatar_LeftFoot', 'Avatar_RightFoot']
+  scene.skeletons.forEach((skel: Skeleton, i: number) => {
+    console.log(`Skeleton[${i}] "${skel.name}" bones=${skel.bones.length}`)
+    probeBones.forEach((name) => {
+      const bone = skel.bones.find((b: Bone) => b.name === name)
+      console.log(`  ${name} absolute=${fmt(bone?.getAbsoluteTransform().toArray())}`)
+    })
+  })
+  console.groupEnd()
+
   const parentMesh = scene.getMeshByName('parent')
 
   const saved = parentMesh
@@ -221,6 +373,29 @@ export async function exportVRM(scene: Scene): Promise<Blob> {
     parentMesh.computeWorldMatrix(true)
   }
 
+  // Babylon's GLTF2Export mutates bone matrices during serialization (snaps to
+  // bind pose, etc.) and does NOT restore them. Snapshot BOTH the bone's base
+  // matrix (rest pose) AND its local matrix (current animated state) — they're
+  // different in Babylon 4.2 and the serializer touches the local one.
+  const boneSnapshots = scene.skeletons.flatMap((skel: Skeleton) =>
+    skel.bones.map((bone: Bone) => ({
+      bone,
+      base: bone.getBaseMatrix().clone(),
+      local: bone.getLocalMatrix().clone(),
+      absolute: bone.getAbsoluteTransform().clone(),
+    })),
+  )
+
+  // First-occurrence by name — matches mergeSkeletons's deduplication policy,
+  // so rebakeBindPose uses the bone snapshot for the same node mergeSkeletons
+  // ends up pointing each skin's joint to.
+  const snapshotByName = new Map<string, (typeof boneSnapshots)[number]>()
+  for (const snap of boneSnapshots) {
+    if (!snapshotByName.has(snap.bone.name)) {
+      snapshotByName.set(snap.bone.name, snap)
+    }
+  }
+
   try {
     const glbData = await GLTF2Export.GLBAsync(scene, 'avatar', {
       shouldExportNode: (node) => {
@@ -235,11 +410,24 @@ export async function exportVRM(scene: Scene): Promise<Blob> {
     const buffer = await glbBlob.arrayBuffer()
     const { json, binChunk } = readGLBChunks(buffer)
 
+    rebakeBindPose(json, binChunk, snapshotByName)
     mergeSkeletons(json)
+    applyOrientationFix(json)
     injectVRMExtension(json)
 
     return new Blob([packGLB(json, binChunk)], { type: 'application/octet-stream' })
   } finally {
+    for (const { bone, base, local } of boneSnapshots) {
+      // updateMatrix writes into both _baseMatrix and _localMatrix, marks the
+      // bone dirty, and recomputes the difference matrix in one call.
+      bone.updateMatrix(base, true, true)
+      // Then overwrite the local matrix with the actual saved animated state
+      // (updateMatrix sets local = base, which would lose any animation pose).
+      bone.getLocalMatrix().copyFrom(local)
+      bone.markAsDirty()
+    }
+    scene.skeletons.forEach((skel: Skeleton) => skel.computeAbsoluteTransforms())
+
     if (parentMesh && saved) {
       parentMesh.scaling.copyFrom(saved.scaling)
       parentMesh.position.copyFrom(saved.position)
