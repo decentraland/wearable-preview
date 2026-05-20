@@ -1,7 +1,14 @@
 import { AbstractMesh, Bone, Matrix, Quaternion, Scene, Skeleton, TransformNode, Vector3 } from '@babylonjs/core'
 import { GLTF2Export } from '@babylonjs/serializers/glTF'
 
-// Maps DCL avatar bone names to VRM 0.x humanoid bone names
+// Maps DCL avatar bone names to VRM 0.x humanoid bone names.
+//
+// IMPORTANT: DCL's rig uses an opposite handedness convention from VRM 0.x —
+// Avatar_LeftArm sits at world +X, whereas VRM 0.x expects the leftUpperArm to
+// be at -X (avatar faces +Z, its own left side is -X). To make VRM animations
+// apply to the correct side of the body, we map each DCL "Left" bone to the
+// VRM "right" slot, and vice versa. The bone names look misleading but the
+// rotation directions end up correct in any compliant VRM viewer.
 const DCL_TO_VRM_HUMANOID: Record<string, string> = {
   Avatar_Hips: 'hips',
   Avatar_Spine: 'spine',
@@ -9,52 +16,52 @@ const DCL_TO_VRM_HUMANOID: Record<string, string> = {
   Avatar_Spine2: 'upperChest',
   Avatar_Neck: 'neck',
   Avatar_Head: 'head',
-  Avatar_LeftShoulder: 'leftShoulder',
-  Avatar_LeftArm: 'leftUpperArm',
-  Avatar_LeftForeArm: 'leftLowerArm',
-  Avatar_LeftHand: 'leftHand',
-  Avatar_RightShoulder: 'rightShoulder',
-  Avatar_RightArm: 'rightUpperArm',
-  Avatar_RightForeArm: 'rightLowerArm',
-  Avatar_RightHand: 'rightHand',
-  Avatar_LeftUpLeg: 'leftUpperLeg',
-  Avatar_LeftLeg: 'leftLowerLeg',
-  Avatar_LeftFoot: 'leftFoot',
-  Avatar_LeftToeBase: 'leftToes',
-  Avatar_RightUpLeg: 'rightUpperLeg',
-  Avatar_RightLeg: 'rightLowerLeg',
-  Avatar_RightFoot: 'rightFoot',
-  Avatar_RightToeBase: 'rightToes',
-  Avatar_LeftHandThumb1: 'leftThumbProximal',
-  Avatar_LeftHandThumb2: 'leftThumbIntermediate',
-  Avatar_LeftHandThumb3: 'leftThumbDistal',
-  Avatar_LeftHandIndex1: 'leftIndexProximal',
-  Avatar_LeftHandIndex2: 'leftIndexIntermediate',
-  Avatar_LeftHandIndex3: 'leftIndexDistal',
-  Avatar_LeftHandMiddle1: 'leftMiddleProximal',
-  Avatar_LeftHandMiddle2: 'leftMiddleIntermediate',
-  Avatar_LeftHandMiddle3: 'leftMiddleDistal',
-  Avatar_LeftHandRing1: 'leftRingProximal',
-  Avatar_LeftHandRing2: 'leftRingIntermediate',
-  Avatar_LeftHandRing3: 'leftRingDistal',
-  Avatar_LeftHandPinky1: 'leftLittleProximal',
-  Avatar_LeftHandPinky2: 'leftLittleIntermediate',
-  Avatar_LeftHandPinky3: 'leftLittleDistal',
-  Avatar_RightHandThumb1: 'rightThumbProximal',
-  Avatar_RightHandThumb2: 'rightThumbIntermediate',
-  Avatar_RightHandThumb3: 'rightThumbDistal',
-  Avatar_RightHandIndex1: 'rightIndexProximal',
-  Avatar_RightHandIndex2: 'rightIndexIntermediate',
-  Avatar_RightHandIndex3: 'rightIndexDistal',
-  Avatar_RightHandMiddle1: 'rightMiddleProximal',
-  Avatar_RightHandMiddle2: 'rightMiddleIntermediate',
-  Avatar_RightHandMiddle3: 'rightMiddleDistal',
-  Avatar_RightHandRing1: 'rightRingProximal',
-  Avatar_RightHandRing2: 'rightRingIntermediate',
-  Avatar_RightHandRing3: 'rightRingDistal',
-  Avatar_RightHandPinky1: 'rightLittleProximal',
-  Avatar_RightHandPinky2: 'rightLittleIntermediate',
-  Avatar_RightHandPinky3: 'rightLittleDistal',
+  Avatar_LeftShoulder: 'rightShoulder',
+  Avatar_LeftArm: 'rightUpperArm',
+  Avatar_LeftForeArm: 'rightLowerArm',
+  Avatar_LeftHand: 'rightHand',
+  Avatar_RightShoulder: 'leftShoulder',
+  Avatar_RightArm: 'leftUpperArm',
+  Avatar_RightForeArm: 'leftLowerArm',
+  Avatar_RightHand: 'leftHand',
+  Avatar_LeftUpLeg: 'rightUpperLeg',
+  Avatar_LeftLeg: 'rightLowerLeg',
+  Avatar_LeftFoot: 'rightFoot',
+  Avatar_LeftToeBase: 'rightToes',
+  Avatar_RightUpLeg: 'leftUpperLeg',
+  Avatar_RightLeg: 'leftLowerLeg',
+  Avatar_RightFoot: 'leftFoot',
+  Avatar_RightToeBase: 'leftToes',
+  Avatar_LeftHandThumb1: 'rightThumbProximal',
+  Avatar_LeftHandThumb2: 'rightThumbIntermediate',
+  Avatar_LeftHandThumb3: 'rightThumbDistal',
+  Avatar_LeftHandIndex1: 'rightIndexProximal',
+  Avatar_LeftHandIndex2: 'rightIndexIntermediate',
+  Avatar_LeftHandIndex3: 'rightIndexDistal',
+  Avatar_LeftHandMiddle1: 'rightMiddleProximal',
+  Avatar_LeftHandMiddle2: 'rightMiddleIntermediate',
+  Avatar_LeftHandMiddle3: 'rightMiddleDistal',
+  Avatar_LeftHandRing1: 'rightRingProximal',
+  Avatar_LeftHandRing2: 'rightRingIntermediate',
+  Avatar_LeftHandRing3: 'rightRingDistal',
+  Avatar_LeftHandPinky1: 'rightLittleProximal',
+  Avatar_LeftHandPinky2: 'rightLittleIntermediate',
+  Avatar_LeftHandPinky3: 'rightLittleDistal',
+  Avatar_RightHandThumb1: 'leftThumbProximal',
+  Avatar_RightHandThumb2: 'leftThumbIntermediate',
+  Avatar_RightHandThumb3: 'leftThumbDistal',
+  Avatar_RightHandIndex1: 'leftIndexProximal',
+  Avatar_RightHandIndex2: 'leftIndexIntermediate',
+  Avatar_RightHandIndex3: 'leftIndexDistal',
+  Avatar_RightHandMiddle1: 'leftMiddleProximal',
+  Avatar_RightHandMiddle2: 'leftMiddleIntermediate',
+  Avatar_RightHandMiddle3: 'leftMiddleDistal',
+  Avatar_RightHandRing1: 'leftRingProximal',
+  Avatar_RightHandRing2: 'leftRingIntermediate',
+  Avatar_RightHandRing3: 'leftRingDistal',
+  Avatar_RightHandPinky1: 'leftLittleProximal',
+  Avatar_RightHandPinky2: 'leftLittleIntermediate',
+  Avatar_RightHandPinky3: 'leftLittleDistal',
 }
 
 function readGLBChunks(buffer: ArrayBuffer): { json: any; binChunk: ArrayBuffer | null } {
@@ -106,53 +113,70 @@ function packGLB(json: any, binChunk: ArrayBuffer | null): ArrayBuffer {
 }
 
 /**
- * Bakes the current visible pose (whatever the live preview shows) as the new
- * bind pose of the exported glTF. Without this, the .vrm encodes the rig's
- * authored bind pose (fingers spread, Mixamo-style feet) — which is what most
- * VRM viewers render when no animation is applied.
+ * Rewrites bones into canonical form to match what well-behaved VRM exporters
+ * (e.g. UniVRM) produce: each bone-node has identity rotation, identity scale,
+ * and a parent-relative translation in world meters; each inverseBindMatrices
+ * entry is the inverse of a pure translation matrix.
  *
- * For each bone in the skin, overwrites:
- *   - the node's TRS with the bone's current local matrix
- *   - the inverseBindMatrices accessor entry with inverse(current absolute)
+ * The reference VRM we inspected had this layout exactly. DCL's rig comes out
+ * of Babylon with weird non-canonical TRS (0.01 scale baked in, 180° rotations
+ * on the basis vectors, translations at 100× meter scale). That layout renders
+ * correctly at rest because the scale×rotation in jointWorld and the inverse
+ * scale×rotation in IBM cancel out — but VRM animations rotate joints in their
+ * local frame, so the baked rotations push arms backward, feet sideways, etc.
  *
- * Math sanity-check: at viewer rest, jointWorld_i × IBM_i must equal identity
- * so the mesh renders at its mesh-local vertex positions. Since we set
- *   node_i.TRS = bone_i.localMatrix → jointWorld_i = bone_i.absoluteMatrix
- *   IBM_i = inverse(bone_i.absoluteMatrix)
- * the product is identity by construction.
+ * Algorithm:
+ *   1. For each bone, read its world position from snap.absolute.getTranslation()
+ *      — Babylon stores skeleton-local positions there at meter scale.
+ *   2. Set node.TRS = (worldPos − parentWorldPos, identity rotation, unit scale).
+ *      Root bones (no bone parent) just use worldPos directly.
+ *   3. Set IBM = inverse(translate(worldPos)) = translate(−worldPos).
+ *
+ * Math sanity-check: at rest, jointWorld_i is a chain of pure translations =
+ * translate(worldPos_i); IBM_i = translate(−worldPos_i); product = identity, so
+ * the mesh renders at its stored mesh-local vertex positions (which Babylon
+ * also outputs at meter scale).
  */
 function rebakeBindPose(
   json: any,
   binChunk: ArrayBuffer | null,
   snapshotByName: Map<string, { local: Matrix; absolute: Matrix }>,
+  boneParentNameByName: Map<string, string | null>,
 ): void {
   if (!binChunk || !json.skins || !json.nodes || !json.accessors || !json.bufferViews) return
 
-  // 1) Overwrite each bone-node's TRS with the snapshot's local matrix.
+  // World position per bone, extracted from the (skeleton-local) absolute matrix.
+  // We rely on the skeleton's owner mesh being at identity (parent mesh is reset
+  // earlier in exportVRM), so skeleton-local equals world.
+  const worldPosByName = new Map<string, Vector3>()
+  for (const [name, snap] of snapshotByName) {
+    worldPosByName.set(name, snap.absolute.getTranslation())
+  }
+
   const boneNodeIndices = new Set<number>()
   for (const skin of json.skins) {
     for (const idx of skin.joints) boneNodeIndices.add(idx)
   }
 
-  const tmpScale = new Vector3()
-  const tmpRotation = new Quaternion()
-  const tmpTranslation = new Vector3()
+  // 1) Canonical TRS per bone-node.
   for (const idx of boneNodeIndices) {
     const node = json.nodes[idx]
     if (!node?.name) continue
-    const snap = snapshotByName.get(node.name)
-    if (!snap) continue
+    const myWorldPos = worldPosByName.get(node.name)
+    if (!myWorldPos) continue
 
-    snap.local.decompose(tmpScale, tmpRotation, tmpTranslation)
-    node.translation = tmpTranslation.asArray()
-    node.rotation = tmpRotation.asArray()
-    node.scale = tmpScale.asArray()
+    const parentName = boneParentNameByName.get(node.name)
+    const parentWorldPos = parentName ? worldPosByName.get(parentName) : undefined
+    const localPos = parentWorldPos ? myWorldPos.subtract(parentWorldPos) : myWorldPos
+
+    node.translation = [localPos.x, localPos.y, localPos.z]
+    node.rotation = [0, 0, 0, 1]
+    node.scale = [1, 1, 1]
     delete node.matrix
   }
 
-  // 2) Overwrite each skin's inverseBindMatrices in-place. The accessor's data
-  //    is Float32 column-major 4x4 matrices packed back-to-back in the binary
-  //    chunk; we mutate via a Float32Array view over the underlying buffer.
+  // 2) IBMs = inverse pure translation. We mutate the accessor's Float32 view
+  //    over the binary chunk in place — same layout we use to read GLB chunks.
   for (const skin of json.skins) {
     if (skin.inverseBindMatrices === undefined) continue
     const accessor = json.accessors[skin.inverseBindMatrices]
@@ -165,9 +189,12 @@ function rebakeBindPose(
     const ibmView = new Float32Array(binChunk, totalOffset, skin.joints.length * 16)
     for (let i = 0; i < skin.joints.length; i++) {
       const jointNode = json.nodes[skin.joints[i]]
-      const snap = jointNode?.name ? snapshotByName.get(jointNode.name) : undefined
-      if (!snap) continue
-      Matrix.Invert(snap.absolute).copyToArray(ibmView, i * 16)
+      const worldPos = jointNode?.name ? worldPosByName.get(jointNode.name) : undefined
+      if (!worldPos) {
+        Matrix.Identity().copyToArray(ibmView, i * 16)
+        continue
+      }
+      Matrix.Translation(-worldPos.x, -worldPos.y, -worldPos.z).copyToArray(ibmView, i * 16)
     }
   }
 }
@@ -203,40 +230,71 @@ function mergeSkeletons(json: any): void {
 }
 
 /**
- * Wraps all top-level scene nodes in a new "VRMRoot" node with a corrective
- * rotation. This is applied AFTER Babylon's serializer has done its handedness
- * conversion, so it's purely additive — we're not fighting the serializer,
- * just rotating the final result.
+ * Restructures the glTF JSON to match the canonical layout that UniVRM (and
+ * other clean exporters) produce:
+ *   scene roots = [hips, meshes, secondary]
+ * Avatar_Hips becomes a top-level skeleton root, all mesh nodes get grouped
+ * under a transformless "meshes" container, and a "secondary" empty container
+ * is added for VRM spring-bone secondary animations.
  *
- * VRM 0.x convention: avatar standing upright (Y-up), facing +Z.
- * If the exported avatar comes out upside-down or mirrored, adjust the
- * quaternion below empirically.
+ * Why this matters: Babylon's serializer wraps everything inside the original
+ * scene meshes (`parent`, `top`, `bottom`) and adds a 180° Y rotation to them
+ * for left→right handedness conversion. Combined with our canonical rebake
+ * those wrappers leave the avatar at a position viewers don't auto-frame.
+ * Flattening to the reference layout fixes positioning AND helps viewers
+ * recognize the avatar as a standard humanoid VRM.
  */
-function applyOrientationFix(json: any): void {
-  if (!json.nodes || !json.scenes || json.scenes.length === 0) return
+function restructureForVrm(json: any): void {
+  if (!json.skins || !json.nodes || !json.scenes || json.scenes.length === 0) return
 
-  // 180° rotation around Y so the avatar faces the camera (+Z), matching the
-  // VRM 0.x facing convention. Babylon exports the avatar facing -Z by default.
-  const correctionRotation = [0, 1, 0, 0]
+  // Find Avatar_Hips — this becomes the new scene-root skeleton.
+  let hipsIdx = -1
+  for (let i = 0; i < json.nodes.length; i++) {
+    if (json.nodes[i].name === 'Avatar_Hips') {
+      hipsIdx = i
+      break
+    }
+  }
+  if (hipsIdx < 0) return
 
-  // Lift the avatar so feet sit on the viewer's ground plane. Tune if needed —
-  // some viewers place their grid at chest/head height instead of Y=0.
-  const correctionTranslation = [0, 1.8, 0]
+  // All mesh-bearing nodes — they get moved into the new "meshes" container.
+  const meshNodeIndices: number[] = []
+  for (let i = 0; i < json.nodes.length; i++) {
+    if (json.nodes[i].mesh !== undefined) meshNodeIndices.push(i)
+  }
 
-  const scene = json.scenes[0]
-  const originalRootIndices = [...scene.nodes]
+  // Detach hips and mesh nodes from any current parent.
+  const detached = new Set<number>([hipsIdx, ...meshNodeIndices])
+  for (let i = 0; i < json.nodes.length; i++) {
+    const node = json.nodes[i]
+    if (node.children && node.children.length) {
+      node.children = node.children.filter((c: number) => !detached.has(c))
+      if (node.children.length === 0) delete node.children
+    }
+  }
 
-  // Create the new wrapper node
-  const wrapperIndex = json.nodes.length
-  json.nodes.push({
-    name: 'VRMRoot',
-    rotation: correctionRotation,
-    translation: correctionTranslation,
-    children: originalRootIndices,
-  })
+  // Strip transforms from mesh nodes — skinned meshes ignore their own
+  // transform per glTF spec, and the reference VRM leaves them unset.
+  for (const m of meshNodeIndices) {
+    delete json.nodes[m].translation
+    delete json.nodes[m].rotation
+    delete json.nodes[m].scale
+    delete json.nodes[m].matrix
+  }
 
-  // Replace scene roots with just the wrapper
-  scene.nodes = [wrapperIndex]
+  // Create the two extra scene roots.
+  const meshesIdx = json.nodes.length
+  json.nodes.push({ name: 'meshes', children: meshNodeIndices })
+  const secondaryIdx = json.nodes.length
+  json.nodes.push({ name: 'secondary' })
+
+  // New scene roots: hips, meshes, secondary (mirrors juanma reference exactly).
+  json.scenes[0].nodes = [hipsIdx, meshesIdx, secondaryIdx]
+
+  // Point every skin's skeleton at the new hips root.
+  for (const skin of json.skins) {
+    if (skin.skeleton !== undefined) skin.skeleton = hipsIdx
+  }
 }
 
 function injectVRMExtension(json: any): void {
@@ -396,6 +454,16 @@ export async function exportVRM(scene: Scene): Promise<Blob> {
     }
   }
 
+  // Map of bone name → parent bone name (using Babylon's bone hierarchy, which
+  // is the source of truth for absolute transforms). rebakeBindPose uses this
+  // to compute parent-relative translations in canonical form.
+  const boneParentNameByName = new Map<string, string | null>()
+  for (const snap of boneSnapshots) {
+    if (boneParentNameByName.has(snap.bone.name)) continue
+    const parent = snap.bone.getParent()
+    boneParentNameByName.set(snap.bone.name, parent ? parent.name : null)
+  }
+
   try {
     const glbData = await GLTF2Export.GLBAsync(scene, 'avatar', {
       shouldExportNode: (node) => {
@@ -410,9 +478,9 @@ export async function exportVRM(scene: Scene): Promise<Blob> {
     const buffer = await glbBlob.arrayBuffer()
     const { json, binChunk } = readGLBChunks(buffer)
 
-    rebakeBindPose(json, binChunk, snapshotByName)
+    rebakeBindPose(json, binChunk, snapshotByName, boneParentNameByName)
     mergeSkeletons(json)
-    applyOrientationFix(json)
+    restructureForVrm(json)
     injectVRMExtension(json)
 
     return new Blob([packGLB(json, binChunk)], { type: 'application/octet-stream' })
