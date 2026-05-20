@@ -105,6 +105,144 @@ function packGLB(json: any, binChunk: ArrayBuffer | null): ArrayBuffer {
   return result
 }
 
+function mat4FromTRS(t?: number[], r?: number[], s?: number[]): Float64Array {
+  const tx = t?.[0] ?? 0, ty = t?.[1] ?? 0, tz = t?.[2] ?? 0
+  const qx = r?.[0] ?? 0, qy = r?.[1] ?? 0, qz = r?.[2] ?? 0, qw = r?.[3] ?? 1
+  const sx = s?.[0] ?? 1, sy = s?.[1] ?? 1, sz = s?.[2] ?? 1
+  const x2 = qx + qx, y2 = qy + qy, z2 = qz + qz
+  const xx = qx * x2, xy = qx * y2, xz = qx * z2
+  const yy = qy * y2, yz = qy * z2, zz = qz * z2
+  const wx = qw * x2, wy = qw * y2, wz = qw * z2
+  const m = new Float64Array(16)
+  m[0] = (1 - yy - zz) * sx; m[1] = (xy + wz) * sx; m[2] = (xz - wy) * sx; m[3] = 0
+  m[4] = (xy - wz) * sy; m[5] = (1 - xx - zz) * sy; m[6] = (yz + wx) * sy; m[7] = 0
+  m[8] = (xz + wy) * sz; m[9] = (yz - wx) * sz; m[10] = (1 - xx - yy) * sz; m[11] = 0
+  m[12] = tx; m[13] = ty; m[14] = tz; m[15] = 1
+  return m
+}
+
+function mat4Multiply(a: Float64Array, b: Float64Array): Float64Array {
+  const out = new Float64Array(16)
+  for (let col = 0; col < 4; col++) {
+    for (let row = 0; row < 4; row++) {
+      out[col * 4 + row] =
+        a[row] * b[col * 4] + a[4 + row] * b[col * 4 + 1] +
+        a[8 + row] * b[col * 4 + 2] + a[12 + row] * b[col * 4 + 3]
+    }
+  }
+  return out
+}
+
+function mat4Invert(m: Float64Array): Float64Array {
+  const a00 = m[0], a01 = m[1], a02 = m[2], a03 = m[3]
+  const a10 = m[4], a11 = m[5], a12 = m[6], a13 = m[7]
+  const a20 = m[8], a21 = m[9], a22 = m[10], a23 = m[11]
+  const a30 = m[12], a31 = m[13], a32 = m[14], a33 = m[15]
+  const b00 = a00 * a11 - a01 * a10, b01 = a00 * a12 - a02 * a10
+  const b02 = a00 * a13 - a03 * a10, b03 = a01 * a12 - a02 * a11
+  const b04 = a01 * a13 - a03 * a11, b05 = a02 * a13 - a03 * a12
+  const b06 = a20 * a31 - a21 * a30, b07 = a20 * a32 - a22 * a30
+  const b08 = a20 * a33 - a23 * a30, b09 = a21 * a32 - a22 * a31
+  const b10 = a21 * a33 - a23 * a31, b11 = a22 * a33 - a23 * a32
+  let det = b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06
+  if (Math.abs(det) < 1e-10) {
+    const id = new Float64Array(16)
+    id[0] = id[5] = id[10] = id[15] = 1
+    return id
+  }
+  det = 1.0 / det
+  const out = new Float64Array(16)
+  out[0] = (a11 * b11 - a12 * b10 + a13 * b09) * det
+  out[1] = (a02 * b10 - a01 * b11 - a03 * b09) * det
+  out[2] = (a31 * b05 - a32 * b04 + a33 * b03) * det
+  out[3] = (a22 * b04 - a21 * b05 - a23 * b03) * det
+  out[4] = (a12 * b08 - a10 * b11 - a13 * b07) * det
+  out[5] = (a00 * b11 - a02 * b08 + a03 * b07) * det
+  out[6] = (a32 * b02 - a30 * b05 - a33 * b01) * det
+  out[7] = (a20 * b05 - a22 * b02 + a23 * b01) * det
+  out[8] = (a10 * b10 - a11 * b08 + a13 * b06) * det
+  out[9] = (a01 * b08 - a00 * b10 - a03 * b06) * det
+  out[10] = (a30 * b04 - a31 * b02 + a33 * b00) * det
+  out[11] = (a21 * b02 - a20 * b04 - a23 * b00) * det
+  out[12] = (a11 * b07 - a10 * b09 - a12 * b06) * det
+  out[13] = (a00 * b09 - a01 * b07 + a02 * b06) * det
+  out[14] = (a31 * b01 - a30 * b03 - a32 * b00) * det
+  out[15] = (a20 * b03 - a21 * b01 + a22 * b00) * det
+  return out
+}
+
+function rewriteInverseBindMatrices(json: any, binChunk: ArrayBuffer | null): ArrayBuffer | null {
+  if (!json.skins || !json.nodes) return binChunk
+
+  const parentMap = new Map<number, number>()
+  for (let i = 0; i < json.nodes.length; i++) {
+    const children = json.nodes[i].children
+    if (children) {
+      for (const c of children) parentMap.set(c, i)
+    }
+  }
+
+  function getWorldMatrix(nodeIdx: number): Float64Array {
+    const chain: number[] = []
+    let idx: number | undefined = nodeIdx
+    while (idx !== undefined) {
+      chain.push(idx)
+      idx = parentMap.get(idx)
+    }
+    chain.reverse()
+    let world = new Float64Array(16)
+    world[0] = world[5] = world[10] = world[15] = 1
+    for (const i of chain) {
+      const node = json.nodes[i]
+      const local = node.matrix
+        ? Float64Array.from(node.matrix)
+        : mat4FromTRS(node.translation, node.rotation, node.scale)
+      world = mat4Multiply(world, local)
+    }
+    return world
+  }
+
+  const skinIBMData: Float32Array[] = []
+  for (const skin of json.skins) {
+    const joints: number[] = skin.joints
+    const floats = new Float32Array(joints.length * 16)
+    for (let j = 0; j < joints.length; j++) {
+      const inv = mat4Invert(getWorldMatrix(joints[j]))
+      for (let k = 0; k < 16; k++) floats[j * 16 + k] = inv[k]
+    }
+    skinIBMData.push(floats)
+  }
+
+  const originalSize = binChunk?.byteLength ?? 0
+  const alignedOriginal = Math.ceil(originalSize / 4) * 4
+  let totalExtra = 0
+  for (const d of skinIBMData) totalExtra += d.byteLength
+  const newBin = new ArrayBuffer(alignedOriginal + totalExtra)
+  const newUint8 = new Uint8Array(newBin)
+  if (binChunk) newUint8.set(new Uint8Array(binChunk))
+
+  if (!json.bufferViews) json.bufferViews = []
+  if (!json.accessors) json.accessors = []
+
+  let offset = alignedOriginal
+  for (let s = 0; s < json.skins.length; s++) {
+    const ibm = skinIBMData[s]
+    newUint8.set(new Uint8Array(ibm.buffer, ibm.byteOffset, ibm.byteLength), offset)
+
+    const bvIdx = json.bufferViews.length
+    json.bufferViews.push({ buffer: 0, byteOffset: offset, byteLength: ibm.byteLength })
+
+    const accIdx = json.accessors.length
+    json.accessors.push({ bufferView: bvIdx, componentType: 5126, count: json.skins[s].joints.length, type: 'MAT4' })
+
+    json.skins[s].inverseBindMatrices = accIdx
+    offset += ibm.byteLength
+  }
+
+  if (json.buffers?.[0]) json.buffers[0].byteLength = newBin.byteLength
+  return newBin
+}
+
 function mergeSkeletons(json: any): void {
   if (!json.skins || json.skins.length <= 1 || !json.nodes) return
 
@@ -236,9 +374,10 @@ export async function exportVRM(scene: Scene): Promise<Blob> {
     const { json, binChunk } = readGLBChunks(buffer)
 
     mergeSkeletons(json)
+    const fixedBin = rewriteInverseBindMatrices(json, binChunk)
     injectVRMExtension(json)
 
-    return new Blob([packGLB(json, binChunk)], { type: 'application/octet-stream' })
+    return new Blob([packGLB(json, fixedBin)], { type: 'application/octet-stream' })
   } finally {
     if (parentMesh && saved) {
       parentMesh.scaling.copyFrom(saved.scaling)
