@@ -1,4 +1,4 @@
-import { AbstractMesh, Scene, Vector3 } from '@babylonjs/core'
+import { AbstractMesh, Quaternion, Scene, Vector3 } from '@babylonjs/core'
 import { GLTF2Export } from '@babylonjs/serializers/glTF'
 
 // Maps DCL avatar bone names to VRM 0.x humanoid bone names
@@ -200,20 +200,25 @@ function injectVRMExtension(json: any): void {
 
 export async function exportVRM(scene: Scene): Promise<Blob> {
   const parentMesh = scene.getMeshByName('parent')
-  let savedScale: Vector3 | null = null
-  let savedPosition: Vector3 | null = null
+
+  const saved = parentMesh
+    ? {
+        scaling: parentMesh.scaling.clone(),
+        position: parentMesh.position.clone(),
+        rotationQuaternion: parentMesh.rotationQuaternion?.clone() ?? null,
+        rotation: parentMesh.rotation.clone(),
+      }
+    : null
+
   if (parentMesh) {
-    savedScale = parentMesh.scaling.clone()
-    savedPosition = parentMesh.position.clone()
     parentMesh.scaling.copyFromFloats(1, 1, 1)
     parentMesh.position.copyFromFloats(0, 0, 0)
-  }
-
-  // Reparent parent under __root__ so the GLTF exporter treats meshes and bones
-  // in the same coordinate space (prevents partial coordinate conversion)
-  const rootNode = scene.transformNodes.find((n) => n.name === '__root__')
-  if (parentMesh && rootNode) {
-    parentMesh.setParent(rootNode)
+    if (parentMesh.rotationQuaternion) {
+      parentMesh.rotationQuaternion.copyFrom(Quaternion.Identity())
+    } else {
+      parentMesh.rotation.copyFromFloats(0, 0, 0)
+    }
+    parentMesh.computeWorldMatrix(true)
   }
 
   try {
@@ -235,12 +240,15 @@ export async function exportVRM(scene: Scene): Promise<Blob> {
 
     return new Blob([packGLB(json, binChunk)], { type: 'application/octet-stream' })
   } finally {
-    if (parentMesh) {
-      parentMesh.setParent(null)
-      if (savedScale && savedPosition) {
-        parentMesh.scaling.copyFrom(savedScale)
-        parentMesh.position.copyFrom(savedPosition)
+    if (parentMesh && saved) {
+      parentMesh.scaling.copyFrom(saved.scaling)
+      parentMesh.position.copyFrom(saved.position)
+      if (saved.rotationQuaternion && parentMesh.rotationQuaternion) {
+        parentMesh.rotationQuaternion.copyFrom(saved.rotationQuaternion)
+      } else {
+        parentMesh.rotation.copyFrom(saved.rotation)
       }
+      parentMesh.computeWorldMatrix(true)
     }
   }
 }
