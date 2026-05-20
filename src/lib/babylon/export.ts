@@ -1,4 +1,4 @@
-import { Scene, Vector3 } from '@babylonjs/core'
+import { AbstractMesh, Scene, Vector3 } from '@babylonjs/core'
 import { GLTF2Export } from '@babylonjs/serializers/glTF'
 
 // Maps DCL avatar bone names to VRM 0.x humanoid bone names
@@ -185,7 +185,7 @@ export async function exportVRM(scene: Scene): Promise<Blob> {
       shouldExportNode: (node) => {
         if (node.name === 'parent_other') return false
         if (node.name.endsWith('_Other')) return false
-        if ('isEnabled' in node && typeof node.isEnabled === 'function' && !node.isEnabled()) return false
+        if (node instanceof AbstractMesh && !node.isEnabled(false)) return false
         return true
       },
     })
