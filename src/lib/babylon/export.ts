@@ -105,6 +105,16 @@ function packGLB(json: any, binChunk: ArrayBuffer | null): ArrayBuffer {
   return result
 }
 
+function fixCoordinateSpace(json: any): void {
+  if (!json.nodes) return
+  for (const node of json.nodes) {
+    if (node.name === 'parent') {
+      node.rotation = [0, 1, 0, 0]
+      break
+    }
+  }
+}
+
 function mergeSkeletons(json: any): void {
   if (!json.skins || json.skins.length <= 1 || !json.nodes) return
 
@@ -225,6 +235,7 @@ export async function exportVRM(scene: Scene): Promise<Blob> {
     const { json, binChunk } = readGLBChunks(buffer)
 
     mergeSkeletons(json)
+    fixCoordinateSpace(json)
     injectVRMExtension(json)
 
     return new Blob([packGLB(json, binChunk)], { type: 'application/octet-stream' })
