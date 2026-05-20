@@ -20,13 +20,22 @@ import { buildTwinMapFromContainer, isFacialFeature, isModel, isSuccesful, proce
 import { loadWearable } from './wearable'
 import { SpringBoneSimulation } from './springBones'
 import { getSpringBoneParamsFromMetadata } from '../wearable'
+import { exportVRM } from './export'
+
+export type IExportController = {
+  exportVRM(): Promise<string>
+}
+
+export type PreviewControllerWithExport = IPreviewController & {
+  export: IExportController
+}
 
 /**
  * Initializes Babylon, creates the scene and loads a list of wearables in it
  * @param canvas
  * @param config
  */
-export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): Promise<IPreviewController> {
+export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): Promise<PreviewControllerWithExport> {
   // create the root scene
   const [scene, sceneController] = await createScene(canvas, config)
   const simulation = new SpringBoneSimulation()
@@ -142,10 +151,18 @@ export async function render(canvas: HTMLCanvasElement, config: PreviewConfig): 
       center(scene)
     }
 
-    const controller: IPreviewController = {
+    const exportController: IExportController = {
+      async exportVRM(): Promise<string> {
+        const blob = await exportVRM(scene)
+        return URL.createObjectURL(blob)
+      },
+    }
+
+    const controller: PreviewControllerWithExport = {
       scene: sceneController,
       emote: emoteController,
       physics: physicsController,
+      export: exportController,
     }
     return controller
   } catch (error) {
