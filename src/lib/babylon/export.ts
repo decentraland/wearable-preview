@@ -105,6 +105,36 @@ function packGLB(json: any, binChunk: ArrayBuffer | null): ArrayBuffer {
   return result
 }
 
+function mergeSkeletons(json: any): void {
+  if (!json.skins || json.skins.length <= 1 || !json.nodes) return
+
+  const nameToFirstIndex = new Map<string, number>()
+  for (let i = 0; i < json.nodes.length; i++) {
+    const name = json.nodes[i].name
+    if (name && !nameToFirstIndex.has(name)) {
+      nameToFirstIndex.set(name, i)
+    }
+  }
+
+  for (const skin of json.skins) {
+    skin.joints = skin.joints.map((jointIdx: number) => {
+      const name = json.nodes[jointIdx]?.name
+      if (name) {
+        const firstIdx = nameToFirstIndex.get(name)
+        if (firstIdx !== undefined) return firstIdx
+      }
+      return jointIdx
+    })
+    if (skin.skeleton !== undefined) {
+      const skelName = json.nodes[skin.skeleton]?.name
+      if (skelName) {
+        const firstIdx = nameToFirstIndex.get(skelName)
+        if (firstIdx !== undefined) skin.skeleton = firstIdx
+      }
+    }
+  }
+}
+
 function injectVRMExtension(json: any): void {
   const seenVrmBones = new Set<string>()
   const humanBones: Array<{ bone: string; node: number; useDefaultValues: boolean }> = []
@@ -194,6 +224,7 @@ export async function exportVRM(scene: Scene): Promise<Blob> {
     const buffer = await glbBlob.arrayBuffer()
     const { json, binChunk } = readGLBChunks(buffer)
 
+    mergeSkeletons(json)
     injectVRMExtension(json)
 
     return new Blob([packGLB(json, binChunk)], { type: 'application/octet-stream' })
