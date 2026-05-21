@@ -297,6 +297,30 @@ function restructureForVrm(json: any): void {
   }
 }
 
+/**
+ * Tags every material as KHR_materials_unlit so VRM viewers render the avatar
+ * with the flat / cartoon look DCL uses, instead of PBR metallic shading.
+ * Matches the juanma reference, which also marks every material as unlit.
+ */
+function applyUnlitMaterials(json: any): void {
+  if (!Array.isArray(json.materials) || json.materials.length === 0) return
+
+  if (!json.extensionsUsed) json.extensionsUsed = []
+  if (!json.extensionsUsed.includes('KHR_materials_unlit')) {
+    json.extensionsUsed.push('KHR_materials_unlit')
+  }
+
+  for (const mat of json.materials) {
+    if (!mat.extensions) mat.extensions = {}
+    if (!mat.extensions.KHR_materials_unlit) mat.extensions.KHR_materials_unlit = {}
+    // Unlit materials should not contribute metallic/roughness — zero them out.
+    if (mat.pbrMetallicRoughness) {
+      mat.pbrMetallicRoughness.metallicFactor = 0
+      mat.pbrMetallicRoughness.roughnessFactor = 0.9
+    }
+  }
+}
+
 function injectVRMExtension(json: any): void {
   const seenVrmBones = new Set<string>()
   const humanBones: Array<{ bone: string; node: number; useDefaultValues: boolean }> = []
@@ -481,6 +505,7 @@ export async function exportVRM(scene: Scene): Promise<Blob> {
     rebakeBindPose(json, binChunk, snapshotByName, boneParentNameByName)
     mergeSkeletons(json)
     restructureForVrm(json)
+    applyUnlitMaterials(json)
     injectVRMExtension(json)
 
     return new Blob([packGLB(json, binChunk)], { type: 'application/octet-stream' })
