@@ -298,6 +298,21 @@ function restructureForVrm(json: any): void {
 }
 
 /**
+ * Removes any embedded animations from the glTF. Babylon's serializer often
+ * includes the avatar's current animation track, but our mergeSkeletons remaps
+ * joint indices and leaves animation channels pointing at the original nodes —
+ * UniVRM and UniGLTF then crash with IndexOutOfRangeException on import.
+ *
+ * The VRM is meant as a static rig that animation hosts (VMagicMirror,
+ * VSeeFace, Unity etc) drive with their own motion data, so dropping the
+ * embedded animations is the correct choice and matches the juanma reference,
+ * which ships with no animations either.
+ */
+function stripAnimations(json: any): void {
+  if (json.animations) delete json.animations
+}
+
+/**
  * Tags every material as KHR_materials_unlit so VRM viewers render the avatar
  * with the flat / cartoon look DCL uses, instead of PBR metallic shading.
  * Matches the juanma reference, which also marks every material as unlit.
@@ -505,6 +520,7 @@ export async function exportVRM(scene: Scene): Promise<Blob> {
     rebakeBindPose(json, binChunk, snapshotByName, boneParentNameByName)
     mergeSkeletons(json)
     restructureForVrm(json)
+    stripAnimations(json)
     applyUnlitMaterials(json)
     injectVRMExtension(json)
 
