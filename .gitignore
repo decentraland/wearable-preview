@@ -37,3 +37,5 @@ public/unity/Build/aang-renderer.data
 public/unity/Build/aang-renderer.framework.js
 public/unity/Build/aang-renderer.symbols.json
 public/unity/Build/aang-renderer.wasm
+
+tmp
