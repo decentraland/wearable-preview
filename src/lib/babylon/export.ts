@@ -399,6 +399,41 @@ function injectVRMExtension(json: any): void {
   }
 }
 
+/**
+ * Babylon 4.2's glTF serializer derives each exported image's identity from the
+ * Babylon texture's `name`. When two DISTINCT textures share a name, the second
+ * one's glTF texture entry is silently aliased to the FIRST one's image:
+ * glTFMaterialExporter._getTextureInfoFromBase64 stores the second image's bytes
+ * under a random name but then matches the image source on the un-deduplicated
+ * original name, so `glTFTexture.source` points back at the first image.
+ *
+ * DCL avatars reuse the names "AvatarSkin_MAT (Base Color)" / "AvatarSkin_MAT"
+ * across body parts that carry DIFFERENT image data — the head has its own clean
+ * 1024² skin map, the body a darker 2048² one. The collision makes every skin
+ * mesh inherit a single image, so the head loses its own map and renders the
+ * wrong (dark, feature-placeholder) texels around the nose and eyes.
+ *
+ * Make every texture name unique for the duration of the export, then restore so
+ * the live scene is left untouched.
+ */
+function uniquifyTextureNamesForExport(scene: Scene): () => void {
+  const restorers: Array<() => void> = []
+  const seen = new Set<string>()
+  for (const tex of scene.textures) {
+    if (seen.has(tex.name)) {
+      const original = tex.name
+      tex.name = `${original}#${tex.uid}`
+      restorers.push(() => {
+        tex.name = original
+      })
+    }
+    seen.add(tex.name)
+  }
+  return () => {
+    for (const restore of restorers) restore()
+  }
+}
+
 export async function exportVRM(scene: Scene): Promise<Blob> {
   console.group('[VRM EXPORT DEBUG]')
   console.log('Scene handedness:', scene.useRightHandedSystem ? 'right' : 'left')
@@ -503,6 +538,10 @@ export async function exportVRM(scene: Scene): Promise<Blob> {
     boneParentNameByName.set(snap.bone.name, parent ? parent.name : null)
   }
 
+  // Disambiguate same-named textures so the serializer doesn't alias distinct
+  // skin maps to a single image (see uniquifyTextureNamesForExport).
+  const restoreTextureNames = uniquifyTextureNamesForExport(scene)
+
   try {
     const glbData = await GLTF2Export.GLBAsync(scene, 'avatar', {
       shouldExportNode: (node) => {
@@ -526,6 +565,8 @@ export async function exportVRM(scene: Scene): Promise<Blob> {
 
     return new Blob([packGLB(json, binChunk)], { type: 'application/octet-stream' })
   } finally {
+    restoreTextureNames()
+
     for (const { bone, base, local } of boneSnapshots) {
       // updateMatrix writes into both _baseMatrix and _localMatrix, marks the
       // bone dirty, and recomputes the difference matrix in one call.
