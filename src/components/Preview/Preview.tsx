@@ -124,7 +124,7 @@ const Preview: React.FC = () => {
   // send ready message to parent
   useReady()
 
-  const showVRMButton = config?.type === PreviewType.AVATAR && isLoaded && !error
+  const showVRMButton = false
 
   async function handleDownloadVRM() {
     if (!controller.current?.export || isExporting) return
