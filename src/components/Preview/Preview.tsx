@@ -8,6 +8,7 @@ import {
   PreviewEmote,
   PreviewRenderer,
 } from '@dcl/schemas'
+import { PreviewControllerWithExport } from '../../lib/babylon/render'
 import { useWindowSize } from '../../hooks/useWindowSize'
 import { useConfig } from '../../hooks/useConfig'
 import { useReady } from '../../hooks/useReady'
@@ -25,8 +26,9 @@ const Preview: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false)
   const [isLoadingModel, setIsLoadingModel] = useState(true)
   const [isLoaded, setIsLoaded] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const controller = useController()
+  const controller = useController() as React.MutableRefObject<PreviewControllerWithExport | undefined>
   const [config, isLoadingConfig, configError] = useConfig()
   const [image, setImage] = useState('')
   const [is3D, setIs3D] = useState(true)
@@ -122,6 +124,25 @@ const Preview: React.FC = () => {
   // send ready message to parent
   useReady()
 
+  const showVRMButton = false
+
+  async function handleDownloadVRM() {
+    if (!controller.current?.export || isExporting) return
+    setIsExporting(true)
+    try {
+      const objectUrl = await controller.current.export.exportVRM()
+      const a = document.createElement('a')
+      a.href = objectUrl
+      a.download = 'avatar.vrm'
+      a.click()
+      URL.revokeObjectURL(objectUrl)
+    } catch (err) {
+      console.error('VRM export failed', err)
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   return (
     <div
       className={classNames('Preview', {
@@ -153,6 +174,16 @@ const Preview: React.FC = () => {
         onMouseUp={() => setIsDragging(false)}
       ></canvas>
       {error && <div className="error">{error}</div>}
+      {showVRMButton && (
+        <button
+          className={classNames('vrm-download-btn', { 'is-exporting': isExporting })}
+          onClick={handleDownloadVRM}
+          disabled={isExporting}
+          title="Download VRM"
+        >
+          {isExporting ? '...' : '↓ VRM'}
+        </button>
+      )}
     </div>
   )
 }
