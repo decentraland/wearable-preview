@@ -28,7 +28,7 @@ jobs:
       run:
         working-directory: ./webapp
     steps:
-      - uses: hmarr/debug-action@v2
+      - uses: hmarr/debug-action@v3
       - name: Set Rollout
         uses: decentraland/set-rollout-action@main
         with:
