@@ -138,9 +138,6 @@ export const sendIndividualOverrideMessages = (
         const transformedValue = transformer ? transformer(value) : String(value)
         sendUnityMessage(unityInstance, unityMethod, transformedValue)
         messagesSent++
-      } else {
-        console.warn(`No Unity method mapping found for property: ${key}`)
-        captureMessage(`No Unity method mapping found for property: ${key}`, { property: key, value })
       }
     }
   })
