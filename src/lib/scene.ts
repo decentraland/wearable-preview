@@ -12,7 +12,16 @@ const ignoreTextureList = [
 ]
 
 export function createSceneController(engine: Engine, scene: Scene, camera: ArcRotateCamera): ISceneController {
+  function checkNotDisposed() {
+    // this controller can outlive its scene: re-rendering (e.g. after an options update) disposes the engine and creates a new controller.
+    // Babylon hangs forever on a disposed engine, so fail fast and let the caller retry against the new controller instead.
+    if (!engine.getRenderingCanvas() || scene.isDisposed) {
+      throw new Error('The scene was disposed, a newer render has replaced it')
+    }
+  }
+
   async function getScreenshot(width: number, height: number) {
+    checkNotDisposed()
     return Tools.CreateScreenshotUsingRenderTargetAsync(engine, camera, { width, height }, undefined, undefined, true)
   }
 
@@ -41,6 +50,7 @@ export function createSceneController(engine: Engine, scene: Scene, camera: ArcR
   }
 
   async function getMetrics() {
+    checkNotDisposed()
     const triangles = scene.meshes
       .filter((mesh) => !mesh.name.toLowerCase().includes('collider')) // remove colliders from metrics
       .reduce((total, mesh) => {

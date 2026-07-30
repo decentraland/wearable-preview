@@ -41,6 +41,10 @@ const Preview: React.FC = () => {
 
   useEffect(() => {
     let removeEmoteEvents: () => unknown = () => {}
+    // when the config changes while a render is still in flight, the in-flight render is stale: its
+    // results must be discarded so the parent window never gets a LOAD (and takes screenshots) for a
+    // scene that is about to be replaced
+    let isStale = false
     if (canvasRef.current && config) {
       let style: React.CSSProperties = { opacity: 1 } // fade in effect
 
@@ -65,16 +69,19 @@ const Preview: React.FC = () => {
         // preview models
         render(canvasRef.current, config)
           .then((newController) => {
+            if (isStale) return
             // set new controller as current one
             controller.current = newController
             // handle emote events and forward them as messages
             removeEmoteEvents = handleEmoteEvents(controller.current)
           })
           .catch((error) => {
+            if (isStale) return
             captureException(error, { component: 'Preview', phase: 'render' })
             setPreviewError(error.message)
           })
           .finally(() => {
+            if (isStale) return
             setIsLoadingModel(false)
             setIsLoaded(true)
           })
@@ -82,18 +89,28 @@ const Preview: React.FC = () => {
     }
 
     return () => {
+      isStale = true
       removeEmoteEvents()
     }
   }, [canvasRef.current, config]) // eslint-disable-line
 
   // send a mesasge to the parent window when loaded or error occurs
   useEffect(() => {
-    if (!isMessageSent) {
+    // if a newer config is already loading (e.g. an update arrived via postMessage while the first
+    // render was in flight), don't announce this render: it's stale and about to be replaced. The
+    // upcoming render will send its own LOAD. This prevents embedders from taking screenshots of
+    // an outdated scene.
+    if (!isMessageSent && !isLoadingConfig) {
       if (isLoaded) {
         sendMessage(getParent(), PreviewMessageType.LOAD, { renderer: PreviewRenderer.BABYLON })
         setIsMessageSent(true)
         if (config?.type === PreviewType.AVATAR || (config?.emote && config.emote !== PreviewEmote.IDLE)) {
-          controller.current?.emote.play()
+          try {
+            controller.current?.emote.play()
+          } catch (error) {
+            // the emote controller can be the invalid stub (e.g. the emote failed to load), keep the preview alive
+            console.warn('Could not play emote', error)
+          }
         }
       } else if (error) {
         captureException(new Error(error), { component: 'Preview', phase: 'sendErrorToParent' })
@@ -101,7 +118,7 @@ const Preview: React.FC = () => {
         setIsMessageSent(true)
       }
     }
-  }, [isLoaded, error, isMessageSent, controller, config?.type, config?.emote])
+  }, [isLoaded, error, isMessageSent, isLoadingConfig, controller, config?.type, config?.emote])
 
   // when the config is being loaded again (because the was an update to some of the options) reset all the other loading flags
   useEffect(() => {
