@@ -67,9 +67,16 @@ type QueryParams = {
   camera: PreviewCamera
   projection: PreviewProjection
   emote: string
+  type: string
   urn: string[]
   base64: string[]
 }
+
+// Only these two express a view the renderer can be pinned to: the item on its own or the item
+// worn by an avatar. TEXTURE is not a view, it's resolved below from the item's representation and
+// only tells the JS side to show the thumbnail instead of the canvas.
+const getRequestedType = (type: PreviewType | null | undefined): PreviewType | null =>
+  type === PreviewType.AVATAR || type === PreviewType.WEARABLE ? type : null
 
 const getDefaultColors = (
   profile: Avatar | null,
@@ -146,7 +153,10 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
           options.marketplaceServerUrl || options.nftServerUrl || config.get('MARKETPLACE_SERVER_URL')
 
         // Initialize basic config
-        let type = PreviewType.WEARABLE
+        // A caller that asked for a specific view gets it; when nobody asked we keep defaulting to
+        // the item view, and the renderer decides (see PreviewController) which view to open in.
+        const requestedType = getRequestedType(options.type)
+        let type = requestedType || PreviewType.WEARABLE
         let background: Background = {
           color: options.background || '#4b4852',
           transparent: options.disableBackground === true,
@@ -189,7 +199,9 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
               image: item.thumbnail,
             }
             const representation = getWearableRepresentationOrDefault(item)
-            if (isTexture(representation)) {
+            // An avatar can wear a texture-only wearable, so an explicit avatar request wins over
+            // the texture fallback (same precedence as the Babylon path, see lib/config.ts).
+            if (isTexture(representation) && type !== PreviewType.AVATAR) {
               type = PreviewType.TEXTURE
             }
           }
@@ -273,6 +285,11 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
                 camera,
                 projection,
                 emote: toQueryValue(emote?.toString() || ''),
+                // Unity reads its config from this URL, so the requested view has to travel here to
+                // reach it. We forward the caller's request and not the resolved `type`: an empty
+                // value means "no preference", which is what lets the renderer fall back to the
+                // view the user last picked.
+                type: toQueryValue(requestedType),
                 urn: urns.length > 0 ? urns : [''],
                 base64: base64s.length > 0 ? base64s : [''],
               }
