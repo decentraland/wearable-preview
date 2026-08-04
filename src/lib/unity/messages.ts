@@ -19,6 +19,7 @@ export enum UnityMethod {
   SET_ITEM_ID = 'SetItemID',
   SET_TOKEN_ID = 'SetTokenID',
   SET_DISABLE_LOADER = 'SetDisableLoader',
+  SET_TYPE = 'SetType',
 
   // Control methods
   RELOAD = 'Reload',
@@ -49,6 +50,7 @@ const PROPERTY_METHOD_MAP: Record<string, UnityMethod> = {
   itemId: UnityMethod.SET_ITEM_ID,
   tokenId: UnityMethod.SET_TOKEN_ID,
   disableLoader: UnityMethod.SET_DISABLE_LOADER,
+  type: UnityMethod.SET_TYPE,
 }
 
 // Individual method handlers for specific value transformations
@@ -69,6 +71,7 @@ const VALUE_TRANSFORMERS: Record<string, (value: any) => string> = {
   itemId: (value) => String(value),
   tokenId: (value) => String(value),
   disableLoader: (value) => String(value),
+  type: (value) => String(value),
 }
 
 export const sendUnityMessage = (unityInstance: any, method: UnityMethod | string, value?: any) => {
