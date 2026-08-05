@@ -210,6 +210,14 @@ export async function createScene(
     camera.upperRadiusLimit = camera.radius
   }
 
+  // The wheel zooms the camera, but the browser also scrolls: since this document never scrolls
+  // (overflow is hidden) the scroll chains to the embedding page. Cancel it while zooming is possible.
+  if (config.camera === PreviewCamera.INTERACTIVE && camera.upperRadiusLimit !== camera.lowerRadiusLimit) {
+    const preventScroll = (event: WheelEvent) => event.preventDefault()
+    canvas.addEventListener('wheel', preventScroll, { passive: false })
+    root.onDisposeObservable.addOnce(() => canvas.removeEventListener('wheel', preventScroll))
+  }
+
   // Setup lights
   if (config.type === PreviewType.WEARABLE) {
     const directional = new DirectionalLight('directional', new Vector3(0, 0, 1), root)
