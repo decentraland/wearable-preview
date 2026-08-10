@@ -27,7 +27,7 @@
     "start": "vite",
     "build": "vite build",
     "build:static-local": "GEN_STATIC_LOCAL=true npm run build && mv ./dist ./static-local",
-    "test": "jest",
+    "test": "vitest run",
     "prebuild": "node ./scripts/prebuild.cjs",
     "update-unity": "node ./scripts/update-unity.cjs"
   },
@@ -73,9 +73,11 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.5.1",
     "dotenv": "^16.5.0",
+    "jsdom": "^29.1.1",
     "prettier": "^3.5.3",
     "rollup": "^4.42.0",
     "typescript": "^5.2.2",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "vitest": "^3.2.7"
   }
 }

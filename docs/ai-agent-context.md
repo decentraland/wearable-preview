@@ -29,9 +29,10 @@ The Wearable Preview is a webapp that renders interactive 3D previews of Decentr
 - Framework: React 18
 - Build Tool: Vite
 - Language: TypeScript
-- 3D Rendering: Babylon.js 8.x (primary), Unity WebGL (alternative renderer)
+- 3D Rendering: Babylon.js 4.2 (primary), Unity WebGL (alternative renderer)
 - UI: decentraland-ui
 - Schemas: @dcl/schemas for type definitions and message types
+- Tests: Vitest (`npm test`)
 
 **External Dependencies:**
 

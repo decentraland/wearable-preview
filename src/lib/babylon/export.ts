@@ -1,5 +1,6 @@
 import { AbstractMesh, Bone, Matrix, Quaternion, Scene, Skeleton, TransformNode, Vector3 } from '@babylonjs/core'
 import { GLTF2Export } from '@babylonjs/serializers/glTF'
+import { UNITY_EMISSIVE_GAIN } from './emissive'
 
 // Maps DCL avatar bone names to VRM 0.x humanoid bone names.
 //
@@ -313,6 +314,22 @@ function stripAnimations(json: any): void {
 }
 
 /**
+ * Undoes the display-only emissive gain (see applyUnityEmissiveGain) before writing the
+ * file. The serializer reads the live scene, so without this the export would carry
+ * emissiveFactor values above the [0,1] range the glTF spec allows.
+ */
+export function normalizeEmissiveForExport(json: any): void {
+  if (!Array.isArray(json.materials)) return
+
+  for (const mat of json.materials) {
+    if (!Array.isArray(mat.emissiveFactor)) continue
+    mat.emissiveFactor = mat.emissiveFactor.map((channel: number) =>
+      Math.min(1, Math.max(0, channel / UNITY_EMISSIVE_GAIN)),
+    )
+  }
+}
+
+/**
  * Tags every material as KHR_materials_unlit so VRM viewers render the avatar
  * with the flat / cartoon look DCL uses, instead of PBR metallic shading.
  * Matches the juanma reference, which also marks every material as unlit.
@@ -560,6 +577,7 @@ export async function exportVRM(scene: Scene): Promise<Blob> {
     mergeSkeletons(json)
     restructureForVrm(json)
     stripAnimations(json)
+    normalizeEmissiveForExport(json)
     applyUnlitMaterials(json)
     injectVRMExtension(json)
 
