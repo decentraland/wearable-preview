@@ -1,6 +1,6 @@
 import { AbstractMesh, Bone, Matrix, Quaternion, Scene, Skeleton, TransformNode, Vector3 } from '@babylonjs/core'
 import { GLTF2Export } from '@babylonjs/serializers/glTF'
-import { UNITY_EMISSIVE_GAIN } from './emissive'
+import { isUnityToneMappingEnabled, UNITY_EMISSIVE_GAIN } from './emissive'
 
 // Maps DCL avatar bone names to VRM 0.x humanoid bone names.
 //
@@ -317,8 +317,13 @@ function stripAnimations(json: any): void {
  * Undoes the display-only emissive gain (see applyUnityEmissiveGain) before writing the
  * file. The serializer reads the live scene, so without this the export would carry
  * emissiveFactor values above the [0,1] range the glTF spec allows.
+ *
+ * Guarded by isUnityToneMappingEnabled: when the escape hatch (?toneMapping=none) is active,
+ * applyUnityEmissiveGain is a no-op, so there is nothing to undo — dividing un-scaled values
+ * by 12.5 would silently crush the emissive to near-zero in the exported file.
  */
 export function normalizeEmissiveForExport(json: any): void {
+  if (!isUnityToneMappingEnabled()) return
   if (!Array.isArray(json.materials)) return
 
   for (const mat of json.materials) {

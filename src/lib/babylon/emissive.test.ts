@@ -1,5 +1,5 @@
 import { Color3 } from '@babylonjs/core/Maths/math.color'
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   applyUnityEmissiveGain,
   getOriginalEmissiveColor,
@@ -10,12 +10,9 @@ import {
   UNITY_EMISSIVE_GENERATOR_GAIN,
   UNITY_EMISSIVE_SHADER_GAIN,
 } from './emissive'
+import { cleanupSearchAfterEach, setSearch } from './test-helpers'
 
-function setSearch(search: string) {
-  window.history.replaceState({}, '', `/${search}`)
-}
-
-afterEach(() => setSearch(''))
+cleanupSearchAfterEach()
 
 // The gain only touches emissiveColor and metadata, so a plain stand-in keeps these tests
 // off a WebGL context. Cast at the call site to satisfy the PBRMaterial signature.

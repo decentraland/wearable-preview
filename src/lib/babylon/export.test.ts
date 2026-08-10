@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { normalizeEmissiveForExport } from './export'
+import { cleanupSearchAfterEach, setSearch } from './test-helpers'
+
+cleanupSearchAfterEach()
 
 describe('normalizeEmissiveForExport', () => {
   it('undoes the display gain so the file stays within the glTF [0,1] range', () => {
@@ -36,5 +39,16 @@ describe('normalizeEmissiveForExport', () => {
     const json = { meshes: [] }
 
     expect(() => normalizeEmissiveForExport(json)).not.toThrow()
+  })
+
+  it('skips normalization when toneMapping=none, since the gain was never applied', () => {
+    setSearch('?toneMapping=none')
+    const original = [0.48118668795180497, 0, 0.0036217522927073365]
+    const json = { materials: [{ emissiveFactor: [...original] }] }
+
+    normalizeEmissiveForExport(json)
+
+    // Values must remain untouched — dividing un-scaled emissive by 12.5 would crush them.
+    expect(json.materials[0].emissiveFactor).toEqual(original)
   })
 })

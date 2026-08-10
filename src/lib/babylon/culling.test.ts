@@ -1,11 +1,8 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { applyUnityBackFaceCulling, isUnityBackFaceCullingEnabled } from './culling'
+import { cleanupSearchAfterEach, setSearch } from './test-helpers'
 
-function setSearch(search: string) {
-  window.history.replaceState({}, '', `/${search}`)
-}
-
-afterEach(() => setSearch(''))
+cleanupSearchAfterEach()
 
 // Only backFaceCulling is touched, so a stand-in keeps these off a WebGL context.
 const fakeMaterial = (backFaceCulling: boolean) => ({ backFaceCulling }) as any
