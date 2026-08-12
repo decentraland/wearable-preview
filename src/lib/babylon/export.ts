@@ -457,53 +457,55 @@ function uniquifyTextureNamesForExport(scene: Scene): () => void {
 }
 
 export async function exportVRM(scene: Scene): Promise<Blob> {
-  console.group('[VRM EXPORT DEBUG]')
-  console.log('Scene handedness:', scene.useRightHandedSystem ? 'right' : 'left')
+  if (process.env.VITE_REACT_APP_DEBUG) {
+    console.group('[VRM EXPORT DEBUG]')
+    console.log('Scene handedness:', scene.useRightHandedSystem ? 'right' : 'left')
 
-  const fmt = (arr: ArrayLike<number> | undefined) =>
-    arr ? JSON.stringify(Array.from(arr).map((v) => +v.toFixed(4))) : 'undefined'
+    const fmt = (arr: ArrayLike<number> | undefined) =>
+      arr ? JSON.stringify(Array.from(arr).map((v) => +v.toFixed(4))) : 'undefined'
 
-  const allRoots = scene.transformNodes.filter((n: TransformNode) => n.name === '__root__')
-  console.log(`Found ${allRoots.length} __root__ node(s):`)
-  allRoots.forEach((r: TransformNode, i: number) => {
-    console.log(
-      `  __root__[${i}]  scaling=${fmt(r.scaling.asArray())}  pos=${fmt(r.position.asArray())}  rot=${fmt(
-        r.rotationQuaternion?.asArray() ?? r.rotation.asArray(),
-      )}  parent=${r.parent?.name ?? '(scene root)'}  children=${r.getChildren().length}`,
-    )
-  })
-
-  const debugParent = scene.getMeshByName('parent')
-  if (debugParent) {
-    console.log(
-      `parent mesh: scaling=${fmt(debugParent.scaling.asArray())}  pos=${fmt(
-        debugParent.position.asArray(),
-      )}  rot=${fmt(
-        debugParent.rotationQuaternion?.asArray() ?? debugParent.rotation.asArray(),
-      )}  parent=${debugParent.parent?.name ?? '(scene root)'}  absPos=${fmt(
-        debugParent.getAbsolutePosition().asArray(),
-      )}`,
-    )
-  }
-
-  console.log(
-    'Top-level transform nodes:',
-    scene.transformNodes.filter((n: TransformNode) => !n.parent).map((n: TransformNode) => n.name),
-  )
-  console.log(
-    'Top-level meshes:',
-    scene.meshes.filter((m: AbstractMesh) => !m.parent).map((m: AbstractMesh) => m.name),
-  )
-
-  const probeBones = ['Avatar_Hips', 'Avatar_LeftHand', 'Avatar_RightHand', 'Avatar_LeftFoot', 'Avatar_RightFoot']
-  scene.skeletons.forEach((skel: Skeleton, i: number) => {
-    console.log(`Skeleton[${i}] "${skel.name}" bones=${skel.bones.length}`)
-    probeBones.forEach((name) => {
-      const bone = skel.bones.find((b: Bone) => b.name === name)
-      console.log(`  ${name} absolute=${fmt(bone?.getAbsoluteTransform().toArray())}`)
+    const allRoots = scene.transformNodes.filter((n: TransformNode) => n.name === '__root__')
+    console.log(`Found ${allRoots.length} __root__ node(s):`)
+    allRoots.forEach((r: TransformNode, i: number) => {
+      console.log(
+        `  __root__[${i}]  scaling=${fmt(r.scaling.asArray())}  pos=${fmt(r.position.asArray())}  rot=${fmt(
+          r.rotationQuaternion?.asArray() ?? r.rotation.asArray(),
+        )}  parent=${r.parent?.name ?? '(scene root)'}  children=${r.getChildren().length}`,
+      )
     })
-  })
-  console.groupEnd()
+
+    const debugParent = scene.getMeshByName('parent')
+    if (debugParent) {
+      console.log(
+        `parent mesh: scaling=${fmt(debugParent.scaling.asArray())}  pos=${fmt(
+          debugParent.position.asArray(),
+        )}  rot=${fmt(
+          debugParent.rotationQuaternion?.asArray() ?? debugParent.rotation.asArray(),
+        )}  parent=${debugParent.parent?.name ?? '(scene root)'}  absPos=${fmt(
+          debugParent.getAbsolutePosition().asArray(),
+        )}`,
+      )
+    }
+
+    console.log(
+      'Top-level transform nodes:',
+      scene.transformNodes.filter((n: TransformNode) => !n.parent).map((n: TransformNode) => n.name),
+    )
+    console.log(
+      'Top-level meshes:',
+      scene.meshes.filter((m: AbstractMesh) => !m.parent).map((m: AbstractMesh) => m.name),
+    )
+
+    const probeBones = ['Avatar_Hips', 'Avatar_LeftHand', 'Avatar_RightHand', 'Avatar_LeftFoot', 'Avatar_RightFoot']
+    scene.skeletons.forEach((skel: Skeleton, i: number) => {
+      console.log(`Skeleton[${i}] "${skel.name}" bones=${skel.bones.length}`)
+      probeBones.forEach((name) => {
+        const bone = skel.bones.find((b: Bone) => b.name === name)
+        console.log(`  ${name} absolute=${fmt(bone?.getAbsoluteTransform().toArray())}`)
+      })
+    })
+    console.groupEnd()
+  }
 
   const parentMesh = scene.getMeshByName('parent')
 

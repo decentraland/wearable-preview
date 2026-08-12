@@ -255,7 +255,9 @@ export async function createScene(
       const emissive =
         material instanceof PBRMaterial
           ? getOriginalEmissiveColor(material)
-          : (material as StandardMaterial).emissiveColor
+          : material instanceof StandardMaterial
+            ? material.emissiveColor
+            : undefined
       if (!emissive) {
         const { r, g, b, a } = glowLayer.neutralColor
         result.set(r, g, b, a)

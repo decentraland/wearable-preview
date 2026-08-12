@@ -31,6 +31,17 @@ type EmissiveMetadata = {
   originalEmissiveColor?: Color3
 }
 
+let _cachedSearch = ''
+let _cachedParams: URLSearchParams | null = null
+function getSearchParams(): URLSearchParams {
+  const search = window.location.search
+  if (!_cachedParams || search !== _cachedSearch) {
+    _cachedSearch = search
+    _cachedParams = new URLSearchParams(search)
+  }
+  return _cachedParams
+}
+
 /**
  * QA escape hatch to A/B the same URL during review, and to unblock support if this
  * regresses something in production. Gates the gain and the tonemapping together: the gain
@@ -39,12 +50,12 @@ type EmissiveMetadata = {
  * a release to extend.
  */
 export function isUnityToneMappingEnabled(): boolean {
-  return new URLSearchParams(window.location.search).get('toneMapping') !== 'none'
+  return getSearchParams().get('toneMapping') !== 'none'
 }
 
 /** {@link TONE_MAPPING_EXPOSURE}, unless ?exposure= overrides it for a QA sweep. */
 export function getToneMappingExposure(): number {
-  const override = Number(new URLSearchParams(window.location.search).get('exposure'))
+  const override = Number(getSearchParams().get('exposure'))
   return Number.isFinite(override) && override > 0 ? override : TONE_MAPPING_EXPOSURE
 }
 

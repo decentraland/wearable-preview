@@ -11,8 +11,19 @@ import { Material } from '@babylonjs/core'
  * reference look wins — but it changes silhouettes anywhere authors relied on double-sided
  * geometry, so it gets its own escape hatch rather than riding along with the tonemapping.
  */
+let _cachedSearch = ''
+let _cachedParams: URLSearchParams | null = null
+function getSearchParams(): URLSearchParams {
+  const search = window.location.search
+  if (!_cachedParams || search !== _cachedSearch) {
+    _cachedSearch = search
+    _cachedParams = new URLSearchParams(search)
+  }
+  return _cachedParams
+}
+
 export function isUnityBackFaceCullingEnabled(): boolean {
-  return new URLSearchParams(window.location.search).get('culling') !== 'none'
+  return getSearchParams().get('culling') !== 'none'
 }
 
 export function applyUnityBackFaceCulling(material: Material): void {
