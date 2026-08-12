@@ -20,8 +20,15 @@ const DEFAULT_PARAMS: SpringBoneParams = {
   drag: 0.5,
 }
 
+type RestPose = {
+  rot: Quaternion
+  pos: Vector3
+  scale: Vector3
+}
+
 type SpringJointState = {
   node: TransformNode
+  childNode: TransformNode
   initialLocalRotation: Quaternion
   initialLocalMatrix: Matrix
   boneAxis: Vector3
@@ -35,6 +42,9 @@ type SpringChain = {
   joints: SpringJointState[]
   params: SpringBoneParams
   centerNode: TransformNode | null
+  // World-space state (tails, bone lengths) is seeded on the first simulated frame instead of
+  // here: the scene is still rescaled and repositioned by center() after the chains are built.
+  seeded: boolean
 }
 
 function isSpringBoneName(name: string): boolean {
@@ -116,9 +126,13 @@ function resolveCenter(centerName: string | undefined, scene: Scene): TransformN
   return null
 }
 
-function buildChain(root: TransformNode, scene: Scene, params: SpringBoneParams): SpringChain | null {
+function buildChain(
+  root: TransformNode,
+  scene: Scene,
+  params: SpringBoneParams,
+  restPoses: Map<TransformNode, RestPose>,
+): SpringChain | null {
   const centerNode = resolveCenter(params.center, scene)
-  const worldToCenter = centerNode ? Matrix.Invert(centerNode.getWorldMatrix()) : Matrix.Identity()
 
   // Collect chain nodes depth-first (linear chain), capped to prevent DoS
   const chainNodes: TransformNode[] = [root]
@@ -139,46 +153,73 @@ function buildChain(root: TransformNode, scene: Scene, params: SpringBoneParams)
     const node = chainNodes[i]
     const childNode = chainNodes[i + 1]
 
-    node.computeWorldMatrix(true)
-    childNode.computeWorldMatrix(true)
-
     // Ensure quaternion rotation mode
     if (!node.rotationQuaternion) {
       node.rotationQuaternion = Quaternion.FromEulerVector(node.rotation)
     }
 
-    const initialLocalRotation = node.rotationQuaternion.clone()
+    // Rest pose comes from the load-time snapshot, not from the live transform: a chain built
+    // while an animation is playing would otherwise take that animated frame as its rest pose.
+    const rest = restPoses.get(node)
+    const childRest = restPoses.get(childNode)
 
-    // Compute local matrix from current local transform
-    const initialLocalMatrix = Matrix.Compose(node.scaling, initialLocalRotation, node.position)
+    const initialLocalRotation = (rest?.rot ?? node.rotationQuaternion).clone()
+    const initialLocalMatrix = Matrix.Compose(
+      rest?.scale ?? node.scaling,
+      initialLocalRotation,
+      rest?.pos ?? node.position,
+    )
 
     // Bone axis: direction from node to child in local space
-    const nodeWorldMatrix = node.getWorldMatrix()
-    const nodeWorldPos = node.getAbsolutePosition()
-    const childWorldPos = childNode.getAbsolutePosition()
-
-    const boneLength = Vector3.Distance(nodeWorldPos, childWorldPos)
-
-    // Compute local direction to child
-    const nodeWorldMatrixInv = Matrix.Invert(nodeWorldMatrix)
-    const childLocalPos = Vector3.TransformCoordinates(childWorldPos, nodeWorldMatrixInv)
+    const childLocalPos = (childRest?.pos ?? childNode.position).clone()
     const boneAxis = childLocalPos.length() > 0 ? childLocalPos.normalize() : new Vector3(0, 1, 0)
-
-    // Initialize tail positions in center space
-    const currentTail = Vector3.TransformCoordinates(childWorldPos, worldToCenter)
 
     joints.push({
       node,
+      childNode,
       initialLocalRotation,
       initialLocalMatrix,
       boneAxis,
-      boneLength,
-      currentTail: currentTail.clone(),
-      previousTail: currentTail.clone(),
+      boneLength: 0,
+      currentTail: new Vector3(),
+      previousTail: new Vector3(),
     })
   }
 
-  return { rootName: root.name, joints, params, centerNode }
+  return { rootName: root.name, joints, params, centerNode, seeded: false }
+}
+
+/**
+ * Puts the tail where the rest pose points, with zero velocity, so the joint starts quiet
+ * instead of springing from a stale position.
+ */
+function seedJointToRest(joint: SpringJointState, worldPos: Vector3, restMatrix: Matrix, worldToCenter: Matrix): void {
+  Vector3.TransformNormalToRef(joint.boneAxis, restMatrix, _scratchVec3C)
+  const len = _scratchVec3C.length()
+  if (len > 0) _scratchVec3C.scaleInPlace(1 / len)
+  _scratchVec3C.scaleInPlace(joint.boneLength)
+  worldPos.addToRef(_scratchVec3C, _scratchVec3D)
+  Vector3.TransformCoordinatesToRef(_scratchVec3D, worldToCenter, joint.currentTail)
+  joint.previousTail.copyFrom(joint.currentTail)
+  // rotationQuaternion is guaranteed non-null: buildChain sets it during init
+  joint.node.rotationQuaternion!.copyFrom(joint.initialLocalRotation)
+}
+
+function seedChainToRest(chain: SpringChain, worldToCenter: Matrix): void {
+  for (const joint of chain.joints) {
+    joint.node.computeWorldMatrix(true)
+    joint.childNode.computeWorldMatrix(true)
+
+    const worldPos = joint.node.getAbsolutePosition()
+    // Measured here rather than at build time so it reflects the final world scale
+    joint.boneLength = Vector3.Distance(worldPos, joint.childNode.getAbsolutePosition())
+
+    const parentWorldMatrix =
+      joint.node.parent instanceof TransformNode ? joint.node.parent.getWorldMatrix() : _identityMatrix
+    joint.initialLocalMatrix.multiplyToRef(parentWorldMatrix, _scratchMatrixB)
+
+    seedJointToRest(joint, worldPos, _scratchMatrixB, worldToCenter)
+  }
 }
 
 function updateSimulation(chains: SpringChain[], scene: Scene): void {
@@ -199,6 +240,12 @@ function updateSimulation(chains: SpringChain[], scene: Scene): void {
     } else {
       worldToCenter = _identityMatrix
       centerToWorld = _identityMatrix
+    }
+
+    if (!chain.seeded) {
+      seedChainToRest(chain, worldToCenter)
+      chain.seeded = true
+      continue
     }
 
     // Normalize gravityDir (guard against zero vector)
@@ -293,15 +340,7 @@ function updateSimulation(chains: SpringChain[], scene: Scene): void {
 
       // 7. NaN/Infinity recovery: if tail state is corrupted, reset to rest pose
       if (!isFiniteVec3(joint.currentTail) || !isFiniteVec3(joint.previousTail)) {
-        // Recompute rest tail position in center space as recovery
-        Vector3.TransformNormalToRef(joint.boneAxis, _scratchMatrixB, _scratchVec3C)
-        const rLen = _scratchVec3C.length()
-        if (rLen > 0) _scratchVec3C.scaleInPlace(1 / rLen)
-        _scratchVec3C.scaleInPlace(joint.boneLength)
-        worldPos.addToRef(_scratchVec3C, _scratchVec3D)
-        Vector3.TransformCoordinatesToRef(_scratchVec3D, worldToCenter, joint.currentTail)
-        joint.previousTail.copyFrom(joint.currentTail)
-        joint.node.rotationQuaternion!.copyFrom(joint.initialLocalRotation)
+        seedJointToRest(joint, worldPos, _scratchMatrixB, worldToCenter)
       }
 
       // Force world matrix update for children
@@ -317,6 +356,7 @@ function isFiniteVec3(v: Vector3): boolean {
 export class SpringBoneSimulation {
   private wearables = new Map<string, SpringChain[]>()
   private containers = new Map<string, AssetContainer>()
+  private restPoses = new Map<TransformNode, RestPose>()
   private beforeRenderCallback: (() => void) | null = null
   private scene: Scene | null = null
 
@@ -328,8 +368,18 @@ export class SpringBoneSimulation {
   ): void {
     this.scene = scene
     this.containers.set(itemId, container)
-    const chains: SpringChain[] = []
 
+    // Snapshot the rest pose while the wearable is still unanimated, so chains built later
+    // (updateParams, mid-emote) get the authored pose rather than the current animated one
+    for (const node of container.transformNodes) {
+      this.restPoses.set(node, {
+        rot: node.rotationQuaternion ? node.rotationQuaternion.clone() : Quaternion.FromEulerVector(node.rotation),
+        pos: node.position.clone(),
+        scale: node.scaling.clone(),
+      })
+    }
+
+    const chains: SpringChain[] = []
     if (springBonesParams) {
       for (const node of container.transformNodes) {
         if (!isSpringBoneName(node.name)) continue
@@ -337,7 +387,7 @@ export class SpringBoneSimulation {
         const params = springBonesParams[node.name]
         if (!params) continue
 
-        const chain = buildChain(node, scene, validateParams(params))
+        const chain = buildChain(node, scene, validateParams(params), this.restPoses)
         if (chain) {
           chains.push(chain)
           if (chains.length >= MAX_CHAINS_PER_WEARABLE) break
@@ -379,11 +429,6 @@ export class SpringBoneSimulation {
     // NOTE: Unlike registerWearable(), we intentionally skip isSpringBoneName()
     // checks here. This method is the editor's mechanism for
     // dynamically adding spring bones to arbitrary nodes via external params.
-    // KNOWN LIMITATION: buildChain() captures the current pose as the rest pose.
-    // If an animation is playing, the "rest" will be the current animated position,
-    // not the bind/T-pose. This can cause visual artifacts where the spring bone
-    // springs from the wrong base orientation. A full preview reload (save) does not
-    // have this issue because chains are built before animation starts.
     const container = this.containers.get(itemId)
     if (this.scene && container) {
       const existingNames = new Set(chains?.map((c) => c.rootName) ?? [])
@@ -395,7 +440,7 @@ export class SpringBoneSimulation {
         const node = container.transformNodes.find((n) => n.name === boneName)
         if (!node) continue
 
-        const chain = buildChain(node, this.scene, validateParams(boneParams))
+        const chain = buildChain(node, this.scene, validateParams(boneParams), this.restPoses)
         if (chain) {
           if (!chains) {
             chains = []
@@ -427,6 +472,7 @@ export class SpringBoneSimulation {
     }
     this.wearables.clear()
     this.containers.clear()
+    this.restPoses.clear()
     this.scene = null
   }
 }
