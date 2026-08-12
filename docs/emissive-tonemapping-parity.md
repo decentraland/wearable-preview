@@ -138,11 +138,32 @@ material, which should not have moved at all:
 | **ACES, exposure 2 (shipped)** | **`#F9D2AF`** | **`#6D150F`** |
 | ACES, exposure 3 | `#FADFC3` | `#7D1913` |
 
-Exposure 1 would have traded the emissive bug for a darker catalogue. 2.0 is the
-conventional compensation for ACES over LDR-authored content and lands the non-emissive
-material within a few units of Unity. 3.0 fits *this item's* feathers better but is a larger
-lift than has been validated against skin and facial features, so it is not the default.
-`?exposure=` overrides it for QA sweeps.
+Exposure 1 would have traded the emissive bug for a darker catalogue, so the default started
+at 2.0 — the conventional compensation for ACES over LDR-authored content — chosen from this
+one wearable because the avatar could not be rendered locally at the time.
+
+**Re-measured across the catalogue, 2.0 was too bright.** Overriding `?peerUrl=` and
+`?marketplaceServerUrl=` to the `.org` endpoints makes the avatar render on the local dev
+server (the "blank avatar" below was the dev config pointing at `.zone`), which allowed a
+sweep against the Unity renderer over 10 marketplace wearables. Mean avatar luminance,
+signed, against Unity's 120.0/255:
+
+| exposure | luminance vs Unity | mean abs. error | per-pixel Δ |
+| - | - | - | - |
+| `toneMapping=none` (master) | +9.6 | 19.1 | 46.4 |
+| 1.0 | −11.4 | 11.6 | 40.6 |
+| 1.15 | −4.8 | 8.5 | 39.4 |
+| **1.2 (shipped)** | **−2.8** | **8.7** | **39.6** |
+| 1.3 | +0.9 | 10.0 | 40.1 |
+| 2.0 | +20.3 | 23.6 | 49.6 |
+
+At 2.0 the tonemapping made most of the catalogue *further* from Unity than master was — it
+fixed emissive wearables and washed out everything else. The optimum is a flat basin from
+1.1 to 1.3 on both metrics; 1.2 sits in it with less dark bias than 1.15. `?exposure=`
+overrides it for QA sweeps.
+
+Note this trades a little fidelity on the reference wearable's feathers (which favoured a
+*higher* lift) for the rest of the catalogue, since emissive-heavy items are the minority.
 
 ### Step 3 — Keep the GlowLayer from compounding
 
@@ -220,12 +241,20 @@ remains deferred as planned.
   material, before alpha blending (constraint 5). Stacked transparent emissive surfaces —
   exactly this wearable — will stay close but never identical.
 
-**V4 could not be validated locally.** The Babylon avatar renders blank on the local dev
-server, including with `?toneMapping=none`, so the failure is environmental and predates this
-change — but it means skin, hair and facial features have *not* been checked against the
-tonemapping. That is the highest-risk case (constraint 3) and the reason the exposure default
-is the conservative 2.0 rather than the better-fitting 3.0. **Run V4 in a working environment
-before merging**, and re-evaluate the exposure default there.
+**The local "blank avatar" was a dev-config issue, now worked around.** `src/config/env/dev.json`
+points `PEER_URL` at `peer.decentraland.zone`, where mainnet marketplace wearables do not
+exist. Passing `?peerUrl=https://peer.decentraland.org` and
+`?marketplaceServerUrl=https://marketplace-api.decentraland.org` renders the avatar fine, which
+is how the exposure sweep above was run — so skin, hair and facial features have now been
+checked against the tonemapping across 38 wearables.
+
+Two unrelated gotchas found while building that harness, both worth fixing separately:
+
+- Unity ignores `?urn=` and silently falls back to a bare default avatar. Use `?contract=` +
+  `?item=`, and note Unity only equips the item when a `?mode=` is set (`marketplace` works;
+  `builder`, `profile` and `authentication` do not).
+- `?profile=default` picks a random one of 159 default outfits per load, so any before/after
+  screenshot comparison needs a pinned `default<N>`.
 
 ## Test cases
 

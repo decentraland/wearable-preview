@@ -17,18 +17,15 @@ export const UNITY_EMISSIVE_SHADER_GAIN = 2.5
 export const UNITY_EMISSIVE_GAIN = UNITY_EMISSIVE_GENERATOR_GAIN * UNITY_EMISSIVE_SHADER_GAIN
 
 /**
- * ACES expects HDR input with headroom above 1.0. Unity's scene has it (many lights, GI, and
- * the emissive gain above); this scene does not — its four lights sum to roughly 1.0 — so
- * tonemapping the raw values crushes everything dark. Without this lift the fix would trade
- * the emissive bug for a darker catalogue: on the reference wearable the non-emissive
- * material fell from #982218 to #400E0A against Unity's #751610.
+ * Compensates for ACES crushing the dark end of this scene, which lacks the HDR headroom the
+ * tonemapper expects (its four lights sum to roughly 1.0).
  *
- * 2.0 is the conventional compensation for ACES over LDR-authored content and lands the
- * non-emissive material on #6D150F. Overridable via ?exposure= for QA sweeps — 3.0 fits the
- * reference wearable's emissive feathers more closely, but is a larger lift than has been
- * validated against skin and facial features.
+ * Measured against the Unity renderer over 10 marketplace wearables: mean avatar luminance
+ * lands within -2.8/255 of Unity at 1.2, against +20.3 at the 2.0 this shipped with initially.
+ * The optimum is flat from 1.1 to 1.3, so the exact value inside that band is not load-bearing.
+ * Overridable via ?exposure= for QA sweeps.
  */
-export const TONE_MAPPING_EXPOSURE = 2.0
+export const TONE_MAPPING_EXPOSURE = 1.2
 
 type EmissiveMetadata = {
   originalEmissiveColor?: Color3
