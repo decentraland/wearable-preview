@@ -452,9 +452,26 @@ export class SpringBoneSimulation {
     }
   }
 
+  /**
+   * Drops the world-space state of every chain so it re-seeds on the next simulated frame.
+   */
+  private unseedAll = (): void => {
+    for (const chains of this.wearables.values()) {
+      for (const chain of chains) {
+        chain.seeded = false
+      }
+    }
+  }
+
   start(scene: Scene): void {
     if (this.beforeRenderCallback) return
     this.scene = scene
+
+    // Starting an animation teleports the rig from its bind pose to the animation's first frame.
+    // Re-seed after that jump, otherwise the springs read it as velocity and swing into place.
+    for (const group of scene.animationGroups) {
+      group.onAnimationGroupPlayObservable.add(this.unseedAll)
+    }
 
     this.beforeRenderCallback = () => {
       for (const chains of this.wearables.values()) {
