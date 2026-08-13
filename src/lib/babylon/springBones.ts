@@ -55,7 +55,11 @@ const _scratchMatrix = new Matrix()
 const _scratchMatrixB = new Matrix()
 const _scratchMatrixC = new Matrix()
 const _scratchQuat = new Quaternion()
+const _quatScratchVec3 = new Vector3()
 const _identityMatrix = Matrix.Identity()
+// Freeze internal data to prevent accidental mutation via *ToRef calls
+const _identityData = (_identityMatrix as unknown as Record<string, unknown>)['_m']
+if (_identityData instanceof Float32Array) Object.freeze(_identityData)
 
 function quaternionFromUnitVectorsToRef(from: Vector3, to: Vector3, result: Quaternion): void {
   const dot = Vector3.Dot(from, to)
@@ -64,16 +68,16 @@ function quaternionFromUnitVectorsToRef(from: Vector3, to: Vector3, result: Quat
     return
   }
   if (dot < -0.999999) {
-    Vector3.CrossToRef(Vector3.Right(), from, _scratchVec3E)
-    if (_scratchVec3E.lengthSquared() < 0.000001) {
-      Vector3.CrossToRef(Vector3.Up(), from, _scratchVec3E)
+    Vector3.CrossToRef(Vector3.Right(), from, _quatScratchVec3)
+    if (_quatScratchVec3.lengthSquared() < 0.000001) {
+      Vector3.CrossToRef(Vector3.Up(), from, _quatScratchVec3)
     }
-    _scratchVec3E.normalize()
-    Quaternion.RotationAxisToRef(_scratchVec3E, Math.PI, result)
+    _quatScratchVec3.normalize()
+    Quaternion.RotationAxisToRef(_quatScratchVec3, Math.PI, result)
     return
   }
-  Vector3.CrossToRef(from, to, _scratchVec3E)
-  result.set(_scratchVec3E.x, _scratchVec3E.y, _scratchVec3E.z, 1 + dot)
+  Vector3.CrossToRef(from, to, _quatScratchVec3)
+  result.set(_quatScratchVec3.x, _quatScratchVec3.y, _quatScratchVec3.z, 1 + dot)
   result.normalize()
 }
 
@@ -348,6 +352,7 @@ export class SpringBoneSimulation {
   private wearables = new Map<string, SpringChain[]>()
   private containers = new Map<string, AssetContainer>()
   private beforeRenderCallback: (() => void) | null = null
+  private observerCleanups: (() => void)[] = []
   private scene: Scene | null = null
 
   registerWearable(
@@ -448,11 +453,20 @@ export class SpringBoneSimulation {
         for (const chain of chains) chain.seeded = false
       }
     }
-    for (const group of scene.animationGroups) {
-      group.onAnimationGroupPlayObservable.add(unseedAll)
+    // Track which groups have been hooked so late-added groups get covered too
+    const hookedGroups = new Set<unknown>()
+    const hookNewGroups = () => {
+      for (const group of scene.animationGroups) {
+        if (hookedGroups.has(group)) continue
+        hookedGroups.add(group)
+        const observer = group.onAnimationGroupPlayObservable.add(unseedAll)
+        if (observer) this.observerCleanups.push(() => group.onAnimationGroupPlayObservable.remove(observer))
+      }
     }
+    hookNewGroups()
 
     this.beforeRenderCallback = () => {
+      hookNewGroups()
       for (const chains of this.wearables.values()) {
         updateSimulation(chains, scene)
       }
@@ -466,6 +480,8 @@ export class SpringBoneSimulation {
       scene.unregisterBeforeRender(this.beforeRenderCallback)
       this.beforeRenderCallback = null
     }
+    for (const cleanup of this.observerCleanups) cleanup()
+    this.observerCleanups.length = 0
     this.wearables.clear()
     this.containers.clear()
     this.scene = null
