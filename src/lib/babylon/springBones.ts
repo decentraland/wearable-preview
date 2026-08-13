@@ -56,10 +56,8 @@ const _scratchMatrixB = new Matrix()
 const _scratchMatrixC = new Matrix()
 const _scratchQuat = new Quaternion()
 const _quatScratchVec3 = new Vector3()
+// Read-only: never pass as the output ref of a *ToRef call
 const _identityMatrix = Matrix.Identity()
-// Freeze internal data to prevent accidental mutation via *ToRef calls
-const _identityData = (_identityMatrix as unknown as Record<string, unknown>)['_m']
-if (_identityData instanceof Float32Array) Object.freeze(_identityData)
 
 function quaternionFromUnitVectorsToRef(from: Vector3, to: Vector3, result: Quaternion): void {
   const dot = Vector3.Dot(from, to)
