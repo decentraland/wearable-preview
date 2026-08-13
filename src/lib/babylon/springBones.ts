@@ -449,6 +449,7 @@ export class SpringBoneSimulation {
   start(scene: Scene): void {
     if (this.beforeRenderCallback) return
     this.scene = scene
+    this.accumulatedDt = 0
 
     // Starting an animation teleports the rig from its bind pose to the animation's first frame.
     // Re-seed after that jump, otherwise the springs read it as velocity and swing into place.
