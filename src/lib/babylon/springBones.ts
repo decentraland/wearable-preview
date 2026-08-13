@@ -205,9 +205,29 @@ function seedJointToRest(joint: SpringJointState, worldPos: Vector3, restMatrix:
   joint.node.rotationQuaternion!.copyFrom(joint.initialLocalRotation)
 }
 
+/**
+ * Recomputes a node's world matrix along with every ancestor's, top down.
+ *
+ * `computeWorldMatrix(true)` only forces the node itself: it pulls ancestors in through
+ * `getWorldMatrix()`, which returns a matrix cached per render id. The simulation runs in
+ * beforeRender, before the scene advances that id, so an ancestor moved since the last frame
+ * -- center() reparenting and rescaling the whole avatar -- still reports its old transform.
+ */
+function refreshWorldMatrix(node: TransformNode): void {
+  const ancestors: TransformNode[] = []
+  let current: TransformNode | null = node
+  while (current) {
+    ancestors.push(current)
+    current = current.parent instanceof TransformNode ? current.parent : null
+  }
+  for (let i = ancestors.length - 1; i >= 0; i--) {
+    ancestors[i].computeWorldMatrix(true)
+  }
+}
+
 function seedChainToRest(chain: SpringChain, worldToCenter: Matrix): void {
   for (const joint of chain.joints) {
-    joint.node.computeWorldMatrix(true)
+    refreshWorldMatrix(joint.node)
     joint.childNode.computeWorldMatrix(true)
 
     const worldPos = joint.node.getAbsolutePosition()
