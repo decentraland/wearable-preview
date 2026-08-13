@@ -186,23 +186,14 @@ function seedJointToRest(joint: SpringJointState, worldPos: Vector3, restMatrix:
 }
 
 /**
- * Recomputes a node's world matrix along with every ancestor's, top down.
- *
- * `computeWorldMatrix(true)` only forces the node itself: it pulls ancestors in through
- * `getWorldMatrix()`, which returns a matrix cached per render id. The simulation runs in
- * beforeRender, before the scene advances that id, so an ancestor moved since the last frame
- * -- center() reparenting and rescaling the whole avatar -- still reports its old transform.
+ * Recomputes a node's world matrix and every ancestor's, top down. `computeWorldMatrix(true)`
+ * forces only the node it is called on: ancestors come in through `getWorldMatrix()`, which
+ * serves a matrix cached per render id, and the scene advances that id after beforeRender. So an
+ * ancestor moved since the last frame -- center() rescaling the avatar -- reports its old one.
  */
 function refreshWorldMatrix(node: TransformNode): void {
-  const ancestors: TransformNode[] = []
-  let current: TransformNode | null = node
-  while (current) {
-    ancestors.push(current)
-    current = current.parent instanceof TransformNode ? current.parent : null
-  }
-  for (let i = ancestors.length - 1; i >= 0; i--) {
-    ancestors[i].computeWorldMatrix(true)
-  }
+  if (node.parent instanceof TransformNode) refreshWorldMatrix(node.parent)
+  node.computeWorldMatrix(true)
 }
 
 function seedChainToRest(chain: SpringChain, worldToCenter: Matrix): void {
@@ -446,25 +437,19 @@ export class SpringBoneSimulation {
     }
   }
 
-  /**
-   * Drops the world-space state of every chain so it re-seeds on the next simulated frame.
-   */
-  private unseedAll = (): void => {
-    for (const chains of this.wearables.values()) {
-      for (const chain of chains) {
-        chain.seeded = false
-      }
-    }
-  }
-
   start(scene: Scene): void {
     if (this.beforeRenderCallback) return
     this.scene = scene
 
     // Starting an animation teleports the rig from its bind pose to the animation's first frame.
     // Re-seed after that jump, otherwise the springs read it as velocity and swing into place.
+    const unseedAll = () => {
+      for (const chains of this.wearables.values()) {
+        for (const chain of chains) chain.seeded = false
+      }
+    }
     for (const group of scene.animationGroups) {
-      group.onAnimationGroupPlayObservable.add(this.unseedAll)
+      group.onAnimationGroupPlayObservable.add(unseedAll)
     }
 
     this.beforeRenderCallback = () => {
