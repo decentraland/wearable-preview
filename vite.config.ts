@@ -13,5 +13,9 @@ export default defineConfig(({ command, mode }) => {
       },
     },
     ...(command === 'build' ? { base: envVariables.VITE_BASE_URL } : undefined),
+    test: {
+      environment: 'jsdom',
+      include: ['src/**/*.test.ts'],
+    },
   }
 })

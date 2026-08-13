@@ -10,6 +10,8 @@
 import { Color3, PBRMaterial, Scene } from '@babylonjs/core'
 import { WearableDefinition, BodyShape } from '@dcl/schemas'
 import { getWearableRepresentation, isTexture, getContentUrl } from '../representation'
+import { applyUnityBackFaceCulling } from './culling'
+import { applyUnityEmissiveGain } from './emissive'
 import { loadAssetContainer } from './scene'
 import './toon'
 
@@ -37,6 +39,9 @@ export async function loadWearable(
 
   // Clean up
   for (const originalMaterial of container.materials) {
+    // Not PBR-specific: Unity culls back faces on every material it generates.
+    applyUnityBackFaceCulling(originalMaterial)
+
     if (originalMaterial instanceof PBRMaterial) {
       const newMaterial = originalMaterial as PBRMaterial
 
@@ -46,6 +51,8 @@ export async function loadWearable(
         newMaterial.metallic = 0
         newMaterial.metallicF0Factor = 0
       }
+
+      applyUnityEmissiveGain(newMaterial)
 
       if (newMaterial.name.toLowerCase().includes('hair')) {
         if (hair) {
