@@ -20,12 +20,6 @@ const DEFAULT_PARAMS: SpringBoneParams = {
   drag: 0.5,
 }
 
-type RestPose = {
-  rot: Quaternion
-  pos: Vector3
-  scale: Vector3
-}
-
 type SpringJointState = {
   node: TransformNode
   childNode: TransformNode
@@ -126,12 +120,7 @@ function resolveCenter(centerName: string | undefined, scene: Scene): TransformN
   return null
 }
 
-function buildChain(
-  root: TransformNode,
-  scene: Scene,
-  params: SpringBoneParams,
-  restPoses: Map<TransformNode, RestPose>,
-): SpringChain | null {
+function buildChain(root: TransformNode, scene: Scene, params: SpringBoneParams): SpringChain | null {
   const centerNode = resolveCenter(params.center, scene)
 
   // Collect chain nodes depth-first (linear chain), capped to prevent DoS
@@ -158,20 +147,11 @@ function buildChain(
       node.rotationQuaternion = Quaternion.FromEulerVector(node.rotation)
     }
 
-    // Rest pose comes from the load-time snapshot, not from the live transform: a chain built
-    // while an animation is playing would otherwise take that animated frame as its rest pose.
-    const rest = restPoses.get(node)
-    const childRest = restPoses.get(childNode)
-
-    const initialLocalRotation = (rest?.rot ?? node.rotationQuaternion).clone()
-    const initialLocalMatrix = Matrix.Compose(
-      rest?.scale ?? node.scaling,
-      initialLocalRotation,
-      rest?.pos ?? node.position,
-    )
+    const initialLocalRotation = node.rotationQuaternion.clone()
+    const initialLocalMatrix = Matrix.Compose(node.scaling, initialLocalRotation, node.position)
 
     // Bone axis: direction from node to child in local space
-    const childLocalPos = (childRest?.pos ?? childNode.position).clone()
+    const childLocalPos = childNode.position.clone()
     const boneAxis = childLocalPos.length() > 0 ? childLocalPos.normalize() : new Vector3(0, 1, 0)
 
     joints.push({
@@ -376,7 +356,6 @@ function isFiniteVec3(v: Vector3): boolean {
 export class SpringBoneSimulation {
   private wearables = new Map<string, SpringChain[]>()
   private containers = new Map<string, AssetContainer>()
-  private restPoses = new Map<TransformNode, RestPose>()
   private beforeRenderCallback: (() => void) | null = null
   private scene: Scene | null = null
 
@@ -388,18 +367,8 @@ export class SpringBoneSimulation {
   ): void {
     this.scene = scene
     this.containers.set(itemId, container)
-
-    // Snapshot the rest pose while the wearable is still unanimated, so chains built later
-    // (updateParams, mid-emote) get the authored pose rather than the current animated one
-    for (const node of container.transformNodes) {
-      this.restPoses.set(node, {
-        rot: node.rotationQuaternion ? node.rotationQuaternion.clone() : Quaternion.FromEulerVector(node.rotation),
-        pos: node.position.clone(),
-        scale: node.scaling.clone(),
-      })
-    }
-
     const chains: SpringChain[] = []
+
     if (springBonesParams) {
       for (const node of container.transformNodes) {
         if (!isSpringBoneName(node.name)) continue
@@ -407,7 +376,7 @@ export class SpringBoneSimulation {
         const params = springBonesParams[node.name]
         if (!params) continue
 
-        const chain = buildChain(node, scene, validateParams(params), this.restPoses)
+        const chain = buildChain(node, scene, validateParams(params))
         if (chain) {
           chains.push(chain)
           if (chains.length >= MAX_CHAINS_PER_WEARABLE) break
@@ -449,6 +418,11 @@ export class SpringBoneSimulation {
     // NOTE: Unlike registerWearable(), we intentionally skip isSpringBoneName()
     // checks here. This method is the editor's mechanism for
     // dynamically adding spring bones to arbitrary nodes via external params.
+    // KNOWN LIMITATION: buildChain() captures the current pose as the rest pose.
+    // If an animation is playing, the "rest" will be the current animated position,
+    // not the bind/T-pose. This can cause visual artifacts where the spring bone
+    // springs from the wrong base orientation. A full preview reload (save) does not
+    // have this issue because chains are built before animation starts.
     const container = this.containers.get(itemId)
     if (this.scene && container) {
       const existingNames = new Set(chains?.map((c) => c.rootName) ?? [])
@@ -460,7 +434,7 @@ export class SpringBoneSimulation {
         const node = container.transformNodes.find((n) => n.name === boneName)
         if (!node) continue
 
-        const chain = buildChain(node, this.scene, validateParams(boneParams), this.restPoses)
+        const chain = buildChain(node, this.scene, validateParams(boneParams))
         if (chain) {
           if (!chains) {
             chains = []
@@ -509,7 +483,6 @@ export class SpringBoneSimulation {
     }
     this.wearables.clear()
     this.containers.clear()
-    this.restPoses.clear()
     this.scene = null
   }
 }
