@@ -3,8 +3,13 @@ import { SpringBoneParams } from '@dcl/schemas'
 
 const SPRING_BONE_PREFIX = 'springbone'
 const MAX_CHAINS_PER_WEARABLE = 12
-const MAX_JOINTS_PER_CHAIN = 12
+const MAX_JOINTS_PER_CHAIN = 8
 const MAX_DELTA_TIME = 0.05 // 50ms cap to prevent physics explosion after tab backgrounding
+
+// Physics runs at a fixed 60 Hz, decoupled from render fps, so authored stiffness/drag produce
+// identical motion on any display. Mirrors the Unity renderer's SpringBoneService.
+const FIXED_STEP = 1 / 60
+const MAX_SUBSTEPS = 4
 
 const SPRING_BONE_STIFFNESS_MIN = 0
 const SPRING_BONE_STIFFNESS_MAX = 4
@@ -181,10 +186,7 @@ function buildChain(root: TransformNode, scene: Scene, params: SpringBoneParams)
   return { rootName: root.name, joints, params, centerNode }
 }
 
-function updateSimulation(chains: SpringChain[], scene: Scene): void {
-  const dt = Math.min(scene.getEngine().getDeltaTime() / 1000, MAX_DELTA_TIME)
-  if (dt <= 0) return
-
+function updateSimulation(chains: SpringChain[], dt: number): void {
   for (const chain of chains) {
     const { params, centerNode } = chain
 
@@ -246,8 +248,11 @@ function updateSimulation(chains: SpringChain[], scene: Scene): void {
       Vector3.TransformNormalToRef(joint.boneAxis, _scratchMatrixB, _scratchVec3B) // reuse B as restTailDir
       const restTailDirLen = _scratchVec3B.length()
       if (restTailDirLen > 0) _scratchVec3B.scaleInPlace(1 / restTailDirLen)
-      // Stiffness pushes tail along the rest direction
-      _scratchVec3B.scaleToRef(stiffness * dt * joint.boneLength, _scratchVec3E)
+      // Stiffness pushes tail along the rest direction. The impulse is in world units, not scaled
+      // by bone length: the restoring rate a joint feels is stiffness/boneLength, so short hair
+      // bones snap back harder. Scaling by boneLength here would make it length-invariant and far
+      // floppier than the Unity renderer.
+      _scratchVec3B.scaleToRef(stiffness * dt, _scratchVec3E)
       _scratchVec3D.addInPlace(_scratchVec3E)
 
       // 3. Gravity
@@ -319,6 +324,7 @@ export class SpringBoneSimulation {
   private containers = new Map<string, AssetContainer>()
   private beforeRenderCallback: (() => void) | null = null
   private scene: Scene | null = null
+  private accumulatedDt = 0
 
   registerWearable(
     scene: Scene,
@@ -412,9 +418,19 @@ export class SpringBoneSimulation {
     this.scene = scene
 
     this.beforeRenderCallback = () => {
-      for (const chains of this.wearables.values()) {
-        updateSimulation(chains, scene)
+      this.accumulatedDt += Math.min(scene.getEngine().getDeltaTime() / 1000, MAX_DELTA_TIME)
+
+      let steps = 0
+      while (this.accumulatedDt >= FIXED_STEP && steps < MAX_SUBSTEPS) {
+        for (const chains of this.wearables.values()) {
+          updateSimulation(chains, FIXED_STEP)
+        }
+        this.accumulatedDt -= FIXED_STEP
+        steps++
       }
+
+      // Drop residual after a stall to avoid a spiral of death
+      if (steps === MAX_SUBSTEPS) this.accumulatedDt = 0
     }
 
     scene.registerBeforeRender(this.beforeRenderCallback)
@@ -428,5 +444,6 @@ export class SpringBoneSimulation {
     this.wearables.clear()
     this.containers.clear()
     this.scene = null
+    this.accumulatedDt = 0
   }
 }
