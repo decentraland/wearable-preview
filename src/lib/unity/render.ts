@@ -28,7 +28,7 @@ type AangBuildConfig = {
 }
 
 // UPDATE THIS URL WITH LATEST AANG BUILD PREVIEW URL:
-const REMOTE_BASE_URL = 'https://aang-renderer-git-fix-marketplace-zero-urns-decentraland1.vercel.app/'
+const REMOTE_BASE_URL = 'https://aang-renderer-jrb9j75a6-decentraland1.vercel.app/'
 
 const COMPRESSED_AANG_BUILD: AangBuildConfig = {
   dataUrl: '/unity/Build/aang-renderer.data.br',
