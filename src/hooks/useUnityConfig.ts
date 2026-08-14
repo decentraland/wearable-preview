@@ -8,12 +8,11 @@ import {
   WearableDefinition,
   EmoteDefinition,
   PreviewType,
-  Avatar,
   PreviewUnityMode,
 } from '@dcl/schemas'
 import { SocialEmoteAnimation } from '@dcl/schemas/dist/dapps/preview/social-emote-animation'
 import { config } from '../config'
-import { colorToHex, formatHex } from '../lib/color'
+import { parseHex } from '../lib/color'
 import { fetchItemFromContract, fetchProfile, fetchProfileEntity, sanitizeProfile } from '../lib/config'
 import { useOptions } from './useOptions'
 import { isWearable } from '../lib/wearable'
@@ -30,13 +29,13 @@ export interface UnityPreviewConfig {
   contract: string | null
   disableLoader: boolean
   emote: string | null
-  eyeColor: string
-  hairColor: string
+  eyeColor: string | null
+  hairColor: string | null
   item: string | null
   profile: string | null
   projection: PreviewProjection | null
   showAnimationReference: boolean | null
-  skinColor: string
+  skinColor: string | null
   token: string | null
   urn: string[] | null
   itemDefinition: WearableDefinition | EmoteDefinition | null
@@ -47,12 +46,6 @@ interface Background {
   color: string
   transparent: boolean
   image?: string
-}
-
-interface AvatarColors {
-  eyes: string
-  hair: string
-  skin: string
 }
 
 type QueryParams = {
@@ -78,14 +71,9 @@ type QueryParams = {
 const getRequestedType = (type: PreviewType | null | undefined): PreviewType | null =>
   type === PreviewType.AVATAR || type === PreviewType.WEARABLE ? type : null
 
-const getDefaultColors = (
-  profile: Avatar | null,
-  options: { eyes?: string | null; hair?: string | null; skin?: string | null },
-): AvatarColors => ({
-  eyes: formatHex(options.eyes || (profile?.avatar?.eyes?.color && colorToHex(profile.avatar.eyes.color)) || '#000000'),
-  hair: formatHex(options.hair || (profile?.avatar?.hair?.color && colorToHex(profile.avatar.hair.color)) || '#000000'),
-  skin: formatHex(options.skin || (profile?.avatar?.skin?.color && colorToHex(profile.avatar.skin.color)) || '#cc9b76'),
-})
+// The renderer already resolves the profile's own colors, and falls back to its own defaults when a
+// color is left unset, so only a color the caller actually asked for has to travel.
+const toColorOverride = (color: string | null | undefined): string | null => (color ? parseHex(color) : null)
 
 // Convert potentially null/undefined values to string or empty string
 const toQueryValue = (value: string | null | undefined): string => value || ''
@@ -208,11 +196,9 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
         }
 
         // Get colors
-        const { eyes, hair, skin } = getDefaultColors(profile, {
-          eyes: options.eyes,
-          hair: options.hair,
-          skin: options.skin,
-        })
+        const eyes = toColorOverride(options.eyes)
+        const hair = toColorOverride(options.hair)
+        const skin = toColorOverride(options.skin)
 
         // Get camera settings
         const mode = options.unityMode || null
@@ -242,11 +228,11 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
           contract: options.contractAddress || null,
           disableLoader: options.disableLoader || false,
           emote: emote?.toString() || null,
-          eyeColor: eyes.replace('#', ''),
-          hairColor: hair.replace('#', ''),
+          eyeColor: eyes,
+          hairColor: hair,
           item: options.itemId || null,
           profile: profileValue || null,
-          skinColor: skin.replace('#', ''),
+          skinColor: skin,
           token: options.tokenId || null,
           urn: options.urns || null,
           showAnimationReference: null,
@@ -278,9 +264,9 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
                 disableLoader: options.disableLoader ? 'true' : '',
                 profile: toQueryValue(profileValue || ''),
                 bodyShape: toQueryValue(bodyShape || ''),
-                eyeColor: toQueryColor(eyes || ''),
-                hairColor: toQueryColor(hair || ''),
-                skinColor: toQueryColor(skin || ''),
+                eyeColor: toQueryValue(eyes),
+                hairColor: toQueryValue(hair),
+                skinColor: toQueryValue(skin),
                 mode: toQueryValue(mode || ''),
                 camera,
                 projection,
