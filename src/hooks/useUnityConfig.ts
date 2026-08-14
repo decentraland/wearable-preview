@@ -73,7 +73,11 @@ const getRequestedType = (type: PreviewType | null | undefined): PreviewType | n
 
 // The renderer already resolves the profile's own colors, and falls back to its own defaults when a
 // color is left unset, so only a color the caller actually asked for has to travel.
-const toColorOverride = (color: string | null | undefined): string | null => (color ? parseHex(color) : null)
+const toColorOverride = (color: string | null | undefined): string | null => {
+  if (!color) return null
+  const parsed = parseHex(color)
+  return parsed || null
+}
 
 // Convert potentially null/undefined values to string or empty string
 const toQueryValue = (value: string | null | undefined): string => value || ''
