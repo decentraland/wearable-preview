@@ -3,8 +3,13 @@ import { SpringBoneParams } from '@dcl/schemas'
 
 const SPRING_BONE_PREFIX = 'springbone'
 const MAX_CHAINS_PER_WEARABLE = 12
-const MAX_JOINTS_PER_CHAIN = 12
+const MAX_JOINTS_PER_CHAIN = 8
 const MAX_DELTA_TIME = 0.05 // 50ms cap to prevent physics explosion after tab backgrounding
+
+// Physics runs at a fixed 60 Hz, decoupled from render fps, so authored stiffness/drag produce
+// identical motion on any display. Mirrors the Unity renderer's SpringBoneService.
+const FIXED_STEP = 1 / 60
+const MAX_SUBSTEPS = 4
 
 const SPRING_BONE_STIFFNESS_MIN = 0
 const SPRING_BONE_STIFFNESS_MAX = 4
@@ -22,6 +27,7 @@ const DEFAULT_PARAMS: SpringBoneParams = {
 
 type SpringJointState = {
   node: TransformNode
+  childNode: TransformNode
   initialLocalRotation: Quaternion
   initialLocalMatrix: Matrix
   boneAxis: Vector3
@@ -35,6 +41,9 @@ type SpringChain = {
   joints: SpringJointState[]
   params: SpringBoneParams
   centerNode: TransformNode | null
+  // World-space state (tails, bone lengths) is seeded on the first simulated frame instead of
+  // here: the scene is still rescaled and repositioned by center() after the chains are built.
+  seeded: boolean
 }
 
 function isSpringBoneName(name: string): boolean {
@@ -51,6 +60,8 @@ const _scratchMatrix = new Matrix()
 const _scratchMatrixB = new Matrix()
 const _scratchMatrixC = new Matrix()
 const _scratchQuat = new Quaternion()
+const _quatScratchVec3 = new Vector3()
+// Read-only: never pass as the output ref of a *ToRef call
 const _identityMatrix = Matrix.Identity()
 
 function quaternionFromUnitVectorsToRef(from: Vector3, to: Vector3, result: Quaternion): void {
@@ -60,16 +71,16 @@ function quaternionFromUnitVectorsToRef(from: Vector3, to: Vector3, result: Quat
     return
   }
   if (dot < -0.999999) {
-    Vector3.CrossToRef(Vector3.Right(), from, _scratchVec3E)
-    if (_scratchVec3E.lengthSquared() < 0.000001) {
-      Vector3.CrossToRef(Vector3.Up(), from, _scratchVec3E)
+    Vector3.CrossToRef(Vector3.Right(), from, _quatScratchVec3)
+    if (_quatScratchVec3.lengthSquared() < 0.000001) {
+      Vector3.CrossToRef(Vector3.Up(), from, _quatScratchVec3)
     }
-    _scratchVec3E.normalize()
-    Quaternion.RotationAxisToRef(_scratchVec3E, Math.PI, result)
+    _quatScratchVec3.normalize()
+    Quaternion.RotationAxisToRef(_quatScratchVec3, Math.PI, result)
     return
   }
-  Vector3.CrossToRef(from, to, _scratchVec3E)
-  result.set(_scratchVec3E.x, _scratchVec3E.y, _scratchVec3E.z, 1 + dot)
+  Vector3.CrossToRef(from, to, _quatScratchVec3)
+  result.set(_quatScratchVec3.x, _quatScratchVec3.y, _quatScratchVec3.z, 1 + dot)
   result.normalize()
 }
 
@@ -118,7 +129,6 @@ function resolveCenter(centerName: string | undefined, scene: Scene): TransformN
 
 function buildChain(root: TransformNode, scene: Scene, params: SpringBoneParams): SpringChain | null {
   const centerNode = resolveCenter(params.center, scene)
-  const worldToCenter = centerNode ? Matrix.Invert(centerNode.getWorldMatrix()) : Matrix.Identity()
 
   // Collect chain nodes depth-first (linear chain), capped to prevent DoS
   const chainNodes: TransformNode[] = [root]
@@ -139,52 +149,78 @@ function buildChain(root: TransformNode, scene: Scene, params: SpringBoneParams)
     const node = chainNodes[i]
     const childNode = chainNodes[i + 1]
 
-    node.computeWorldMatrix(true)
-    childNode.computeWorldMatrix(true)
-
     // Ensure quaternion rotation mode
     if (!node.rotationQuaternion) {
       node.rotationQuaternion = Quaternion.FromEulerVector(node.rotation)
     }
 
     const initialLocalRotation = node.rotationQuaternion.clone()
-
-    // Compute local matrix from current local transform
     const initialLocalMatrix = Matrix.Compose(node.scaling, initialLocalRotation, node.position)
 
     // Bone axis: direction from node to child in local space
-    const nodeWorldMatrix = node.getWorldMatrix()
-    const nodeWorldPos = node.getAbsolutePosition()
-    const childWorldPos = childNode.getAbsolutePosition()
-
-    const boneLength = Vector3.Distance(nodeWorldPos, childWorldPos)
-
-    // Compute local direction to child
-    const nodeWorldMatrixInv = Matrix.Invert(nodeWorldMatrix)
-    const childLocalPos = Vector3.TransformCoordinates(childWorldPos, nodeWorldMatrixInv)
+    const childLocalPos = childNode.position.clone()
     const boneAxis = childLocalPos.length() > 0 ? childLocalPos.normalize() : new Vector3(0, 1, 0)
-
-    // Initialize tail positions in center space
-    const currentTail = Vector3.TransformCoordinates(childWorldPos, worldToCenter)
 
     joints.push({
       node,
+      childNode,
       initialLocalRotation,
       initialLocalMatrix,
       boneAxis,
-      boneLength,
-      currentTail: currentTail.clone(),
-      previousTail: currentTail.clone(),
+      boneLength: 0,
+      currentTail: new Vector3(),
+      previousTail: new Vector3(),
     })
   }
 
-  return { rootName: root.name, joints, params, centerNode }
+  return { rootName: root.name, joints, params, centerNode, seeded: false }
 }
 
-function updateSimulation(chains: SpringChain[], scene: Scene): void {
-  const dt = Math.min(scene.getEngine().getDeltaTime() / 1000, MAX_DELTA_TIME)
-  if (dt <= 0) return
+/**
+ * Puts the tail where the rest pose points, with zero velocity, so the joint starts quiet
+ * instead of springing from a stale position.
+ */
+function seedJointToRest(joint: SpringJointState, worldPos: Vector3, restMatrix: Matrix, worldToCenter: Matrix): void {
+  Vector3.TransformNormalToRef(joint.boneAxis, restMatrix, _scratchVec3C)
+  const len = _scratchVec3C.length()
+  if (len > 0) _scratchVec3C.scaleInPlace(1 / len)
+  _scratchVec3C.scaleInPlace(joint.boneLength)
+  worldPos.addToRef(_scratchVec3C, _scratchVec3D)
+  Vector3.TransformCoordinatesToRef(_scratchVec3D, worldToCenter, joint.currentTail)
+  joint.previousTail.copyFrom(joint.currentTail)
+  // rotationQuaternion is guaranteed non-null: buildChain sets it during init
+  joint.node.rotationQuaternion!.copyFrom(joint.initialLocalRotation)
+}
 
+/**
+ * Recomputes a node's world matrix and every ancestor's, top down. `computeWorldMatrix(true)`
+ * forces only the node it is called on: ancestors come in through `getWorldMatrix()`, which
+ * serves a matrix cached per render id, and the scene advances that id after beforeRender. So an
+ * ancestor moved since the last frame -- center() rescaling the avatar -- reports its old one.
+ */
+function refreshWorldMatrix(node: TransformNode): void {
+  if (node.parent instanceof TransformNode) refreshWorldMatrix(node.parent)
+  node.computeWorldMatrix(true)
+}
+
+function seedChainToRest(chain: SpringChain, worldToCenter: Matrix): void {
+  for (const joint of chain.joints) {
+    refreshWorldMatrix(joint.node)
+    joint.childNode.computeWorldMatrix(true)
+
+    const worldPos = joint.node.getAbsolutePosition()
+    // Measured here rather than at build time so it reflects the final world scale
+    joint.boneLength = Vector3.Distance(worldPos, joint.childNode.getAbsolutePosition())
+
+    const parentWorldMatrix =
+      joint.node.parent instanceof TransformNode ? joint.node.parent.getWorldMatrix() : _identityMatrix
+    joint.initialLocalMatrix.multiplyToRef(parentWorldMatrix, _scratchMatrixB)
+
+    seedJointToRest(joint, worldPos, _scratchMatrixB, worldToCenter)
+  }
+}
+
+function updateSimulation(chains: SpringChain[], dt: number): void {
   for (const chain of chains) {
     const { params, centerNode } = chain
 
@@ -199,6 +235,12 @@ function updateSimulation(chains: SpringChain[], scene: Scene): void {
     } else {
       worldToCenter = _identityMatrix
       centerToWorld = _identityMatrix
+    }
+
+    if (!chain.seeded) {
+      seedChainToRest(chain, worldToCenter)
+      chain.seeded = true
+      continue
     }
 
     // Normalize gravityDir (guard against zero vector)
@@ -246,8 +288,11 @@ function updateSimulation(chains: SpringChain[], scene: Scene): void {
       Vector3.TransformNormalToRef(joint.boneAxis, _scratchMatrixB, _scratchVec3B) // reuse B as restTailDir
       const restTailDirLen = _scratchVec3B.length()
       if (restTailDirLen > 0) _scratchVec3B.scaleInPlace(1 / restTailDirLen)
-      // Stiffness pushes tail along the rest direction
-      _scratchVec3B.scaleToRef(stiffness * dt * joint.boneLength, _scratchVec3E)
+      // Stiffness pushes tail along the rest direction. The impulse is in world units, not scaled
+      // by bone length: the restoring rate a joint feels is stiffness/boneLength, so short hair
+      // bones snap back harder. Scaling by boneLength here would make it length-invariant and far
+      // floppier than the Unity renderer.
+      _scratchVec3B.scaleToRef(stiffness * dt, _scratchVec3E)
       _scratchVec3D.addInPlace(_scratchVec3E)
 
       // 3. Gravity
@@ -293,15 +338,7 @@ function updateSimulation(chains: SpringChain[], scene: Scene): void {
 
       // 7. NaN/Infinity recovery: if tail state is corrupted, reset to rest pose
       if (!isFiniteVec3(joint.currentTail) || !isFiniteVec3(joint.previousTail)) {
-        // Recompute rest tail position in center space as recovery
-        Vector3.TransformNormalToRef(joint.boneAxis, _scratchMatrixB, _scratchVec3C)
-        const rLen = _scratchVec3C.length()
-        if (rLen > 0) _scratchVec3C.scaleInPlace(1 / rLen)
-        _scratchVec3C.scaleInPlace(joint.boneLength)
-        worldPos.addToRef(_scratchVec3C, _scratchVec3D)
-        Vector3.TransformCoordinatesToRef(_scratchVec3D, worldToCenter, joint.currentTail)
-        joint.previousTail.copyFrom(joint.currentTail)
-        joint.node.rotationQuaternion!.copyFrom(joint.initialLocalRotation)
+        seedJointToRest(joint, worldPos, _scratchMatrixB, worldToCenter)
       }
 
       // Force world matrix update for children
@@ -318,7 +355,9 @@ export class SpringBoneSimulation {
   private wearables = new Map<string, SpringChain[]>()
   private containers = new Map<string, AssetContainer>()
   private beforeRenderCallback: (() => void) | null = null
+  private observerCleanups: (() => void)[] = []
   private scene: Scene | null = null
+  private accumulatedDt = 0
 
   registerWearable(
     scene: Scene,
@@ -410,11 +449,43 @@ export class SpringBoneSimulation {
   start(scene: Scene): void {
     if (this.beforeRenderCallback) return
     this.scene = scene
+    this.accumulatedDt = 0
+
+    // Starting an animation teleports the rig from its bind pose to the animation's first frame.
+    // Re-seed after that jump, otherwise the springs read it as velocity and swing into place.
+    const unseedAll = () => {
+      for (const chains of this.wearables.values()) {
+        for (const chain of chains) chain.seeded = false
+      }
+    }
+    // Track which groups have been hooked so late-added groups get covered too
+    const hookedGroups = new Set<unknown>()
+    const hookNewGroups = () => {
+      for (const group of scene.animationGroups) {
+        if (hookedGroups.has(group)) continue
+        hookedGroups.add(group)
+        const observer = group.onAnimationGroupPlayObservable.add(unseedAll)
+        if (observer) this.observerCleanups.push(() => group.onAnimationGroupPlayObservable.remove(observer))
+      }
+    }
+    hookNewGroups()
 
     this.beforeRenderCallback = () => {
-      for (const chains of this.wearables.values()) {
-        updateSimulation(chains, scene)
+      hookNewGroups()
+
+      this.accumulatedDt += Math.min(scene.getEngine().getDeltaTime() / 1000, MAX_DELTA_TIME)
+
+      let steps = 0
+      while (this.accumulatedDt >= FIXED_STEP && steps < MAX_SUBSTEPS) {
+        for (const chains of this.wearables.values()) {
+          updateSimulation(chains, FIXED_STEP)
+        }
+        this.accumulatedDt -= FIXED_STEP
+        steps++
       }
+
+      // Drop residual after a stall to avoid a spiral of death
+      if (steps === MAX_SUBSTEPS) this.accumulatedDt = 0
     }
 
     scene.registerBeforeRender(this.beforeRenderCallback)
@@ -425,8 +496,11 @@ export class SpringBoneSimulation {
       scene.unregisterBeforeRender(this.beforeRenderCallback)
       this.beforeRenderCallback = null
     }
+    for (const cleanup of this.observerCleanups) cleanup()
+    this.observerCleanups.length = 0
     this.wearables.clear()
     this.containers.clear()
     this.scene = null
+    this.accumulatedDt = 0
   }
 }

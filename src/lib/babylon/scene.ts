@@ -11,8 +11,10 @@ import {
   Engine,
   GlowLayer,
   HemisphericLight,
+  ImageProcessingConfiguration,
   Mesh,
   MeshBuilder,
+  PBRMaterial,
   Scene,
   SceneLoader,
   Sound,
@@ -36,6 +38,7 @@ import {
   WearableDefinition,
 } from '@dcl/schemas'
 import { hexToColor } from './utils'
+import { getOriginalEmissiveColor, getToneMappingExposure, isUnityToneMappingEnabled } from './emissive'
 import { isIOs } from '../env'
 import { getWearableRepresentation } from '../representation'
 import { createSceneController } from '../scene'
@@ -116,6 +119,16 @@ export async function createScene(
     : hexToColor(config.background.color).toColor4()
   root.ambientColor = new Color3(1, 1, 1)
   root.preventDefaultOnPointerDown = false
+
+  // Wearables carry emissive values authored against Unity's ACES tonemapper (see
+  // applyUnityEmissiveGain). Set on the scene rather than through a DefaultRenderingPipeline
+  // so it runs inside the material shaders: Tools.CreateScreenshotUsingRenderTarget renders
+  // to its own target and would skip a camera post-process, leaving screenshots untonemapped.
+  if (isUnityToneMappingEnabled()) {
+    root.imageProcessingConfiguration.toneMappingEnabled = true
+    root.imageProcessingConfiguration.toneMappingType = ImageProcessingConfiguration.TONEMAPPING_ACES
+    root.imageProcessingConfiguration.exposure = getToneMappingExposure()
+  }
 
   if (config.showSceneBoundaries) {
     // create transparent cylinder to show the boundaries
@@ -210,6 +223,14 @@ export async function createScene(
     camera.upperRadiusLimit = camera.radius
   }
 
+  // The wheel zooms the camera, but the browser also scrolls: since this document never scrolls
+  // (overflow is hidden) the scroll chains to the embedding page. Cancel it while zooming is possible.
+  if (config.camera === PreviewCamera.INTERACTIVE && camera.upperRadiusLimit !== camera.lowerRadiusLimit) {
+    const preventScroll = (event: WheelEvent) => event.preventDefault()
+    canvas.addEventListener('wheel', preventScroll, { passive: false })
+    root.onDisposeObservable.addOnce(() => canvas.removeEventListener('wheel', preventScroll))
+  }
+
   // Setup lights
   if (config.type === PreviewType.WEARABLE) {
     const directional = new DirectionalLight('directional', new Vector3(0, 0, 1), root)
@@ -227,6 +248,24 @@ export async function createScene(
   if (!isIOs()) {
     const glowLayer = new GlowLayer('glow', root)
     glowLayer.intensity = 2.0
+    // Feed the glow the pre-gain emissive so the bleed stays what it was before
+    // applyUnityEmissiveGain; otherwise every emissive wearable glows 12.5x harder.
+    // Mirrors Babylon's own default selector, only swapping in the unscaled color.
+    glowLayer.customEmissiveColorSelector = (_mesh, _subMesh, material, result) => {
+      const emissive =
+        material instanceof PBRMaterial
+          ? getOriginalEmissiveColor(material)
+          : material instanceof StandardMaterial
+            ? material.emissiveColor
+            : undefined
+      if (!emissive) {
+        const { r, g, b, a } = glowLayer.neutralColor
+        result.set(r, g, b, a)
+        return
+      }
+      const level = (material as PBRMaterial | StandardMaterial).emissiveTexture?.level ?? 1
+      result.set(emissive.r * level, emissive.g * level, emissive.b * level, material.alpha)
+    }
   }
 
   // Render loop

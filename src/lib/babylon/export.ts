@@ -1,5 +1,6 @@
 import { AbstractMesh, Bone, Matrix, Quaternion, Scene, Skeleton, TransformNode, Vector3 } from '@babylonjs/core'
 import { GLTF2Export } from '@babylonjs/serializers/glTF'
+import { isUnityToneMappingEnabled, UNITY_EMISSIVE_GAIN } from './emissive'
 
 // Maps DCL avatar bone names to VRM 0.x humanoid bone names.
 //
@@ -313,6 +314,27 @@ function stripAnimations(json: any): void {
 }
 
 /**
+ * Undoes the display-only emissive gain (see applyUnityEmissiveGain) before writing the
+ * file. The serializer reads the live scene, so without this the export would carry
+ * emissiveFactor values above the [0,1] range the glTF spec allows.
+ *
+ * Guarded by isUnityToneMappingEnabled: when the escape hatch (?toneMapping=none) is active,
+ * applyUnityEmissiveGain is a no-op, so there is nothing to undo — dividing un-scaled values
+ * by 12.5 would silently crush the emissive to near-zero in the exported file.
+ */
+export function normalizeEmissiveForExport(json: any): void {
+  if (!isUnityToneMappingEnabled()) return
+  if (!Array.isArray(json.materials)) return
+
+  for (const mat of json.materials) {
+    if (!Array.isArray(mat.emissiveFactor)) continue
+    mat.emissiveFactor = mat.emissiveFactor.map((channel: number) =>
+      Math.min(1, Math.max(0, channel / UNITY_EMISSIVE_GAIN)),
+    )
+  }
+}
+
+/**
  * Tags every material as KHR_materials_unlit so VRM viewers render the avatar
  * with the flat / cartoon look DCL uses, instead of PBR metallic shading.
  * Matches the juanma reference, which also marks every material as unlit.
@@ -435,53 +457,55 @@ function uniquifyTextureNamesForExport(scene: Scene): () => void {
 }
 
 export async function exportVRM(scene: Scene): Promise<Blob> {
-  console.group('[VRM EXPORT DEBUG]')
-  console.log('Scene handedness:', scene.useRightHandedSystem ? 'right' : 'left')
+  if (process.env.VITE_REACT_APP_DEBUG) {
+    console.group('[VRM EXPORT DEBUG]')
+    console.log('Scene handedness:', scene.useRightHandedSystem ? 'right' : 'left')
 
-  const fmt = (arr: ArrayLike<number> | undefined) =>
-    arr ? JSON.stringify(Array.from(arr).map((v) => +v.toFixed(4))) : 'undefined'
+    const fmt = (arr: ArrayLike<number> | undefined) =>
+      arr ? JSON.stringify(Array.from(arr).map((v) => +v.toFixed(4))) : 'undefined'
 
-  const allRoots = scene.transformNodes.filter((n: TransformNode) => n.name === '__root__')
-  console.log(`Found ${allRoots.length} __root__ node(s):`)
-  allRoots.forEach((r: TransformNode, i: number) => {
-    console.log(
-      `  __root__[${i}]  scaling=${fmt(r.scaling.asArray())}  pos=${fmt(r.position.asArray())}  rot=${fmt(
-        r.rotationQuaternion?.asArray() ?? r.rotation.asArray(),
-      )}  parent=${r.parent?.name ?? '(scene root)'}  children=${r.getChildren().length}`,
-    )
-  })
-
-  const debugParent = scene.getMeshByName('parent')
-  if (debugParent) {
-    console.log(
-      `parent mesh: scaling=${fmt(debugParent.scaling.asArray())}  pos=${fmt(
-        debugParent.position.asArray(),
-      )}  rot=${fmt(
-        debugParent.rotationQuaternion?.asArray() ?? debugParent.rotation.asArray(),
-      )}  parent=${debugParent.parent?.name ?? '(scene root)'}  absPos=${fmt(
-        debugParent.getAbsolutePosition().asArray(),
-      )}`,
-    )
-  }
-
-  console.log(
-    'Top-level transform nodes:',
-    scene.transformNodes.filter((n: TransformNode) => !n.parent).map((n: TransformNode) => n.name),
-  )
-  console.log(
-    'Top-level meshes:',
-    scene.meshes.filter((m: AbstractMesh) => !m.parent).map((m: AbstractMesh) => m.name),
-  )
-
-  const probeBones = ['Avatar_Hips', 'Avatar_LeftHand', 'Avatar_RightHand', 'Avatar_LeftFoot', 'Avatar_RightFoot']
-  scene.skeletons.forEach((skel: Skeleton, i: number) => {
-    console.log(`Skeleton[${i}] "${skel.name}" bones=${skel.bones.length}`)
-    probeBones.forEach((name) => {
-      const bone = skel.bones.find((b: Bone) => b.name === name)
-      console.log(`  ${name} absolute=${fmt(bone?.getAbsoluteTransform().toArray())}`)
+    const allRoots = scene.transformNodes.filter((n: TransformNode) => n.name === '__root__')
+    console.log(`Found ${allRoots.length} __root__ node(s):`)
+    allRoots.forEach((r: TransformNode, i: number) => {
+      console.log(
+        `  __root__[${i}]  scaling=${fmt(r.scaling.asArray())}  pos=${fmt(r.position.asArray())}  rot=${fmt(
+          r.rotationQuaternion?.asArray() ?? r.rotation.asArray(),
+        )}  parent=${r.parent?.name ?? '(scene root)'}  children=${r.getChildren().length}`,
+      )
     })
-  })
-  console.groupEnd()
+
+    const debugParent = scene.getMeshByName('parent')
+    if (debugParent) {
+      console.log(
+        `parent mesh: scaling=${fmt(debugParent.scaling.asArray())}  pos=${fmt(
+          debugParent.position.asArray(),
+        )}  rot=${fmt(
+          debugParent.rotationQuaternion?.asArray() ?? debugParent.rotation.asArray(),
+        )}  parent=${debugParent.parent?.name ?? '(scene root)'}  absPos=${fmt(
+          debugParent.getAbsolutePosition().asArray(),
+        )}`,
+      )
+    }
+
+    console.log(
+      'Top-level transform nodes:',
+      scene.transformNodes.filter((n: TransformNode) => !n.parent).map((n: TransformNode) => n.name),
+    )
+    console.log(
+      'Top-level meshes:',
+      scene.meshes.filter((m: AbstractMesh) => !m.parent).map((m: AbstractMesh) => m.name),
+    )
+
+    const probeBones = ['Avatar_Hips', 'Avatar_LeftHand', 'Avatar_RightHand', 'Avatar_LeftFoot', 'Avatar_RightFoot']
+    scene.skeletons.forEach((skel: Skeleton, i: number) => {
+      console.log(`Skeleton[${i}] "${skel.name}" bones=${skel.bones.length}`)
+      probeBones.forEach((name) => {
+        const bone = skel.bones.find((b: Bone) => b.name === name)
+        console.log(`  ${name} absolute=${fmt(bone?.getAbsoluteTransform().toArray())}`)
+      })
+    })
+    console.groupEnd()
+  }
 
   const parentMesh = scene.getMeshByName('parent')
 
@@ -560,6 +584,7 @@ export async function exportVRM(scene: Scene): Promise<Blob> {
     mergeSkeletons(json)
     restructureForVrm(json)
     stripAnimations(json)
+    normalizeEmissiveForExport(json)
     applyUnlitMaterials(json)
     injectVRMExtension(json)
 
