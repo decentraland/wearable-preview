@@ -84,7 +84,7 @@ const useUnityRenderer = (
 
         // Start JS-side playback tracking so EmoteControls receives events.
         // This runs on every OnLoadComplete (initial load + after each Reload).
-        if (controller.current) {
+        if (controller.current?.emote?.emote) {
           controller.current.emote.play()
         }
       } else if (type === UnityMessageType.CUSTOMIZATION_DONE) {
