@@ -1,14 +1,19 @@
 const fs = require('fs')
 const path = require('path')
 
-// Configuration
-const SOURCE_DIR = path.join(
-  process.env.HOME || process.env.USERPROFILE,
-  'Projects',
-  'aang-renderer',
-  'aang-renderer',
-  'Build',
-)
+// The renderer now lives in the unity-explorer monorepo under avatar-preview-renderer/.
+// Unity still names the WebGL build output folder after its build target (aang-renderer).
+// Override with RENDERER_BUILD_DIR if your local build lands somewhere else.
+const SOURCE_DIR =
+  process.env.RENDERER_BUILD_DIR ||
+  path.join(
+    process.env.HOME || process.env.USERPROFILE,
+    'Projects',
+    'unity-explorer',
+    'avatar-preview-renderer',
+    'aang-renderer',
+    'Build',
+  )
 const DEST_DIR = path.join(process.cwd(), 'public', 'unity', 'Build')
 
 // File mappings: source -> destination

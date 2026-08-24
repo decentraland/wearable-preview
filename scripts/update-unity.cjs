@@ -32,15 +32,18 @@ if (!fs.existsSync(TEMP_DIR)) {
 
 function apiGet(url) {
   return new Promise((resolve, reject) => {
+    const headers = {
+      'User-Agent': 'Decentraland-Wearable-Preview',
+      Accept: 'application/vnd.github.v3+json',
+    }
+    if (process.env.GITHUB_TOKEN) {
+      headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`
+    }
+
     https
       .get(
         url,
-        {
-          headers: {
-            'User-Agent': 'Decentraland-Wearable-Preview',
-            Accept: 'application/vnd.github.v3+json',
-          },
-        },
+        { headers },
         (response) => {
           if (response.statusCode !== 200) {
             reject(new Error(`GitHub API request failed: ${response.statusCode} ${response.statusMessage} (${url})`))
