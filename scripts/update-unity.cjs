@@ -3,7 +3,15 @@ const fs = require('fs')
 const path = require('path')
 const { execSync } = require('child_process')
 
-const GITHUB_API_URL = 'https://api.github.com/repos/decentraland/aang-renderer/releases/latest'
+// The renderer lives in the unity-explorer monorepo (avatar-preview-renderer/) since
+// https://github.com/decentraland/unity-explorer/pull/9844. Its releases are tagged
+// `avatar-preview-renderer/vX.Y.Z` with `make_latest: false` (the repo's "latest release"
+// belongs to Explorer client releases), so we list releases and filter by tag prefix
+// instead of hitting /releases/latest.
+const GITHUB_REPO = 'decentraland/unity-explorer'
+const RELEASE_TAG_PREFIX = 'avatar-preview-renderer/v'
+// Pin an exact release with RENDERER_TAG=avatar-preview-renderer/vX.Y.Z
+const PINNED_TAG = process.env.RENDERER_TAG
 const UNITY_OUTPUT_DIR = path.join(process.cwd(), 'public', 'unity')
 const EMOTES_OUTPUT_DIR = path.join(process.cwd(), 'public', 'emotes')
 const TEMP_DIR = path.join(process.cwd(), 'temp')
@@ -87,41 +95,72 @@ function downloadFile(url, destPath) {
   })
 }
 
-async function getLatestRelease() {
+function githubApiGet(apiPath) {
   return new Promise((resolve, reject) => {
-    https
-      .get(
-        GITHUB_API_URL,
-        {
-          headers: {
-            'User-Agent': 'Decentraland-Wearable-Preview',
-            Accept: 'application/vnd.github.v3+json',
-          },
-        },
-        (response) => {
-          if (response.statusCode !== 200) {
-            reject(new Error(`GitHub API request failed: ${response.statusCode} ${response.statusMessage}`))
-            return
-          }
+    const headers = {
+      'User-Agent': 'Decentraland-Wearable-Preview',
+      Accept: 'application/vnd.github.v3+json',
+    }
+    // Optional: raises the API rate limit
+    if (process.env.GITHUB_TOKEN) {
+      headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`
+    }
 
-          let data = ''
-          response.on('data', (chunk) => (data += chunk))
-          response.on('end', () => {
-            try {
-              const release = JSON.parse(data)
-              if (!release.assets || !Array.isArray(release.assets)) {
-                reject(new Error('Invalid release data: no assets found'))
-                return
-              }
-              resolve(release)
-            } catch (error) {
-              reject(new Error(`Failed to parse release data: ${error.message}`))
-            }
-          })
-        },
-      )
+    https
+      .get(`https://api.github.com${apiPath}`, { headers }, (response) => {
+        if (response.statusCode !== 200) {
+          reject(new Error(`GitHub API request failed: ${response.statusCode} ${response.statusMessage} (${apiPath})`))
+          return
+        }
+
+        let data = ''
+        response.on('data', (chunk) => (data += chunk))
+        response.on('end', () => {
+          try {
+            resolve(JSON.parse(data))
+          } catch (error) {
+            reject(new Error(`Failed to parse GitHub API response: ${error.message}`))
+          }
+        })
+      })
       .on('error', reject)
   })
+}
+
+async function getLatestRelease() {
+  if (PINNED_TAG) {
+    if (!PINNED_TAG.startsWith(RELEASE_TAG_PREFIX)) {
+      throw new Error(`RENDERER_TAG must start with "${RELEASE_TAG_PREFIX}", got "${PINNED_TAG}"`)
+    }
+    console.log(`📌 Using pinned tag: ${PINNED_TAG}`)
+    const release = await githubApiGet(`/repos/${GITHUB_REPO}/releases/tags/${encodeURIComponent(PINNED_TAG)}`)
+    if (!release.assets || !Array.isArray(release.assets)) {
+      throw new Error('Invalid release data: no assets found')
+    }
+    return release
+  }
+
+  // Releases are sorted by creation date (newest first), so the first match is the latest.
+  const MAX_PAGES = 5
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const releases = await githubApiGet(`/repos/${GITHUB_REPO}/releases?per_page=100&page=${page}`)
+    if (!Array.isArray(releases) || releases.length === 0) {
+      break
+    }
+    const release = releases.find((r) => r.tag_name && r.tag_name.startsWith(RELEASE_TAG_PREFIX) && !r.draft)
+    if (release) {
+      if (!release.assets || !Array.isArray(release.assets)) {
+        throw new Error('Invalid release data: no assets found')
+      }
+      return release
+    }
+  }
+
+  throw new Error(
+    `No release tagged "${RELEASE_TAG_PREFIX}*" found in ${GITHUB_REPO}. ` +
+      'Cut one with the "Avatar Preview Renderer Release" workflow in that repo, ' +
+      'or pin a tag with RENDERER_TAG.',
+  )
 }
 
 function findFolderPaths(zipPath, targetFolders) {
