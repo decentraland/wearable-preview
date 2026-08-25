@@ -22,7 +22,7 @@ Only the emissive material diverges. Sampled pixels: Unity feathers `#FDFBD2`
 
 ## Cause
 
-**Unity (`aang-renderer`) multiplies `emissiveFactor` by 12.5 and tonemaps the result.**
+**Unity (`avatar-preview-renderer`) multiplies `emissiveFactor` by 12.5 and tonemaps the result.**
 
 - `Assets/Scripts/Loading/ToonMaterialGenerator.cs:12,55` —
   `_Emissive_Color = gltfMaterial.Emissive * EMISSIVE_MAGIC_NUMBER`, `EMISSIVE_MAGIC_NUMBER = 5f`.
@@ -104,7 +104,7 @@ New `src/lib/babylon/emissive.ts`:
   original on `material.metadata.originalEmissiveColor`, and no-ops if already applied.
 
 Keeping the two factors separate and named after their source keeps the link to
-`aang-renderer` traceable when either side changes.
+`avatar-preview-renderer` traceable when either side changes.
 
 Call it from the existing cleanup loop in `src/lib/babylon/wearable.ts:39-48`. That loop is
 the single funnel for every glTF material in the scene — body shape included, since the body
