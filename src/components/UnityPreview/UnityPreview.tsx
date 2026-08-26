@@ -239,13 +239,6 @@ const useUnityOverrides = (
       }
     }
 
-    // Unity has no blob channel: repackage the item as a base64 definition whose contents are
-    // object URLs local to this document, and let it ride the existing AddBase64 flow.
-    if (allOverrides.blob) {
-      allOverrides.base64s = [...(allOverrides.base64s ?? []), blobToBase64Definition(allOverrides.blob)]
-      delete allOverrides.blob
-    }
-
     return allOverrides
   }, [overrideSources, options])
 
@@ -260,12 +253,18 @@ const useUnityOverrides = (
     }
 
     if (Object.keys(overridesData).length > 0) {
+      // Unity has no blob channel: repackage the item as a base64 definition whose contents are
+      // object URLs local to this document, and let it ride the existing AddBase64 flow. Done here
+      // rather than in the memo above because creating/revoking object URLs is a side effect.
+      const data = { ...overridesData }
+      if (data.blob) {
+        data.base64s = [...(data.base64s ?? []), blobToBase64Definition(data.blob)]
+        delete data.blob
+      }
       const sources =
-        overridesData.base64s !== undefined && !overrideSources.base64s
-          ? { ...overrideSources, base64s: true }
-          : overrideSources
-      sendIndividualOverrideMessages(unityInstance.current, overridesData, sources)
-      lastSentOverrides.current = overridesData
+        data.base64s !== undefined && !overrideSources.base64s ? { ...overrideSources, base64s: true } : overrideSources
+      sendIndividualOverrideMessages(unityInstance.current, data, sources)
+      lastSentOverrides.current = data
     }
   }, [
     renderingState.isInitialized,

@@ -1,6 +1,8 @@
 import { EmoteWithBlobs, WearableWithBlobs } from '@dcl/schemas'
 import { fromBlob } from '../config'
 
+// Singleton by design: the page hosts exactly one preview instance. A second concurrent instance
+// would revoke this one's object URLs.
 let previousObjectUrls: string[] = []
 
 /**
