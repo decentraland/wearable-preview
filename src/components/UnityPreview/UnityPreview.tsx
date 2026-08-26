@@ -3,6 +3,7 @@ import classNames from 'classnames'
 import { PreviewType, PreviewMessageType, sendMessage, PreviewRenderer } from '@dcl/schemas'
 
 import { sendIndividualOverrideMessages, sendUnityMessage, UnityMethod } from '../../lib/unity/messages'
+import { blobToBase64Definition } from '../../lib/unity/blob'
 import { getParent } from '../../lib/parent'
 import { captureException } from '../../lib/sentry'
 import { render } from '../../lib/unity/render'
@@ -238,6 +239,13 @@ const useUnityOverrides = (
       }
     }
 
+    // Unity has no blob channel: repackage the item as a base64 definition whose contents are
+    // object URLs local to this document, and let it ride the existing AddBase64 flow.
+    if (allOverrides.blob) {
+      allOverrides.base64s = [...(allOverrides.base64s ?? []), blobToBase64Definition(allOverrides.blob)]
+      delete allOverrides.blob
+    }
+
     return allOverrides
   }, [overrideSources, options])
 
@@ -252,7 +260,11 @@ const useUnityOverrides = (
     }
 
     if (Object.keys(overridesData).length > 0) {
-      sendIndividualOverrideMessages(unityInstance.current, overridesData, overrideSources)
+      const sources =
+        overridesData.base64s !== undefined && !overrideSources.base64s
+          ? { ...overrideSources, base64s: true }
+          : overrideSources
+      sendIndividualOverrideMessages(unityInstance.current, overridesData, sources)
       lastSentOverrides.current = overridesData
     }
   }, [

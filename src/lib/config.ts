@@ -513,7 +513,7 @@ function fromBlobRepresentation<T extends WearableRepresentationWithBlobs | Emot
   }
 }
 
-function fromBlob(itemWithBlobs: WearableWithBlobs | EmoteWithBlobs): WearableDefinition | EmoteDefinition {
+export function fromBlob(itemWithBlobs: WearableWithBlobs | EmoteWithBlobs): WearableDefinition | EmoteDefinition {
   if ('emoteDataADR74' in itemWithBlobs) {
     return {
       ...itemWithBlobs,
