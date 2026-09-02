@@ -31,9 +31,15 @@ export function createEmoteController(
   let playingIntervalId: ReturnType<typeof setInterval> | null = null
   let lastTickTime = 0
 
+  // Mutable: emotes fed through the blob/base64 overrides (e.g. the builder's live preview) arrive
+  // after this controller is created, via the `emote` setter below. The epoch invalidates async
+  // work (play's length fetch) that started against a previous definition.
+  let currentEmote = emote
+  let definitionEpoch = 0
+
   const isLooped = (): boolean => {
     if (playingAnimation) return playingAnimation.loop
-    if (emote?.emoteDataADR74?.loop) return true
+    if (currentEmote?.emoteDataADR74?.loop) return true
     if (previewEmote && LOOPED_EMOTES_LIST.includes(previewEmote)) return true
     return false
   }
@@ -125,12 +131,17 @@ export function createEmoteController(
       if (!instance) return
 
       // Fetch length if we don't have it yet
+      const epoch = definitionEpoch
       if (emoteLength <= 0) {
-        emoteLength = await requestFromUnity<number>(
+        const length = await requestFromUnity<number>(
           () => instance.SendMessage('JSBridge', 'GetEmoteLength', ''),
           UnityMessagePayload.LENGTH,
           0,
         )
+        // The definition was swapped while we awaited: discard this play, the reload that follows
+        // every swap triggers a fresh one.
+        if (epoch !== definitionEpoch) return
+        emoteLength = length
       }
 
       if (state === PlaybackState.STOPPED) {
@@ -173,17 +184,17 @@ export function createEmoteController(
       )
     },
     isSocialEmote: async () => {
-      return isSocialEmoteHelper(emote)
+      return isSocialEmoteHelper(currentEmote)
     },
     getSocialEmoteAnimations: async () => {
-      if (!emote || !isSocialEmoteHelper(emote)) return null
+      if (!currentEmote || !isSocialEmoteHelper(currentEmote)) return null
 
       return [
         {
           title: 'Start Animation',
-          ...emote.emoteDataADR74.startAnimation!,
+          ...currentEmote.emoteDataADR74.startAnimation!,
         },
-        ...emote.emoteDataADR74.outcomes!.map((outcome) => ({
+        ...currentEmote.emoteDataADR74.outcomes!.map((outcome) => ({
           title: outcome.title,
           loop: outcome.loop,
           audio: outcome.audio,
@@ -194,7 +205,20 @@ export function createEmoteController(
     getPlayingSocialEmoteAnimation: async () => {
       return playingAnimation ?? null
     },
-    emote,
+    get emote() {
+      return currentEmote
+    },
+    set emote(value: EmoteDefinition | null) {
+      currentEmote = value
+      // A new definition is always followed by a Reload that restarts the clip from zero, so reset
+      // the whole tracker: a stale currentTime would desync the progress events (and force-stop a
+      // non-looping emote early), and a stale length would cap them at the previous clip's duration.
+      definitionEpoch++
+      stopPlayingInterval()
+      state = PlaybackState.STOPPED
+      currentTime = 0
+      emoteLength = 0
+    },
     events,
   }
 }
