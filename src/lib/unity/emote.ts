@@ -31,7 +31,7 @@ export function createEmoteController(
   let playingIntervalId: ReturnType<typeof setInterval> | null = null
   let lastTickTime = 0
 
-  // Mutable: emotes fed through the blob/base64 overrides (e.g. the builder's live preview) arrive
+  // Mutable: emotes fed through the blob/base64 overrides arrive
   // after this controller is created, via the `emote` setter below. The epoch invalidates async
   // work (play's length fetch) that started against a previous definition.
   let currentEmote = emote
@@ -218,6 +218,9 @@ export function createEmoteController(
       state = PlaybackState.STOPPED
       currentTime = 0
       emoteLength = 0
+      // The social animation belonged to the previous definition; keeping it would let its loop
+      // flag override the new one in isLooped().
+      playingAnimation = undefined
     },
     events,
   }
