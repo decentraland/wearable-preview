@@ -175,7 +175,7 @@ function findFolderPaths(zipPath, targetFolders) {
 
         // Match the folder as a path segment (root or nested), on directory
         // entries and file entries alike — some ZIPs omit directory entries.
-        const segmentMatch = filePath.match(new RegExp(`^(.*?(?:^|\\/))(${folder})(\\/|$)`, 'i'))
+        const segmentMatch = filePath.match(new RegExp(`^(.*?(?:^|\\/))(${folder})(\\/|$)`))
         if (segmentMatch) {
           const basePath = `${segmentMatch[1]}${segmentMatch[2]}/`
           folderPaths.set(folder, basePath)
