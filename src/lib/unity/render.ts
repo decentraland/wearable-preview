@@ -18,34 +18,34 @@ export interface UnityInstance {
   }
 }
 
-type AangBuildConfig = {
+type RendererBuildConfig = {
   dataUrl: string
   frameworkUrl: string
   codeUrl: string
   symbolUrl: string
 }
 
-const COMPRESSED_AANG_BUILD: AangBuildConfig = {
-  dataUrl: '/unity/Build/aang-renderer.data.br',
-  frameworkUrl: '/unity/Build/aang-renderer.framework.js.br',
-  codeUrl: '/unity/Build/aang-renderer.wasm.br',
-  symbolUrl: '/unity/Build/aang-renderer.symbols.json.br',
+const COMPRESSED_RENDERER_BUILD: RendererBuildConfig = {
+  dataUrl: '/unity/Build/avatar-preview-renderer.data.br',
+  frameworkUrl: '/unity/Build/avatar-preview-renderer.framework.js.br',
+  codeUrl: '/unity/Build/avatar-preview-renderer.wasm.br',
+  symbolUrl: '/unity/Build/avatar-preview-renderer.symbols.json.br',
 }
 
-const UNCOMPRESSED_AANG_BUILD: AangBuildConfig = {
-  dataUrl: '/unity/Build/aang-renderer.data',
-  frameworkUrl: '/unity/Build/aang-renderer.framework.js',
-  codeUrl: '/unity/Build/aang-renderer.wasm',
-  symbolUrl: '/unity/Build/aang-renderer.symbols.json',
+const UNCOMPRESSED_RENDERER_BUILD: RendererBuildConfig = {
+  dataUrl: '/unity/Build/avatar-preview-renderer.data',
+  frameworkUrl: '/unity/Build/avatar-preview-renderer.framework.js',
+  codeUrl: '/unity/Build/avatar-preview-renderer.wasm',
+  symbolUrl: '/unity/Build/avatar-preview-renderer.symbols.json',
 }
 
-function getAangBuildConfig(): AangBuildConfig {
-  if (process.env.NODE_ENV !== 'production' && import.meta.env.VITE_AANG_USE_UNCOMPRESSED === 'true') {
-    console.log('[UNITY] Using uncompressed Aang build')
-    return UNCOMPRESSED_AANG_BUILD
+function getRendererBuildConfig(): RendererBuildConfig {
+  if (process.env.NODE_ENV !== 'production' && import.meta.env.VITE_RENDERER_USE_UNCOMPRESSED === 'true') {
+    console.log('[UNITY] Using uncompressed renderer build')
+    return UNCOMPRESSED_RENDERER_BUILD
   }
 
-  return COMPRESSED_AANG_BUILD
+  return COMPRESSED_RENDERER_BUILD
 }
 
 /**
@@ -60,19 +60,19 @@ export async function render(
   let instance: UnityInstance | null = null
 
   try {
-    const buildConfig = getAangBuildConfig()
+    const buildConfig = getRendererBuildConfig()
 
     // Initialize Unity instance
     instance = (await loadUnityInstance(
       canvas,
-      '/unity/Build/aang-renderer.loader.js',
+      '/unity/Build/avatar-preview-renderer.loader.js',
       buildConfig.dataUrl,
       buildConfig.frameworkUrl,
       buildConfig.codeUrl,
       buildConfig.symbolUrl,
       '/emotes',
       'Decentraland',
-      'AangRenderer',
+      'AvatarPreviewRenderer',
       '2.2.2',
       true,
       [],

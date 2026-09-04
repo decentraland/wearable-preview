@@ -1,14 +1,14 @@
 import { Color3, PBRMaterial } from '@babylonjs/core'
 
 /**
- * Unity (aang-renderer) is the reference look, and it amplifies the glTF
+ * Unity (avatar-preview-renderer) is the reference look, and it amplifies the glTF
  * `emissiveFactor` twice before tonemapping it. Babylon applies the factor 1:1,
  * so emissive wearables render as saturated raw colors instead of the blown-out
  * highlights Unity produces. These constants mirror the two Unity multipliers so
  * the link stays traceable if either side changes.
  */
 
-/** `ToonMaterialGenerator.EMISSIVE_MAGIC_NUMBER` in aang-renderer. */
+/** `ToonMaterialGenerator.EMISSIVE_MAGIC_NUMBER` in avatar-preview-renderer. */
 export const UNITY_EMISSIVE_GENERATOR_GAIN = 5
 
 /** The `* 2.5f` applied to `_Emissive_Color` in DCL_ToonBodyDoubleShadeWithFeather.hlsl. */

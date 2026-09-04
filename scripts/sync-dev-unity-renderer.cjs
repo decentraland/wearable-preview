@@ -1,28 +1,33 @@
 const fs = require('fs')
 const path = require('path')
 
-// Configuration
-const SOURCE_DIR = path.join(
-  process.env.HOME || process.env.USERPROFILE,
-  'Projects',
-  'aang-renderer',
-  'aang-renderer',
-  'Build',
-)
+// The renderer now lives in the unity-explorer monorepo under avatar-preview-renderer/.
+// Unity names the WebGL output folder after the UCB project (avatar-preview-renderer).
+// Override with RENDERER_BUILD_DIR if your local build lands somewhere else.
+const SOURCE_DIR =
+  process.env.RENDERER_BUILD_DIR ||
+  path.join(
+    process.env.HOME || process.env.USERPROFILE,
+    'Projects',
+    'unity-explorer',
+    'avatar-preview-renderer',
+    'avatar-preview-renderer',
+    'Build',
+  )
 const DEST_DIR = path.join(process.cwd(), 'public', 'unity', 'Build')
 
 // File mappings: source -> destination
 const FILE_MAPPINGS = [
-  { source: 'aang-renderer.data.br', dest: 'aang-renderer.data.br' },
-  { source: 'aang-renderer.framework.js.br', dest: 'aang-renderer.framework.js.br' },
-  { source: 'aang-renderer.loader.js', dest: 'aang-renderer.loader.js' },
-  { source: 'aang-renderer.symbols.json.br', dest: 'aang-renderer.symbols.json.br' },
-  { source: 'aang-renderer.wasm.br', dest: 'aang-renderer.wasm.br' },
+  { source: 'avatar-preview-renderer.data.br', dest: 'avatar-preview-renderer.data.br' },
+  { source: 'avatar-preview-renderer.framework.js.br', dest: 'avatar-preview-renderer.framework.js.br' },
+  { source: 'avatar-preview-renderer.loader.js', dest: 'avatar-preview-renderer.loader.js' },
+  { source: 'avatar-preview-renderer.symbols.json.br', dest: 'avatar-preview-renderer.symbols.json.br' },
+  { source: 'avatar-preview-renderer.wasm.br', dest: 'avatar-preview-renderer.wasm.br' },
   // Optional uncompressed variants for local development
-  { source: 'aang-renderer.data', dest: 'aang-renderer.data' },
-  { source: 'aang-renderer.framework.js', dest: 'aang-renderer.framework.js' },
-  { source: 'aang-renderer.symbols.json', dest: 'aang-renderer.symbols.json' },
-  { source: 'aang-renderer.wasm', dest: 'aang-renderer.wasm' },
+  { source: 'avatar-preview-renderer.data', dest: 'avatar-preview-renderer.data' },
+  { source: 'avatar-preview-renderer.framework.js', dest: 'avatar-preview-renderer.framework.js' },
+  { source: 'avatar-preview-renderer.symbols.json', dest: 'avatar-preview-renderer.symbols.json' },
+  { source: 'avatar-preview-renderer.wasm', dest: 'avatar-preview-renderer.wasm' },
 ]
 
 // Ensure destination directory exists
@@ -34,7 +39,7 @@ if (!fs.existsSync(DEST_DIR)) {
 // Check if source directory exists
 if (!fs.existsSync(SOURCE_DIR)) {
   console.error(`❌ Source directory does not exist: ${SOURCE_DIR}`)
-  console.error('Please ensure the aang-renderer project is built and the WebGLBuild directory exists.')
+  console.error('Please ensure the avatar-preview-renderer project is built and the WebGLBuild directory exists.')
   process.exit(1)
 }
 

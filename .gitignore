@@ -33,9 +33,9 @@ static-local
 .claude
 
 # Uncompressed Unity build files (dev only, synced via sync-dev-unity-renderer)
-public/unity/Build/aang-renderer.data
-public/unity/Build/aang-renderer.framework.js
-public/unity/Build/aang-renderer.symbols.json
-public/unity/Build/aang-renderer.wasm
+public/unity/Build/avatar-preview-renderer.data
+public/unity/Build/avatar-preview-renderer.framework.js
+public/unity/Build/avatar-preview-renderer.symbols.json
+public/unity/Build/avatar-preview-renderer.wasm
 
 tmp

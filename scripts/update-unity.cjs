@@ -3,7 +3,15 @@ const fs = require('fs')
 const path = require('path')
 const { execSync } = require('child_process')
 
-const GITHUB_API_URL = 'https://api.github.com/repos/decentraland/aang-renderer/releases/latest'
+// The renderer lives in the decentraland/unity-explorer monorepo, released under
+// avatar-preview-renderer/vX.Y.Z tags. The repo's "latest release" belongs to the
+// Explorer desktop client, so this script lists releases and picks the newest one
+// with the renderer's tag prefix. Pass a version to pin one instead:
+// `npm run update-unity -- 3.0.1` or RENDERER_VERSION=3.0.1.
+const OWNER_REPO = 'decentraland/unity-explorer'
+const TAG_PREFIX = 'avatar-preview-renderer/v'
+const PINNED_VERSION = process.env.RENDERER_VERSION || process.argv[2] || ''
+
 const UNITY_OUTPUT_DIR = path.join(process.cwd(), 'public', 'unity')
 const EMOTES_OUTPUT_DIR = path.join(process.cwd(), 'public', 'emotes')
 const TEMP_DIR = path.join(process.cwd(), 'temp')
@@ -20,6 +28,41 @@ if (!fs.existsSync(EMOTES_OUTPUT_DIR)) {
 }
 if (!fs.existsSync(TEMP_DIR)) {
   fs.mkdirSync(TEMP_DIR, { recursive: true })
+}
+
+function apiGet(url) {
+  return new Promise((resolve, reject) => {
+    const headers = {
+      'User-Agent': 'Decentraland-Wearable-Preview',
+      Accept: 'application/vnd.github.v3+json',
+    }
+    if (process.env.GITHUB_TOKEN) {
+      headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`
+    }
+
+    https
+      .get(
+        url,
+        { headers },
+        (response) => {
+          if (response.statusCode !== 200) {
+            reject(new Error(`GitHub API request failed: ${response.statusCode} ${response.statusMessage} (${url})`))
+            return
+          }
+
+          let data = ''
+          response.on('data', (chunk) => (data += chunk))
+          response.on('end', () => {
+            try {
+              resolve(JSON.parse(data))
+            } catch (error) {
+              reject(new Error(`Failed to parse GitHub API response: ${error.message}`))
+            }
+          })
+        },
+      )
+      .on('error', reject)
+  })
 }
 
 function downloadFile(url, destPath) {
@@ -87,41 +130,23 @@ function downloadFile(url, destPath) {
   })
 }
 
-async function getLatestRelease() {
-  return new Promise((resolve, reject) => {
-    https
-      .get(
-        GITHUB_API_URL,
-        {
-          headers: {
-            'User-Agent': 'Decentraland-Wearable-Preview',
-            Accept: 'application/vnd.github.v3+json',
-          },
-        },
-        (response) => {
-          if (response.statusCode !== 200) {
-            reject(new Error(`GitHub API request failed: ${response.statusCode} ${response.statusMessage}`))
-            return
-          }
+async function getRendererRelease() {
+  if (PINNED_VERSION) {
+    const tag = `${TAG_PREFIX}${PINNED_VERSION.replace(/^v/, '')}`
+    return apiGet(`https://api.github.com/repos/${OWNER_REPO}/releases/tags/${encodeURIComponent(tag)}`)
+  }
 
-          let data = ''
-          response.on('data', (chunk) => (data += chunk))
-          response.on('end', () => {
-            try {
-              const release = JSON.parse(data)
-              if (!release.assets || !Array.isArray(release.assets)) {
-                reject(new Error('Invalid release data: no assets found'))
-                return
-              }
-              resolve(release)
-            } catch (error) {
-              reject(new Error(`Failed to parse release data: ${error.message}`))
-            }
-          })
-        },
-      )
-      .on('error', reject)
-  })
+  // `releases/latest` would return the Explorer release; list and filter instead.
+  // Releases are returned newest-first.
+  for (let page = 1; page <= 5; page++) {
+    const releases = await apiGet(`https://api.github.com/repos/${OWNER_REPO}/releases?per_page=30&page=${page}`)
+    if (!Array.isArray(releases) || releases.length === 0) break
+
+    const release = releases.find((r) => r.tag_name.startsWith(TAG_PREFIX) && !r.draft && !r.prerelease)
+    if (release) return release
+  }
+
+  throw new Error(`No ${TAG_PREFIX}* release found in ${OWNER_REPO}`)
 }
 
 function findFolderPaths(zipPath, targetFolders) {
@@ -146,11 +171,15 @@ function findFolderPaths(zipPath, targetFolders) {
 
       // Check if this path contains any of our target folders
       for (const folder of targetFolders) {
-        const regex = new RegExp(`.*?\\/${folder}\\/?$`, 'i')
-        if (regex.test(filePath)) {
-          // Store the path up to and including the target folder
-          folderPaths.set(folder, filePath)
-          console.log(`   Found ${folder} at: ${filePath}`)
+        if (folderPaths.has(folder)) continue
+
+        // Match the folder as a path segment (root or nested), on directory
+        // entries and file entries alike — some ZIPs omit directory entries.
+        const segmentMatch = filePath.match(new RegExp(`^(.*?(?:^|\\/))(${folder})(\\/|$)`))
+        if (segmentMatch) {
+          const basePath = `${segmentMatch[1]}${segmentMatch[2]}/`
+          folderPaths.set(folder, basePath)
+          console.log(`   Found ${folder} at: ${basePath}`)
           break
         }
       }
@@ -185,7 +214,8 @@ function extractZip(zipPath, outputPath) {
         // Extract the folder and its contents
         // The `/*` at the end ensures we get the contents
         const folderInZip = path.dirname(folderPath)
-        execSync(`unzip -o -q "${zipPath}" "${folderInZip}/*" -d "${extractPath}"`)
+        const unzipPattern = folderInZip === '.' ? `${folder}/*` : `${folderInZip}/*`
+        execSync(`unzip -o -q "${zipPath}" "${unzipPattern}" -d "${extractPath}"`)
 
         // Move the specific folder to the final destination
         const sourcePath = path.join(extractPath, folderPath)
@@ -244,9 +274,15 @@ function extractZip(zipPath, outputPath) {
 
 async function main() {
   try {
-    console.log('🔍 Fetching latest release information...')
-    const release = await getLatestRelease()
+    console.log('🔍 Fetching renderer release information...')
+    const release = await getRendererRelease()
     console.log(`📦 Found release: ${release.tag_name}`)
+    console.log(`   Commit: ${release.target_commitish}`)
+    console.log(`   Notes:  ${release.html_url}`)
+
+    if (!release.assets || release.assets.length === 0) {
+      throw new Error(`Release ${release.tag_name} has no assets`)
+    }
 
     // Clean existing unity and GLB directories
     console.log('🧹 Cleaning existing Unity files...')
@@ -284,7 +320,7 @@ async function main() {
     console.log('🧹 Cleaning up temporary files...')
     fs.rmSync(TEMP_DIR, { recursive: true, force: true })
 
-    console.log('✅ Unity files updated successfully!')
+    console.log(`✅ Unity files updated to ${release.tag_name} — commit the changes in public/unity and public/emotes.`)
   } catch (error) {
     console.error('❌ Error updating Unity files:', error)
     // Log more details about the error

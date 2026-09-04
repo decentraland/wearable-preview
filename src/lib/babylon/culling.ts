@@ -1,7 +1,7 @@
 import { Material } from '@babylonjs/core'
 
 /**
- * Unity (aang-renderer) ignores the glTF `doubleSided` flag and culls back faces on every
+ * Unity (avatar-preview-renderer) ignores the glTF `doubleSided` flag and culls back faces on every
  * material — `ToonMaterialGenerator` sets `CullMode.Back` unconditionally. Babylon honours
  * the flag, so a double-sided wearable draws each face twice: flat cards like feathers,
  * hair strands and capes stay visible from behind instead of disappearing, which reads as
