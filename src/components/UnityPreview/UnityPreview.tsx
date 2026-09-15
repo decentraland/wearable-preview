@@ -4,6 +4,7 @@ import { PreviewType, PreviewMessageType, sendMessage, PreviewRenderer } from '@
 
 import { sendIndividualOverrideMessages, sendUnityMessage, UnityMethod } from '../../lib/unity/messages'
 import { blobToBase64Definition } from '../../lib/unity/blob'
+import { isEmote } from '../../lib/emote'
 import { getParent } from '../../lib/parent'
 import { captureException } from '../../lib/sentry'
 import { render } from '../../lib/unity/render'
@@ -229,6 +230,7 @@ const useUnityOverrides = (
   renderingState: UnityRenderingState,
   options: ReturnType<typeof useOptions>['options'],
   overrideSources: ReturnType<typeof useOptions>['overrideSources'],
+  controller: ReturnType<typeof useController>,
 ): void => {
   const overridesData = useMemo(() => {
     const allOverrides: Record<string, any> = {}
@@ -258,8 +260,15 @@ const useUnityOverrides = (
       // rather than in the memo above because creating/revoking object URLs is a side effect.
       const data = { ...overridesData }
       if (data.blob) {
-        data.base64s = [...(data.base64s ?? []), blobToBase64Definition(data.blob)]
+        const { base64, definition } = blobToBase64Definition(data.blob)
+        data.base64s = [...(data.base64s ?? []), base64]
         delete data.blob
+        // The emote controller was created before the blob arrived (useUnityConfig only resolves
+        // contract items), so hand it the streamed definition: isLooped() and the social emote
+        // queries read from it.
+        if (controller.current) {
+          controller.current.emote.emote = isEmote(definition) ? definition : null
+        }
       }
       const sources =
         data.base64s !== undefined && !overrideSources.base64s ? { ...overrideSources, base64s: true } : overrideSources
@@ -273,6 +282,7 @@ const useUnityOverrides = (
     overrideSources,
     unityInstance,
     lastSentOverrides,
+    controller,
   ])
 }
 
@@ -316,7 +326,7 @@ const UnityPreview: React.FC = () => {
   const previewState = usePreviewState(config)
 
   // Unity overrides effect
-  useUnityOverrides(refs.unityInstance, refs.lastSentOverrides, renderingState, options, overrideSources)
+  useUnityOverrides(refs.unityInstance, refs.lastSentOverrides, renderingState, options, overrideSources, controller)
 
   // Mark as ready
   useReady()
