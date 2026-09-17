@@ -3,8 +3,7 @@ import classNames from 'classnames'
 import { PreviewType, PreviewMessageType, sendMessage, PreviewRenderer } from '@dcl/schemas'
 
 import { sendIndividualOverrideMessages, sendUnityMessage, UnityMethod } from '../../lib/unity/messages'
-import { blobToBase64Definition } from '../../lib/unity/blob'
-import { isEmote } from '../../lib/emote'
+import { blobToBase64Definition, findBase64Emote } from '../../lib/unity/blob'
 import { getParent } from '../../lib/parent'
 import { captureException } from '../../lib/sentry'
 import { render } from '../../lib/unity/render'
@@ -260,15 +259,16 @@ const useUnityOverrides = (
       // rather than in the memo above because creating/revoking object URLs is a side effect.
       const data = { ...overridesData }
       if (data.blob) {
-        const { base64, definition } = blobToBase64Definition(data.blob)
+        const { base64 } = blobToBase64Definition(data.blob)
         data.base64s = [...(data.base64s ?? []), base64]
         delete data.blob
-        // The emote controller was created before the blob arrived (useUnityConfig only resolves
-        // contract items), so hand it the streamed definition: isLooped() and the social emote
-        // queries read from it.
-        if (controller.current) {
-          controller.current.emote.emote = isEmote(definition) ? definition : null
-        }
+      }
+      // The emote controller was created before these arrived (useUnityConfig only resolves
+      // contract items), so hand it the streamed definition: isLooped() and the social emote
+      // queries read from it. Unity loops the clip on its own, but a controller without the
+      // definition would stop it after one pass.
+      if (data.base64s !== undefined && controller.current) {
+        controller.current.emote.emote = findBase64Emote(data.base64s)
       }
       const sources =
         data.base64s !== undefined && !overrideSources.base64s ? { ...overrideSources, base64s: true } : overrideSources
