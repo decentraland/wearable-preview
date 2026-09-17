@@ -304,6 +304,9 @@ function createController(
         fromSecond = 0
       } else {
         animationGroup.play(loop)
+        // The audio may outlive the clip (longer track, or a play racing the autoplay): Babylon's
+        // play() layers a new source over one still sounding, so end that one first.
+        sound?.stop()
         sound?.play()
       }
     }

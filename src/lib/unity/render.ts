@@ -5,7 +5,7 @@ import { isEmote } from '../emote'
 import { getSpringBoneParamsFromMetadata, isWearable } from '../wearable'
 import { loadUnityInstance } from './loader'
 import { createSceneController } from './scene'
-import { createEmoteController } from './emote'
+import { createEmoteController, UnityEmoteController } from './emote'
 import { createPhysicsController } from './physics'
 
 export interface UnityInstance {
@@ -56,7 +56,7 @@ function getRendererBuildConfig(): RendererBuildConfig {
 export async function render(
   canvas: HTMLCanvasElement,
   config?: UnityPreviewConfig,
-): Promise<IPreviewController & { unity: UnityInstance }> {
+): Promise<IPreviewController & { unity: UnityInstance; emote: UnityEmoteController }> {
   let instance: UnityInstance | null = null
 
   try {
