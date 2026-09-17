@@ -16,12 +16,21 @@ enum PlaybackState {
   STOPPED = 'stopped',
 }
 
+export type UnityEmoteController = IEmoteController & {
+  /**
+   * Aligns the tracker with a clip Unity started on its own (it autoplays the emote on every load and
+   * reload). Only the JS-side counter starts: sending PlayEmote here would replay the clip Unity has
+   * just begun and layer its audio.
+   */
+  syncAutoplay(): Promise<void>
+}
+
 export function createEmoteController(
   instance: UnityInstance,
   emote: EmoteDefinition | null,
   playingAnimation?: SocialEmoteAnimation,
   previewEmote?: PreviewEmote | null,
-): IEmoteController {
+): UnityEmoteController {
   const events = mitt<EmoteEvents>()
 
   // Playback tracking state
@@ -105,7 +114,30 @@ export function createEmoteController(
     })
   }
 
+  const fetchLength = () =>
+    requestFromUnity<number | undefined>(
+      () => instance.SendMessage('JSBridge', 'GetEmoteLength', ''),
+      UnityMessagePayload.LENGTH,
+      0,
+    )
+
   return {
+    syncAutoplay: async () => {
+      if (!instance) return
+      const epoch = definitionEpoch
+      stopPlayingInterval()
+      state = PlaybackState.STOPPED
+      currentTime = 0
+      emoteLength = 0
+      const length = (await fetchLength()) ?? 0
+      // A definition swap or an explicit play/pause got in first; that call owns the tracker now.
+      if (epoch !== definitionEpoch || state !== PlaybackState.STOPPED) return
+      if (length <= 0) return
+      emoteLength = length
+      state = PlaybackState.PLAYING
+      startPlayingInterval()
+      events.emit(PreviewEmoteEventType.ANIMATION_PLAY)
+    },
     getLength: async () => {
       const emoteLength = await requestFromUnity<number | undefined>(
         () => instance.SendMessage('JSBridge', 'GetEmoteLength', ''),
@@ -125,10 +157,20 @@ export function createEmoteController(
       if (!instance) return
       currentTime = seconds
       instance.SendMessage('JSBridge', 'GoToEmote', seconds.toString())
+      // Unity can only seek a running clip, so seeking a stopped emote restarts it (audio included).
+      // Freeze it right away: the seek lands as "paused at this position", and the next play resumes
+      // from there instead of replaying from zero over the audio that GoTo just started.
+      if (state === PlaybackState.STOPPED) {
+        instance.SendMessage('JSBridge', 'PauseEmote', '')
+        state = PlaybackState.PAUSED
+      }
       events.emit(PreviewEmoteEventType.ANIMATION_PLAYING, { length: seconds })
     },
     play: async () => {
       if (!instance) return
+      // Unity replays the clip from zero on every PlayEmote, layering its audio over the take that is
+      // still sounding, so a play while already playing is a duplicate to drop, not a restart.
+      if (state === PlaybackState.PLAYING) return
 
       // Fetch length if we don't have it yet
       const epoch = definitionEpoch
@@ -141,10 +183,15 @@ export function createEmoteController(
         // The definition was swapped while we awaited: discard this play, the reload that follows
         // every swap triggers a fresh one.
         if (epoch !== definitionEpoch) return
+        if (state === PlaybackState.PLAYING) return
+        // No emote is loaded (e.g. the base avatar booted before the item arrived): nothing to track.
+        // Without a length the tick would never end and the counter would climb until the next reload.
+        if (length <= 0) return
         emoteLength = length
       }
 
-      if (state === PlaybackState.STOPPED) {
+      // Anything but a resume starts the clip over in Unity.
+      if (state !== PlaybackState.PAUSED) {
         currentTime = 0
       }
 
@@ -155,6 +202,9 @@ export function createEmoteController(
     },
     pause: async () => {
       if (!instance) return
+      // Unity ignores a pause while nothing plays; mirroring it as PAUSED would make the next play a
+      // resume of a position Unity no longer holds.
+      if (state !== PlaybackState.PLAYING) return
       state = PlaybackState.PAUSED
       stopPlayingInterval()
       instance.SendMessage('JSBridge', 'PauseEmote', '')

@@ -8,6 +8,7 @@ import { isEmote } from '../../lib/emote'
 import { getParent } from '../../lib/parent'
 import { captureException } from '../../lib/sentry'
 import { render } from '../../lib/unity/render'
+import { UnityEmoteController } from '../../lib/unity/emote'
 import { getRandomDefaultProfile } from '../../lib/profile'
 import { useWindowSize } from '../../hooks/useWindowSize'
 import { UnityPreviewConfig, useUnityConfig } from '../../hooks/useUnityConfig'
@@ -35,6 +36,7 @@ interface UnityRenderingState {
 interface UnityRefs {
   canvas: React.RefObject<HTMLCanvasElement>
   unityInstance: React.MutableRefObject<any>
+  emoteController: React.MutableRefObject<UnityEmoteController | null>
   isInitializing: React.MutableRefObject<boolean>
   lastSentOverrides: React.MutableRefObject<Record<string, any>>
 }
@@ -84,11 +86,9 @@ const useUnityRenderer = (
         }))
         sendMessage(getParent(), PreviewMessageType.LOAD, { renderer: PreviewRenderer.UNITY })
 
-        // Start JS-side playback tracking so EmoteControls receives events.
-        // This runs on every OnLoadComplete (initial load + after each Reload).
-        if (controller.current) {
-          controller.current.emote.play()
-        }
+        // Unity has already started the emote by itself; this runs on every OnLoadComplete (initial
+        // load + after each Reload), so the JS-side counter starts over with the clip.
+        refs.emoteController.current?.syncAutoplay()
       } else if (type === UnityMessageType.CUSTOMIZATION_DONE) {
         sendMessage(getParent(), PreviewMessageType.CONTROLLER_RESPONSE, {
           id: UnityMessageType.CUSTOMIZATION_DONE,
@@ -123,6 +123,7 @@ const useUnityRenderer = (
       try {
         const { unity, ...previewController } = await render(refs.canvas.current, config)
         refs.unityInstance.current = unity
+        refs.emoteController.current = previewController.emote
         controller.current = previewController
 
         // Store cleanup to avoid listener leaks on re-init
@@ -294,6 +295,7 @@ const UnityPreview: React.FC = () => {
   const unityInstanceRef = useRef<any>(null)
   const isInitializingRef = useRef(false)
   const lastSentOverridesRef = useRef<Record<string, any>>({})
+  const emoteControllerRef = useRef<UnityEmoteController | null>(null)
 
   // Hooks
   const controller = useController()
@@ -305,6 +307,7 @@ const UnityPreview: React.FC = () => {
     () => ({
       canvas: canvasRef,
       unityInstance: unityInstanceRef,
+      emoteController: emoteControllerRef,
       isInitializing: isInitializingRef,
       lastSentOverrides: lastSentOverridesRef,
     }),
