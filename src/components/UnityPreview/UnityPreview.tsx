@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import classNames from 'classnames'
-import { PreviewType, PreviewMessageType, sendMessage, PreviewRenderer } from '@dcl/schemas'
+import { PreviewType, PreviewMessageType, sendMessage, PreviewRenderer, PreviewEmote } from '@dcl/schemas'
 
 import { sendIndividualOverrideMessages, sendUnityMessage, UnityMethod } from '../../lib/unity/messages'
 import { blobToBase64Definition, findBase64Emote } from '../../lib/unity/blob'
+import { UnityEmoteController } from '../../lib/unity/emote'
 import { getParent } from '../../lib/parent'
 import { captureException } from '../../lib/sentry'
 import { render } from '../../lib/unity/render'
@@ -269,6 +270,11 @@ const useUnityOverrides = (
       // definition would stop it after one pass.
       if (data.base64s !== undefined && controller.current) {
         controller.current.emote.emote = findBase64Emote(data.base64s)
+      }
+      // Same for the default emote: the tracker decides whether a base emote loops (and how long it
+      // runs) from it, so a picked emote must reach it or the mount-time one keeps deciding.
+      if ('emote' in data && controller.current && data.emote !== lastSentOverrides.current.emote) {
+        ;(controller.current.emote as UnityEmoteController).previewEmote = (data.emote as PreviewEmote) ?? null
       }
       const sources =
         data.base64s !== undefined && !overrideSources.base64s ? { ...overrideSources, base64s: true } : overrideSources
