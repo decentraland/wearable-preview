@@ -4,6 +4,7 @@ import { captureException } from '../sentry'
 import { isEmote } from '../emote'
 import { getSpringBoneParamsFromMetadata, isWearable } from '../wearable'
 import { loadUnityInstance } from './loader'
+import { watchAudioReady } from './audio'
 import { createSceneController } from './scene'
 import { createEmoteController, UnityEmoteController } from './emote'
 import { createPhysicsController } from './physics'
@@ -63,6 +64,7 @@ export async function render(
     const buildConfig = getRendererBuildConfig()
 
     // Initialize Unity instance
+    watchAudioReady()
     instance = (await loadUnityInstance(
       canvas,
       '/unity/Build/avatar-preview-renderer.loader.js',

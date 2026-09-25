@@ -1,7 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { PreviewEmoteEventType } from '@dcl/schemas'
+import { EmoteDefinition, PreviewEmote, PreviewEmoteEventType } from '@dcl/schemas'
 import { createEmoteController } from './emote'
 import { UnityInstance } from './render'
+
+const audioReady = vi.hoisted(() => ({ listeners: [] as (() => void)[] }))
+vi.mock('./audio', () => ({
+  onAudioReady: (listener: () => void) => audioReady.listeners.push(listener),
+}))
+const audioBecomesReady = () => audioReady.listeners.forEach((listener) => listener())
 
 type Call = { method: string; value: string }
 
@@ -21,9 +27,9 @@ function fakeUnity(emoteLength: number) {
   return { instance, calls, sent }
 }
 
-function setup(emoteLength = 2) {
+function setup(emoteLength = 2, emote: EmoteDefinition | null = null, previewEmote?: PreviewEmote) {
   const unity = fakeUnity(emoteLength)
-  const controller = createEmoteController(unity.instance, null)
+  const controller = createEmoteController(unity.instance, emote, undefined, previewEmote)
   const events: Record<string, unknown[]> = {}
   for (const type of Object.values(PreviewEmoteEventType)) {
     events[type] = []
@@ -38,7 +44,40 @@ const flush = () => vi.advanceTimersByTimeAsync(0)
 
 describe('unity emote controller', () => {
   beforeEach(() => vi.useFakeTimers())
-  afterEach(() => vi.useRealTimers())
+  afterEach(() => {
+    vi.useRealTimers()
+    audioReady.listeners.length = 0
+  })
+
+  it('ends a play-once emote item even while the default emote is a looping one', async () => {
+    const playOnce = { emoteDataADR74: { loop: false } } as unknown as EmoteDefinition
+    const { controller, sent, events } = setup(2, playOnce, PreviewEmote.IDLE)
+    await controller.play()
+    await vi.advanceTimersByTimeAsync(2100)
+    expect(events[PreviewEmoteEventType.ANIMATION_END]).toHaveLength(1)
+    expect(events[PreviewEmoteEventType.ANIMATION_LOOP]).toHaveLength(0)
+    expect(sent('StopEmote')).toHaveLength(1)
+  })
+
+  it('restarts a playing clip when its audio becomes ready late, so both start in step', async () => {
+    const { controller, sent, positions } = setup(2)
+    await controller.play()
+    await vi.advanceTimersByTimeAsync(1000)
+    audioBecomesReady()
+    await vi.advanceTimersByTimeAsync(30)
+    expect(sent('StopEmote')).toHaveLength(1)
+    expect(sent('PlayEmote')).toHaveLength(2)
+    expect(positions().at(-1)).toBeLessThan(0.1)
+  })
+
+  it('silences the stale audio of a clip that ended before its audio became ready', async () => {
+    const { controller, sent } = setup(2)
+    await controller.play()
+    await vi.advanceTimersByTimeAsync(2100)
+    audioBecomesReady()
+    expect(sent('StopEmote')).toHaveLength(2)
+    expect(sent('PlayEmote')).toHaveLength(1)
+  })
 
   it('plays once when play is requested twice', async () => {
     const { controller, sent, events } = setup()

@@ -258,6 +258,36 @@ function createController(
   let fromSecond: number | undefined = undefined
   let fromGoTo = false
 
+  const currentFrame = () => animationGroup.targetedAnimations[0]?.animation.runtimeAnimations[0]?.currentFrame ?? 0
+
+  // A page loaded without a user gesture starts this frame's AudioContext suspended, and nothing here
+  // resumed it but the unmute button. The embedder's gestures reach this frame through allow="autoplay",
+  // so every play asks again. Babylon's play() on a suspended context schedules a retry that would layer
+  // over the realigned one below, so the sound is only ever started on a running context.
+  function isAudioRunning() {
+    const context = Engine.audioEngine.audioContext
+    if (!context || context.state === 'running') return true
+    void context.resume().catch(() => undefined)
+    return false
+  }
+
+  function playSound() {
+    if (!sound) return
+    // The audio may outlive the clip, and Babylon's play() layers a new source over one still sounding.
+    sound.stop()
+    if (isAudioRunning()) sound.play()
+  }
+
+  // Once the context runs, start the audio where the animation already is.
+  const audioContext = sound ? Engine.audioEngine.audioContext : null
+  audioContext?.addEventListener('statechange', () => {
+    if (audioContext.state !== 'running') return
+    Engine.audioEngine.unlock()
+    if (!sound || !animationGroup.isPlaying) return
+    sound.stop()
+    sound.play(undefined, currentFrame())
+  })
+
   async function getLength() {
     // if there's no animation, it should return 0
     return Math.max(animationGroup.to, 0)
@@ -296,6 +326,8 @@ function createController(
         animationGroup.start(loop, 1, fromSecond, await getLength(), false)
         if (sound) {
           sound.stop()
+        }
+        if (sound && isAudioRunning()) {
           // This is a hack to solve a bug in babylonjs version. This was finally fixed in Babylon PR: #13455.
           // TODO: update babylon major version
           sound['_startOffset'] = fromSecond
@@ -304,10 +336,7 @@ function createController(
         fromSecond = 0
       } else {
         animationGroup.play(loop)
-        // The audio may outlive the clip (longer track, or a play racing the autoplay): Babylon's
-        // play() layers a new source over one still sounding, so end that one first.
-        sound?.stop()
-        sound?.play()
+        playSound()
       }
     }
   }
@@ -327,10 +356,9 @@ function createController(
 
   async function enableSound() {
     if (!sound) return
-    Engine.audioEngine.unlock()
     Engine.audioEngine.setGlobalVolume(1)
-    if (animationGroup.isPlaying && !sound.isPlaying) {
-      sound.play(undefined, animationGroup.targetedAnimations[0].animation.runtimeAnimations[0].currentFrame)
+    if (isAudioRunning() && animationGroup.isPlaying && !sound.isPlaying) {
+      sound.play(undefined, currentFrame())
     }
   }
 
@@ -403,8 +431,7 @@ function createController(
     events.emit(PreviewEmoteEventType.ANIMATION_PAUSE)
   })
   animationGroup.onAnimationGroupLoopObservable.add(() => {
-    sound?.stop()
-    sound?.play()
+    playSound()
     // It's required to stop and start a looping animation again from 0 when using the Go To feature,
     // otherwise the animation will continue playing from the GoTo chosen frame
     if (fromGoTo) {

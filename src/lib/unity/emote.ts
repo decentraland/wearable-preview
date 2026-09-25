@@ -3,6 +3,7 @@ import mitt from 'mitt'
 import { SocialEmoteAnimation } from '@dcl/schemas/dist/dapps/preview/social-emote-animation'
 import { isSocialEmote as isSocialEmoteHelper, LOOPED_EMOTES_LIST } from '../emote'
 import { UnityInstance } from './render'
+import { onAudioReady } from './audio'
 
 enum UnityMessagePayload {
   LENGTH = 'emoteLength',
@@ -54,7 +55,8 @@ export function createEmoteController(
 
   const isLooped = (): boolean => {
     if (playingAnimation) return playingAnimation.loop
-    if (currentEmote?.emoteDataADR74?.loop) return true
+    // A loaded emote item replaces the default emote, so its flag wins even when the default (idle) loops.
+    if (currentEmote) return !!currentEmote.emoteDataADR74?.loop
     if (currentPreviewEmote && LOOPED_EMOTES_LIST.includes(currentPreviewEmote)) return true
     return false
   }
@@ -69,6 +71,21 @@ export function createEmoteController(
     currentTime = 0
     emoteLength = 0
   }
+
+  // Unity starts the clip before its audio can sound: the first pass is silent while Chrome still decodes
+  // it, and audio queued behind the autoplay policy sounds from its start once lifted, out of step. When
+  // the audio turns ready, restart a playing clip so both begin together; an ended one must stay silent.
+  onAudioReady(() => {
+    if (state === PlaybackState.PLAYING) {
+      instance.SendMessage('JSBridge', 'StopEmote', '')
+      instance.SendMessage('JSBridge', 'PlayEmote', '')
+      currentTime = 0
+      lastTickTime = Date.now()
+      events.emit(PreviewEmoteEventType.ANIMATION_LOOP)
+    } else if (state === PlaybackState.STOPPED && currentTime > 0) {
+      instance.SendMessage('JSBridge', 'StopEmote', '')
+    }
+  })
 
   const startPlayingInterval = () => {
     stopPlayingInterval()
