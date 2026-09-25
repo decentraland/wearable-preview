@@ -38,7 +38,7 @@ export function blobToBase64Definition(itemWithBlobs: WearableWithBlobs | EmoteW
   return { base64: btoa(binary), definition }
 }
 
-/** Inverse of `blobToBase64Definition`'s encoding; also decodes plain-ASCII base64 from other callers. */
+/** Inverse of `blobToBase64Definition`'s encoding; also decodes plain-ASCII base64 from other callers. @throws {DOMException|SyntaxError} on malformed base64 or invalid JSON. */
 export function base64ToDefinition(base64: string): WearableDefinition | EmoteDefinition {
   const bytes = Uint8Array.from(atob(base64), (char) => char.charCodeAt(0))
   return JSON.parse(new TextDecoder().decode(bytes))

@@ -68,6 +68,6 @@ describe('findBase64Emote', () => {
   })
 
   it('skips malformed entries', () => {
-    expect(findBase64Emote(['not-base64!!', encode(emote(false))])?.emoteDataADR74.loop).toBe(false)
+    expect(findBase64Emote([encode(emote(false)), 'not-base64!!'])?.emoteDataADR74.loop).toBe(false)
   })
 })
