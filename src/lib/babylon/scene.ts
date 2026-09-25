@@ -345,12 +345,17 @@ export function loadSound(
     }
 
     const task = new BinaryFileAssetTask('Sound task', soundUrl)
-    const onSuccess = () =>
-      resolve(
-        new Sound('music', task.data, scene, null, {
-          spatialSound: true,
-        }),
-      )
+    const onSuccess = () => {
+      const audioContext = Engine.audioEngine?.audioContext
+      if (!audioContext) return resolve(null)
+      // Handing Sound the raw bytes decodes them asynchronously and Babylon drops every play() until that
+      // finishes, which silenced the emote's autoplay: decode first so the sound is playable on arrival.
+      audioContext.decodeAudioData(task.data).then((buffer) => {
+        const sound = new Sound('music', null, scene, null, { spatialSound: true })
+        sound.setAudioBuffer(buffer)
+        resolve(sound)
+      }, reject)
+    }
     const onError = (message?: string) => reject(message)
     task.run(scene, onSuccess, onError)
   })
