@@ -75,41 +75,46 @@ const useUnityRenderer = (
   })
   const emoteCleanupRef = useRef<(() => void) | null>(null)
 
-  const handleUnityMessage = useCallback((event: MessageEvent) => {
-    if (event.data.type === UNITY_MESSAGE_TYPE) {
-      const { type, payload } = event.data.payload
-      if (type === UnityMessageType.LOADED && (payload === true || payload === 'true')) {
-        setRenderingState((prev) => ({
-          ...prev,
-          isLoaded: true,
-          isInitialized: true,
-        }))
-        sendMessage(getParent(), PreviewMessageType.LOAD, { renderer: PreviewRenderer.UNITY })
+  const handleUnityMessage = useCallback(
+    (event: MessageEvent) => {
+      if (event.data.type === UNITY_MESSAGE_TYPE) {
+        const { type, payload } = event.data.payload
+        if (type === UnityMessageType.LOADED && (payload === true || payload === 'true')) {
+          setRenderingState((prev) => ({
+            ...prev,
+            isLoaded: true,
+            isInitialized: true,
+          }))
+          sendMessage(getParent(), PreviewMessageType.LOAD, { renderer: PreviewRenderer.UNITY })
 
-        // Unity has already started the emote by itself; this runs on every OnLoadComplete (initial
-        // load + after each Reload), so the JS-side counter starts over with the clip.
-        refs.emoteController.current?.syncAutoplay()
-      } else if (type === UnityMessageType.CUSTOMIZATION_DONE) {
-        sendMessage(getParent(), PreviewMessageType.CONTROLLER_RESPONSE, {
-          id: UnityMessageType.CUSTOMIZATION_DONE,
-          ok: true,
-          result: JSON.parse(event.data.payload.payload),
-        })
-      } else if (type === UnityMessageType.CUSTOMIZATION_STEP) {
-        sendMessage(getParent(), PreviewMessageType.CONTROLLER_RESPONSE, {
-          id: UnityMessageType.CUSTOMIZATION_STEP,
-          ok: true,
-          result: { step: event.data.payload.payload },
-        })
-      } else if (type === UnityMessageType.ELEMENT_BOUNDS) {
-        sendMessage(getParent(), ELEMENT_BOUNDS_RESPONSE as any, payload)
-      } else if (type === UnityMessageType.ERROR) {
-        captureException(new Error(payload), { component: 'UnityPreview', phase: 'unityMessage' })
-        setRenderingState((prev) => ({ ...prev, error: payload }))
-        sendMessage(getParent(), PreviewMessageType.ERROR, { message: 'Error loading the wearable. Please try again.' })
+          // Unity has already started the emote by itself; this runs on every OnLoadComplete (initial
+          // load + after each Reload), so the JS-side counter starts over with the clip.
+          refs.emoteController.current?.syncAutoplay()
+        } else if (type === UnityMessageType.CUSTOMIZATION_DONE) {
+          sendMessage(getParent(), PreviewMessageType.CONTROLLER_RESPONSE, {
+            id: UnityMessageType.CUSTOMIZATION_DONE,
+            ok: true,
+            result: JSON.parse(event.data.payload.payload),
+          })
+        } else if (type === UnityMessageType.CUSTOMIZATION_STEP) {
+          sendMessage(getParent(), PreviewMessageType.CONTROLLER_RESPONSE, {
+            id: UnityMessageType.CUSTOMIZATION_STEP,
+            ok: true,
+            result: { step: event.data.payload.payload },
+          })
+        } else if (type === UnityMessageType.ELEMENT_BOUNDS) {
+          sendMessage(getParent(), ELEMENT_BOUNDS_RESPONSE as any, payload)
+        } else if (type === UnityMessageType.ERROR) {
+          captureException(new Error(payload), { component: 'UnityPreview', phase: 'unityMessage' })
+          setRenderingState((prev) => ({ ...prev, error: payload }))
+          sendMessage(getParent(), PreviewMessageType.ERROR, {
+            message: 'Error loading the wearable. Please try again.',
+          })
+        }
       }
-    }
-  }, [])
+    },
+    [refs],
+  )
 
   const initializeUnity = useCallback(
     async (config: UnityPreviewConfig) => {

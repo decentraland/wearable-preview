@@ -10,6 +10,8 @@ enum UnityMessagePayload {
   HAS_SOUND = 'hasSound',
 }
 
+// STOPPED → PLAYING (play) | STOPPED → PAUSED (goTo while stopped) | PAUSED → PLAYING (play)
+// PLAYING → PAUSED (pause) | PLAYING → STOPPED (end/stop)
 enum PlaybackState {
   PLAYING = 'playing',
   PAUSED = 'paused',
@@ -130,7 +132,7 @@ export function createEmoteController(
   }
 
   const fetchLength = () =>
-    requestFromUnity<number | undefined>(
+    requestFromUnity<number>(
       () => instance.SendMessage('JSBridge', 'GetEmoteLength', ''),
       UnityMessagePayload.LENGTH,
       0,
@@ -144,7 +146,7 @@ export function createEmoteController(
       state = PlaybackState.STOPPED
       currentTime = 0
       emoteLength = 0
-      const length = (await fetchLength()) ?? 0
+      const length = await fetchLength()
       // A definition swap or an explicit play/pause got in first; that call owns the tracker now.
       if (epoch !== definitionEpoch || state !== PlaybackState.STOPPED) return
       if (length <= 0) return
@@ -153,14 +155,7 @@ export function createEmoteController(
       startPlayingInterval()
       events.emit(PreviewEmoteEventType.ANIMATION_PLAY)
     },
-    getLength: async () => {
-      const emoteLength = await requestFromUnity<number | undefined>(
-        () => instance.SendMessage('JSBridge', 'GetEmoteLength', ''),
-        UnityMessagePayload.LENGTH,
-        0,
-      )
-      return emoteLength ?? 0
-    },
+    getLength: fetchLength,
     isPlaying: async () => {
       return requestFromUnity<boolean>(
         () => instance.SendMessage('JSBridge', 'IsEmotePlaying', ''),
@@ -190,11 +185,7 @@ export function createEmoteController(
       // Fetch length if we don't have it yet
       const epoch = definitionEpoch
       if (emoteLength <= 0) {
-        const length = await requestFromUnity<number>(
-          () => instance.SendMessage('JSBridge', 'GetEmoteLength', ''),
-          UnityMessagePayload.LENGTH,
-          0,
-        )
+        const length = await fetchLength()
         // The definition was swapped while we awaited: discard this play, the reload that follows
         // every swap triggers a fresh one.
         if (epoch !== definitionEpoch) return
