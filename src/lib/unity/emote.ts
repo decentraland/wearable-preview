@@ -16,7 +16,9 @@ enum PlaybackState {
   STOPPED = 'stopped',
 }
 
+/** The Unity controller also tracks the default (embedded) emote, which decides looping for base emotes. */
 export type UnityEmoteController = IEmoteController & {
+  previewEmote: PreviewEmote | null
   /**
    * Aligns the tracker with a clip Unity started on its own (it autoplays the emote on every load and
    * reload). Only the JS-side counter starts: sending PlayEmote here would replay the clip Unity has
@@ -32,6 +34,8 @@ export function createEmoteController(
   previewEmote?: PreviewEmote | null,
 ): UnityEmoteController {
   const events = mitt<EmoteEvents>()
+  // Mutable: the parent swaps the default emote through UPDATE messages after this controller exists.
+  let currentPreviewEmote: PreviewEmote | null = previewEmote ?? null
 
   // Playback tracking state
   let emoteLength = 0
@@ -49,8 +53,19 @@ export function createEmoteController(
   const isLooped = (): boolean => {
     if (playingAnimation) return playingAnimation.loop
     if (currentEmote?.emoteDataADR74?.loop) return true
-    if (previewEmote && LOOPED_EMOTES_LIST.includes(previewEmote)) return true
+    if (currentPreviewEmote && LOOPED_EMOTES_LIST.includes(currentPreviewEmote)) return true
     return false
+  }
+
+  // A new clip is always followed by a Reload that restarts it from zero, so the tracker starts over:
+  // a stale currentTime would desync the progress events (and force-stop a non-looping emote early),
+  // and a stale length would cap them at the previous clip's duration.
+  const resetTracker = () => {
+    definitionEpoch++
+    stopPlayingInterval()
+    state = PlaybackState.STOPPED
+    currentTime = 0
+    emoteLength = 0
   }
 
   const startPlayingInterval = () => {
@@ -260,17 +275,18 @@ export function createEmoteController(
     },
     set emote(value: EmoteDefinition | null) {
       currentEmote = value
-      // A new definition is always followed by a Reload that restarts the clip from zero, so reset
-      // the whole tracker: a stale currentTime would desync the progress events (and force-stop a
-      // non-looping emote early), and a stale length would cap them at the previous clip's duration.
-      definitionEpoch++
-      stopPlayingInterval()
-      state = PlaybackState.STOPPED
-      currentTime = 0
-      emoteLength = 0
+      resetTracker()
       // The social animation belonged to the previous definition; keeping it would let its loop
       // flag override the new one in isLooped().
       playingAnimation = undefined
+    },
+    get previewEmote() {
+      return currentPreviewEmote
+    },
+    set previewEmote(value: PreviewEmote | null) {
+      if (value === currentPreviewEmote) return
+      currentPreviewEmote = value
+      resetTracker()
     },
     events,
   }
