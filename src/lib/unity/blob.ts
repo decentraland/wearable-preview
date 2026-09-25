@@ -1,5 +1,6 @@
 import { EmoteDefinition, EmoteWithBlobs, WearableDefinition, WearableWithBlobs } from '@dcl/schemas'
 import { fromBlob } from '../config'
+import { isEmote } from '../emote'
 
 // Singleton by design: the page hosts exactly one preview instance. A second concurrent instance
 // would revoke this one's object URLs.
@@ -35,4 +36,23 @@ export function blobToBase64Definition(itemWithBlobs: WearableWithBlobs | EmoteW
     binary += String.fromCharCode(byte)
   }
   return { base64: btoa(binary), definition }
+}
+
+/** Inverse of `blobToBase64Definition`'s encoding; also decodes plain-ASCII base64 from other callers. @throws {DOMException|SyntaxError} on malformed base64 or invalid JSON. */
+export function base64ToDefinition(base64: string): WearableDefinition | EmoteDefinition {
+  const bytes = Uint8Array.from(atob(base64), (char) => char.charCodeAt(0))
+  return JSON.parse(new TextDecoder().decode(bytes))
+}
+
+/** The emote among the base64 definitions, if any; the last one wins as in the Babylon config. */
+export function findBase64Emote(base64s: string[]): EmoteDefinition | null {
+  for (let index = base64s.length - 1; index >= 0; index--) {
+    try {
+      const definition = base64ToDefinition(base64s[index])
+      if (isEmote(definition)) return definition
+    } catch {
+      // Malformed entries are the renderer's problem to report; they carry no emote for us.
+    }
+  }
+  return null
 }

@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import classNames from 'classnames'
-import { PreviewType, PreviewMessageType, sendMessage, PreviewRenderer } from '@dcl/schemas'
+import { PreviewType, PreviewMessageType, sendMessage, PreviewRenderer, PreviewEmote } from '@dcl/schemas'
 
 import { sendIndividualOverrideMessages, sendUnityMessage, UnityMethod } from '../../lib/unity/messages'
-import { blobToBase64Definition } from '../../lib/unity/blob'
-import { isEmote } from '../../lib/emote'
+import { blobToBase64Definition, findBase64Emote } from '../../lib/unity/blob'
+import { UnityEmoteController } from '../../lib/unity/emote'
 import { getParent } from '../../lib/parent'
 import { captureException } from '../../lib/sentry'
 import { render } from '../../lib/unity/render'
@@ -260,15 +260,21 @@ const useUnityOverrides = (
       // rather than in the memo above because creating/revoking object URLs is a side effect.
       const data = { ...overridesData }
       if (data.blob) {
-        const { base64, definition } = blobToBase64Definition(data.blob)
+        const { base64 } = blobToBase64Definition(data.blob)
         data.base64s = [...(data.base64s ?? []), base64]
         delete data.blob
-        // The emote controller was created before the blob arrived (useUnityConfig only resolves
-        // contract items), so hand it the streamed definition: isLooped() and the social emote
-        // queries read from it.
-        if (controller.current) {
-          controller.current.emote.emote = isEmote(definition) ? definition : null
-        }
+      }
+      // The emote controller was created before these arrived (useUnityConfig only resolves
+      // contract items), so hand it the streamed definition: isLooped() and the social emote
+      // queries read from it. Unity loops the clip on its own, but a controller without the
+      // definition would stop it after one pass.
+      if (data.base64s !== undefined && controller.current) {
+        controller.current.emote.emote = findBase64Emote(data.base64s)
+      }
+      // Same for the default emote: the tracker decides whether a base emote loops (and how long it
+      // runs) from it, so a picked emote must reach it or the mount-time one keeps deciding.
+      if ('emote' in data && controller.current && data.emote !== lastSentOverrides.current.emote) {
+        ;(controller.current.emote as UnityEmoteController).previewEmote = (data.emote as PreviewEmote) ?? null
       }
       const sources =
         data.base64s !== undefined && !overrideSources.base64s ? { ...overrideSources, base64s: true } : overrideSources
