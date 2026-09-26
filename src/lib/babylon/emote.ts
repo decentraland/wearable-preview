@@ -324,9 +324,7 @@ function createController(
     if (!(await isPlaying())) {
       if (fromSecond) {
         animationGroup.start(loop, 1, fromSecond, await getLength(), false)
-        if (sound) {
-          sound.stop()
-        }
+        sound?.stop()
         if (sound && isAudioRunning()) {
           // This is a hack to solve a bug in babylonjs version. This was finally fixed in Babylon PR: #13455.
           // TODO: update babylon major version

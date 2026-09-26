@@ -158,11 +158,8 @@ export function createEmoteController(
   return {
     syncAutoplay: async () => {
       if (!instance) return
+      resetTracker()
       const epoch = definitionEpoch
-      stopPlayingInterval()
-      state = PlaybackState.STOPPED
-      currentTime = 0
-      emoteLength = 0
       const length = await fetchLength()
       // A definition swap or an explicit play/pause got in first; that call owns the tracker now.
       if (epoch !== definitionEpoch || state !== PlaybackState.STOPPED) return

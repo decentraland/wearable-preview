@@ -1,6 +1,4 @@
-type Listener = () => void
-
-const listeners = new Set<Listener>()
+const listeners = new Set<() => void>()
 let watching = false
 
 const notify = () => listeners.forEach((listener) => listener())
@@ -11,7 +9,7 @@ const notify = () => listeners.forEach((listener) => listener())
  * while it runs. Call it before Unity boots: its audio context lives inside the build, out of reach.
  */
 export function watchAudioReady() {
-  if (watching || typeof window === 'undefined' || !window.AudioContext) return
+  if (watching || !window.AudioContext) return
   watching = true
   const NativeAudioContext = window.AudioContext
   window.AudioContext = class extends NativeAudioContext {
@@ -39,7 +37,6 @@ export function watchAudioReady() {
   }
 }
 
-export function onAudioReady(listener: Listener): () => void {
+export function onAudioReady(listener: () => void) {
   listeners.add(listener)
-  return () => listeners.delete(listener)
 }

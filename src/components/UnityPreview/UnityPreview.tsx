@@ -35,7 +35,6 @@ interface UnityRenderingState {
 interface UnityRefs {
   canvas: React.RefObject<HTMLCanvasElement>
   unityInstance: React.MutableRefObject<any>
-  emoteController: React.MutableRefObject<UnityEmoteController | null>
   isInitializing: React.MutableRefObject<boolean>
   lastSentOverrides: React.MutableRefObject<Record<string, any>>
 }
@@ -74,46 +73,41 @@ const useUnityRenderer = (
   })
   const emoteCleanupRef = useRef<(() => void) | null>(null)
 
-  const handleUnityMessage = useCallback(
-    (event: MessageEvent) => {
-      if (event.data.type === UNITY_MESSAGE_TYPE) {
-        const { type, payload } = event.data.payload
-        if (type === UnityMessageType.LOADED && (payload === true || payload === 'true')) {
-          setRenderingState((prev) => ({
-            ...prev,
-            isLoaded: true,
-            isInitialized: true,
-          }))
-          sendMessage(getParent(), PreviewMessageType.LOAD, { renderer: PreviewRenderer.UNITY })
+  const handleUnityMessage = useCallback((event: MessageEvent) => {
+    if (event.data.type === UNITY_MESSAGE_TYPE) {
+      const { type, payload } = event.data.payload
+      if (type === UnityMessageType.LOADED && (payload === true || payload === 'true')) {
+        setRenderingState((prev) => ({
+          ...prev,
+          isLoaded: true,
+          isInitialized: true,
+        }))
+        sendMessage(getParent(), PreviewMessageType.LOAD, { renderer: PreviewRenderer.UNITY })
 
-          // Unity has already started the emote by itself; this runs on every OnLoadComplete (initial
-          // load + after each Reload), so the JS-side counter starts over with the clip.
-          refs.emoteController.current?.syncAutoplay()
-        } else if (type === UnityMessageType.CUSTOMIZATION_DONE) {
-          sendMessage(getParent(), PreviewMessageType.CONTROLLER_RESPONSE, {
-            id: UnityMessageType.CUSTOMIZATION_DONE,
-            ok: true,
-            result: JSON.parse(event.data.payload.payload),
-          })
-        } else if (type === UnityMessageType.CUSTOMIZATION_STEP) {
-          sendMessage(getParent(), PreviewMessageType.CONTROLLER_RESPONSE, {
-            id: UnityMessageType.CUSTOMIZATION_STEP,
-            ok: true,
-            result: { step: event.data.payload.payload },
-          })
-        } else if (type === UnityMessageType.ELEMENT_BOUNDS) {
-          sendMessage(getParent(), ELEMENT_BOUNDS_RESPONSE as any, payload)
-        } else if (type === UnityMessageType.ERROR) {
-          captureException(new Error(payload), { component: 'UnityPreview', phase: 'unityMessage' })
-          setRenderingState((prev) => ({ ...prev, error: payload }))
-          sendMessage(getParent(), PreviewMessageType.ERROR, {
-            message: 'Error loading the wearable. Please try again.',
-          })
-        }
+        // Unity has already started the emote by itself; this runs on every OnLoadComplete (initial
+        // load + after each Reload), so the JS-side counter starts over with the clip.
+        ;(controller.current?.emote as UnityEmoteController | undefined)?.syncAutoplay()
+      } else if (type === UnityMessageType.CUSTOMIZATION_DONE) {
+        sendMessage(getParent(), PreviewMessageType.CONTROLLER_RESPONSE, {
+          id: UnityMessageType.CUSTOMIZATION_DONE,
+          ok: true,
+          result: JSON.parse(event.data.payload.payload),
+        })
+      } else if (type === UnityMessageType.CUSTOMIZATION_STEP) {
+        sendMessage(getParent(), PreviewMessageType.CONTROLLER_RESPONSE, {
+          id: UnityMessageType.CUSTOMIZATION_STEP,
+          ok: true,
+          result: { step: event.data.payload.payload },
+        })
+      } else if (type === UnityMessageType.ELEMENT_BOUNDS) {
+        sendMessage(getParent(), ELEMENT_BOUNDS_RESPONSE as any, payload)
+      } else if (type === UnityMessageType.ERROR) {
+        captureException(new Error(payload), { component: 'UnityPreview', phase: 'unityMessage' })
+        setRenderingState((prev) => ({ ...prev, error: payload }))
+        sendMessage(getParent(), PreviewMessageType.ERROR, { message: 'Error loading the wearable. Please try again.' })
       }
-    },
-    [refs],
-  )
+    }
+  }, [])
 
   const initializeUnity = useCallback(
     async (config: UnityPreviewConfig) => {
@@ -127,7 +121,6 @@ const useUnityRenderer = (
       try {
         const { unity, ...previewController } = await render(refs.canvas.current, config)
         refs.unityInstance.current = unity
-        refs.emoteController.current = previewController.emote
         controller.current = previewController
 
         // Store cleanup to avoid listener leaks on re-init
@@ -305,7 +298,6 @@ const UnityPreview: React.FC = () => {
   const unityInstanceRef = useRef<any>(null)
   const isInitializingRef = useRef(false)
   const lastSentOverridesRef = useRef<Record<string, any>>({})
-  const emoteControllerRef = useRef<UnityEmoteController | null>(null)
 
   // Hooks
   const controller = useController()
@@ -317,7 +309,6 @@ const UnityPreview: React.FC = () => {
     () => ({
       canvas: canvasRef,
       unityInstance: unityInstanceRef,
-      emoteController: emoteControllerRef,
       isInitializing: isInitializingRef,
       lastSentOverrides: lastSentOverridesRef,
     }),
