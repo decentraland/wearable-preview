@@ -84,11 +84,9 @@ const useUnityRenderer = (
         }))
         sendMessage(getParent(), PreviewMessageType.LOAD, { renderer: PreviewRenderer.UNITY })
 
-        // Start JS-side playback tracking so EmoteControls receives events.
-        // This runs on every OnLoadComplete (initial load + after each Reload).
-        if (controller.current) {
-          controller.current.emote.play()
-        }
+        // Unity has already started the emote by itself; this runs on every OnLoadComplete (initial
+        // load + after each Reload), so the JS-side counter starts over with the clip.
+        ;(controller.current?.emote as UnityEmoteController | undefined)?.syncAutoplay()
       } else if (type === UnityMessageType.CUSTOMIZATION_DONE) {
         sendMessage(getParent(), PreviewMessageType.CONTROLLER_RESPONSE, {
           id: UnityMessageType.CUSTOMIZATION_DONE,

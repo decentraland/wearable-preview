@@ -3,6 +3,7 @@ import mitt from 'mitt'
 import { SocialEmoteAnimation } from '@dcl/schemas/dist/dapps/preview/social-emote-animation'
 import { isSocialEmote as isSocialEmoteHelper, LOOPED_EMOTES_LIST } from '../emote'
 import { UnityInstance } from './render'
+import { onAudioReady } from './audio'
 
 enum UnityMessagePayload {
   LENGTH = 'emoteLength',
@@ -10,6 +11,8 @@ enum UnityMessagePayload {
   HAS_SOUND = 'hasSound',
 }
 
+// STOPPED → PLAYING (play) | STOPPED → PAUSED (goTo while stopped) | PAUSED → PLAYING (play)
+// PLAYING → PAUSED (pause) | PLAYING → STOPPED (end/stop)
 enum PlaybackState {
   PLAYING = 'playing',
   PAUSED = 'paused',
@@ -19,6 +22,12 @@ enum PlaybackState {
 /** The Unity controller also tracks the default (embedded) emote, which decides looping for base emotes. */
 export type UnityEmoteController = IEmoteController & {
   previewEmote: PreviewEmote | null
+  /**
+   * Aligns the tracker with a clip Unity started on its own (it autoplays the emote on every load and
+   * reload). Only the JS-side counter starts: sending PlayEmote here would replay the clip Unity has
+   * just begun and layer its audio.
+   */
+  syncAutoplay(): Promise<void>
 }
 
 export function createEmoteController(
@@ -46,7 +55,8 @@ export function createEmoteController(
 
   const isLooped = (): boolean => {
     if (playingAnimation) return playingAnimation.loop
-    if (currentEmote?.emoteDataADR74?.loop) return true
+    // A loaded emote item replaces the default emote, so its flag wins even when the default (idle) loops.
+    if (currentEmote) return !!currentEmote.emoteDataADR74?.loop
     if (currentPreviewEmote && LOOPED_EMOTES_LIST.includes(currentPreviewEmote)) return true
     return false
   }
@@ -61,6 +71,21 @@ export function createEmoteController(
     currentTime = 0
     emoteLength = 0
   }
+
+  // Unity starts the clip before its audio can sound: the first pass is silent while Chrome still decodes
+  // it, and audio queued behind the autoplay policy sounds from its start once lifted, out of step. When
+  // the audio turns ready, restart a playing clip so both begin together; an ended one must stay silent.
+  onAudioReady(() => {
+    if (state === PlaybackState.PLAYING) {
+      instance.SendMessage('JSBridge', 'StopEmote', '')
+      instance.SendMessage('JSBridge', 'PlayEmote', '')
+      currentTime = 0
+      lastTickTime = Date.now()
+      events.emit(PreviewEmoteEventType.ANIMATION_LOOP)
+    } else if (state === PlaybackState.STOPPED && currentTime > 0) {
+      instance.SendMessage('JSBridge', 'StopEmote', '')
+    }
+  })
 
   const startPlayingInterval = () => {
     stopPlayingInterval()
@@ -123,15 +148,28 @@ export function createEmoteController(
     })
   }
 
+  const fetchLength = () =>
+    requestFromUnity<number>(
+      () => instance.SendMessage('JSBridge', 'GetEmoteLength', ''),
+      UnityMessagePayload.LENGTH,
+      0,
+    )
+
   return {
-    getLength: async () => {
-      const emoteLength = await requestFromUnity<number | undefined>(
-        () => instance.SendMessage('JSBridge', 'GetEmoteLength', ''),
-        UnityMessagePayload.LENGTH,
-        0,
-      )
-      return emoteLength ?? 0
+    syncAutoplay: async () => {
+      if (!instance) return
+      resetTracker()
+      const epoch = definitionEpoch
+      const length = await fetchLength()
+      // A definition swap or an explicit play/pause got in first; that call owns the tracker now.
+      if (epoch !== definitionEpoch || state !== PlaybackState.STOPPED) return
+      if (length <= 0) return
+      emoteLength = length
+      state = PlaybackState.PLAYING
+      startPlayingInterval()
+      events.emit(PreviewEmoteEventType.ANIMATION_PLAY)
     },
+    getLength: fetchLength,
     isPlaying: async () => {
       return requestFromUnity<boolean>(
         () => instance.SendMessage('JSBridge', 'IsEmotePlaying', ''),
@@ -143,26 +181,37 @@ export function createEmoteController(
       if (!instance) return
       currentTime = seconds
       instance.SendMessage('JSBridge', 'GoToEmote', seconds.toString())
+      // Unity can only seek a running clip, so seeking a stopped emote restarts it (audio included).
+      // Freeze it right away: the seek lands as "paused at this position", and the next play resumes
+      // from there instead of replaying from zero over the audio that GoTo just started.
+      if (state === PlaybackState.STOPPED) {
+        instance.SendMessage('JSBridge', 'PauseEmote', '')
+        state = PlaybackState.PAUSED
+      }
       events.emit(PreviewEmoteEventType.ANIMATION_PLAYING, { length: seconds })
     },
     play: async () => {
       if (!instance) return
+      // Unity replays the clip from zero on every PlayEmote, layering its audio over the take that is
+      // still sounding, so a play while already playing is a duplicate to drop, not a restart.
+      if (state === PlaybackState.PLAYING) return
 
       // Fetch length if we don't have it yet
       const epoch = definitionEpoch
       if (emoteLength <= 0) {
-        const length = await requestFromUnity<number>(
-          () => instance.SendMessage('JSBridge', 'GetEmoteLength', ''),
-          UnityMessagePayload.LENGTH,
-          0,
-        )
+        const length = await fetchLength()
         // The definition was swapped while we awaited: discard this play, the reload that follows
         // every swap triggers a fresh one.
         if (epoch !== definitionEpoch) return
+        if (state === PlaybackState.PLAYING) return
+        // No emote is loaded (e.g. the base avatar booted before the item arrived): nothing to track.
+        // Without a length the tick would never end and the counter would climb until the next reload.
+        if (length <= 0) return
         emoteLength = length
       }
 
-      if (state === PlaybackState.STOPPED) {
+      // Anything but a resume starts the clip over in Unity.
+      if (state !== PlaybackState.PAUSED) {
         currentTime = 0
       }
 
@@ -173,6 +222,9 @@ export function createEmoteController(
     },
     pause: async () => {
       if (!instance) return
+      // Unity ignores a pause while nothing plays; mirroring it as PAUSED would make the next play a
+      // resume of a position Unity no longer holds.
+      if (state !== PlaybackState.PLAYING) return
       state = PlaybackState.PAUSED
       stopPlayingInterval()
       instance.SendMessage('JSBridge', 'PauseEmote', '')
