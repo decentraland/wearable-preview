@@ -43,6 +43,7 @@ import { isIOs } from '../env'
 import { getWearableRepresentation } from '../representation'
 import { createSceneController } from '../scene'
 import { startAutoRotateBehavior } from './camera'
+import { getWebGLSupport, isWebGLNotSupportedError, WebGLNotSupportedError } from './webgl'
 
 // needed for debugging
 const showInspector = process.env.VITE_REACT_APP_DEBUG
@@ -101,15 +102,25 @@ export async function createScene(
   canvas: HTMLCanvasElement,
   config: PreviewConfig,
 ): Promise<[Scene, ISceneController]> {
+  // Fail early with a typed error when the browser can't create a WebGL context
+  if (getWebGLSupport() === 'none') {
+    throw new WebGLNotSupportedError()
+  }
+
   // Create engine
   if (engine) {
     engine.dispose()
   }
-  engine = new Engine(canvas, true, {
-    preserveDrawingBuffer: true,
-    stencil: true,
-    antialias: true,
-  })
+  try {
+    engine = new Engine(canvas, true, {
+      preserveDrawingBuffer: true,
+      stencil: true,
+      antialias: true,
+    })
+  } catch (error) {
+    // the probe can pass while the context with these attributes still fails
+    throw isWebGLNotSupportedError(error) ? new WebGLNotSupportedError() : error
+  }
 
   // Setup scene
   const root = new Scene(engine)

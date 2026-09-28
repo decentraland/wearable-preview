@@ -63,10 +63,10 @@ export function captureException(error: unknown, context?: Record<string, unknow
 /**
  * Capture a message-level event in Sentry (for warnings / non-exception errors).
  */
-export function captureMessage(message: string, context?: Record<string, unknown>) {
+export function captureMessage(message: string, context?: Record<string, unknown>, level?: Sentry.SeverityLevel) {
   if (!sentryClient) {
     return
   }
 
-  Sentry.captureMessage(message, { extra: context })
+  Sentry.captureMessage(message, { extra: context, level })
 }
