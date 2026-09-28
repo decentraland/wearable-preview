@@ -16,11 +16,13 @@ import { useController } from '../../hooks/useController'
 import { render } from '../../lib/babylon/render'
 import { handleEmoteEvents } from '../../lib/emote-events'
 import { getParent } from '../../lib/parent'
-import { captureException } from '../../lib/sentry'
+import { captureException, captureMessage } from '../../lib/sentry'
+import { getWebGLSupport, isWebGLNotSupportedError } from '../../lib/babylon/webgl'
 import './Preview.css'
 
 const Preview: React.FC = () => {
   const [previewError, setPreviewError] = useState('')
+  const [isWebGLUnavailable, setIsWebGLUnavailable] = useState(false)
   const { width, height } = useWindowSize()
   const [style, setStyle] = useState<React.CSSProperties>({})
   const [isDragging, setIsDragging] = useState(false)
@@ -36,8 +38,10 @@ const Preview: React.FC = () => {
 
   const error = previewError || configError
   const isLoading = (isLoadingModel || isLoadingConfig) && !error
-  const showImage = !!image && !is3D && !isLoading
-  const showCanvas = is3D && !isLoading
+  // without WebGL there's nothing to render, so fall back to the thumbnail when the config has one
+  const showImage = !!image && (!is3D || isWebGLUnavailable) && !isLoading
+  const showCanvas = is3D && !isWebGLUnavailable && !isLoading
+  const showError = !!error && !(isWebGLUnavailable && showImage)
 
   useEffect(() => {
     let removeEmoteEvents: () => unknown = () => {}
@@ -77,7 +81,17 @@ const Preview: React.FC = () => {
           })
           .catch((error) => {
             if (isStale) return
-            captureException(error, { component: 'Preview', phase: 'render' })
+            if (isWebGLNotSupportedError(error)) {
+              // caused by the browser environment (WebGL disabled or blocked, GPU blocklist, headless), not by the preview
+              captureMessage(
+                error.message,
+                { component: 'Preview', phase: 'render', webgl: getWebGLSupport() },
+                'warning',
+              )
+              setIsWebGLUnavailable(true)
+            } else {
+              captureException(error, { component: 'Preview', phase: 'render' })
+            }
             setPreviewError(error.message)
           })
           .finally(() => {
@@ -101,7 +115,12 @@ const Preview: React.FC = () => {
     // upcoming render will send its own LOAD. This prevents embedders from taking screenshots of
     // an outdated scene.
     if (!isMessageSent && !isLoadingConfig) {
-      if (isLoaded) {
+      // check the error first: a failed render also sets isLoaded, and embedders rely on ERROR to show their fallback.
+      // errors are already reported where they happen (render catch, useAsync), so they aren't captured again here
+      if (error) {
+        sendMessage(getParent(), PreviewMessageType.ERROR, { message: error })
+        setIsMessageSent(true)
+      } else if (isLoaded) {
         sendMessage(getParent(), PreviewMessageType.LOAD, { renderer: PreviewRenderer.BABYLON })
         setIsMessageSent(true)
         if (config?.type === PreviewType.AVATAR || (config?.emote && config.emote !== PreviewEmote.IDLE)) {
@@ -112,10 +131,6 @@ const Preview: React.FC = () => {
             console.warn('Could not play emote', error)
           }
         }
-      } else if (error) {
-        captureException(new Error(error), { component: 'Preview', phase: 'sendErrorToParent' })
-        sendMessage(getParent(), PreviewMessageType.ERROR, { message: error })
-        setIsMessageSent(true)
       }
     }
   }, [isLoaded, error, isMessageSent, isLoadingConfig, controller, config?.type, config?.emote])
@@ -135,8 +150,13 @@ const Preview: React.FC = () => {
       if (shouldResetIsLoaded && isLoaded) {
         setIsLoaded(false)
       }
+      // clear the error left by the previous render, so it isn't sent again for the new config
+      if (previewError) {
+        setPreviewError('')
+        setIsWebGLUnavailable(false)
+      }
     }
-  }, [isLoadingConfig, isLoadingModel, isMessageSent, isLoaded])
+  }, [isLoadingConfig, isLoadingModel, isMessageSent, isLoaded, previewError])
 
   // send ready message to parent
   useReady()
@@ -190,7 +210,7 @@ const Preview: React.FC = () => {
         onMouseDown={() => setIsDragging(is3D && !error)}
         onMouseUp={() => setIsDragging(false)}
       ></canvas>
-      {error && <div className="error">{error}</div>}
+      {showError && <div className="error">{error}</div>}
       {showVRMButton && (
         <button
           className={classNames('vrm-download-btn', { 'is-exporting': isExporting })}
