@@ -4,9 +4,11 @@ import {
   browserTracingIntegration,
   dedupeIntegration,
   globalHandlersIntegration,
+  httpContextIntegration,
   linkedErrorsIntegration,
 } from '@sentry/browser'
 import { Env } from '@dcl/ui-env'
+import type { WebGPUSupport } from './webgpu'
 
 let sentryClient: ReturnType<typeof Sentry.init>
 
@@ -26,6 +28,8 @@ export function initSentry() {
       globalHandlersIntegration(),
       linkedErrorsIntegration(),
       dedupeIntegration(),
+      // attaches the page URL and User-Agent, which Sentry parses into the browser, OS and device tags
+      httpContextIntegration(),
       browserTracingIntegration({
         enableLongTask: false,
         enableLongAnimationFrame: false,
@@ -46,6 +50,20 @@ export function initSentry() {
     environment: ENVIRONMENT,
     dsn: SENTRY_DSN,
     release,
+  })
+}
+
+/**
+ * Tag every following event with the WebGPU detection result, which decides whether the Unity renderer can be used.
+ */
+export function setWebGPUTags(support: Pick<WebGPUSupport, 'isSupported' | 'isAvailable'>) {
+  if (!sentryClient) {
+    return
+  }
+
+  Sentry.setTags({
+    'webgpu.supported': support.isSupported,
+    'webgpu.available': support.isAvailable,
   })
 }
 
