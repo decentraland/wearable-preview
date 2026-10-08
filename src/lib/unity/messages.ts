@@ -1,4 +1,5 @@
 import { captureException, captureMessage } from '../sentry'
+import { inferHideControls } from './controls'
 
 export enum UnityMethod {
   // Property setters
@@ -24,6 +25,7 @@ export enum UnityMethod {
   // Control methods
   RELOAD = 'Reload',
   CLEANUP = 'Cleanup',
+  SET_HIDE_CONTROLS = 'SetHideControls',
 
   // Query methods
   GET_ELEMENT_BOUNDS = 'GetElementBounds',
@@ -147,6 +149,13 @@ export const sendIndividualOverrideMessages = (
       }
     }
   })
+
+  // A page that starts framing the canvas through Babylon's options gets the in-canvas controls out
+  // of its way, the same as a mount that passed them in the URL (see controls.ts).
+  if (inferHideControls(overrides)) {
+    sendUnityMessage(unityInstance, UnityMethod.SET_HIDE_CONTROLS, 'true')
+    messagesSent++
+  }
 
   // Send Reload after all property messages have been sent
   if (messagesSent > 0) {

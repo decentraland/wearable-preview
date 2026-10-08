@@ -154,6 +154,7 @@ Configure the preview via URL query parameters:
 | `disableDefaultEmotes`    | If `true` and `emote` is not passed, will not load the default IDLE emote             |
 | `showSceneBoundaries`     | If `true`, shows a cylinder representing the recommended scene boundaries             |
 | `showThumbnailBoundaries` | If `true`, shows a square representing the thumbnail boundaries                       |
+| `hideControls`            | If `true`, hides the in-canvas controls of the Unity renderer (view switcher, emote and sound buttons). Set on its own when `zoom`, `wheelZoom`, `showThumbnailBoundaries` or `camera=static` is passed. Babylon draws no controls |
 
 #### Configuration
 
@@ -240,7 +241,7 @@ To use the controller you can send `controller_request` messages and the respons
 The available methods are:
 
 - namespace: `scene`
-  - method: `getScreenshot` params: `[width: number, height: number]` result: `string`
+  - method: `getScreenshot` params: `[width: number, height: number]` result: `string` (a PNG data URL; with the Unity renderer it is the live framing captured at that size, controls excluded, transparent when `disableBackground` is set, and the request fails while the preview is still loading)
   - method: `getMetrics` params: `[]` result: `Metrics`
 - namespace: `emote`
   - method: `play` params: `[]` result: `void`

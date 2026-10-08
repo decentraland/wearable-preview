@@ -19,6 +19,7 @@ import { isWearable } from '../lib/wearable'
 import { isTexture } from '../lib/representation'
 import { getWearableRepresentationOrDefault } from '../lib/representation'
 import { getRandomDefaultProfile } from '../lib/profile'
+import { inferHideControls } from '../lib/unity/controls'
 
 export interface UnityPreviewConfig {
   background: Background
@@ -63,6 +64,7 @@ type QueryParams = {
   type: string
   urn: string[]
   base64: string[]
+  hideControls: string
 }
 
 // Only these two express a view the renderer can be pinned to: the item on its own or the item
@@ -282,6 +284,10 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
                 type: toQueryValue(requestedType),
                 urn: urns.length > 0 ? urns : [''],
                 base64: base64s.length > 0 ? base64s : [''],
+              }
+              // Only ever set, never cleared: a hideControls the page put in the URL itself stays.
+              if (inferHideControls(options)) {
+                queryParams.hideControls = 'true'
               }
               updateQueryParams(queryParams)
             }

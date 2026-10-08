@@ -13,54 +13,56 @@ enum UnityMessage {
 enum UnityMessagePayload {
   METRICS = 'metrics',
   SCREENSHOT = 'screenshot',
+  REQUEST_FAILED = 'request-failed',
 }
 
 const BASE64_IMAGE_HEADER = 'data:image/png;base64,'
 
+// Unity answers a query by posting `{ type: 'unity-renderer', payload: { type, payload } }` to the
+// window. A query it cannot serve (nothing loaded yet, a reload in flight, a bad argument) comes back
+// as `request-failed` naming the query by its reply type and giving the reason.
+function query<T>(instance: UnityInstance, method: UnityMessage, value: string, reply: UnityMessagePayload) {
+  return new Promise<T>((resolve, reject) => {
+    function onReply(event: MessageEvent) {
+      if (event.data?.type !== 'unity-renderer') return
+      const { type, payload } = event.data.payload
+      if (type === reply) {
+        window.removeEventListener('message', onReply)
+        resolve(payload as T)
+      } else if (type === UnityMessagePayload.REQUEST_FAILED && payload?.request === reply) {
+        window.removeEventListener('message', onReply)
+        reject(new Error(payload.reason))
+      }
+    }
+    window.addEventListener('message', onReply)
+    instance.SendMessage('JSBridge', method, value)
+  })
+}
+
+const isPixelSize = (value: number) => Number.isInteger(value) && value > 0
+
 export function createSceneController(instance: UnityInstance): ISceneController {
   return {
-    getScreenshot: () => {
-      return new Promise<string>((resolve) => {
-        if (!instance) {
-          resolve('')
-          return
-        }
-        instance.SendMessage('JSBridge', UnityMessage.TAKE_SCREENSHOT, '')
-        window.addEventListener('message', function onScreenshot(event) {
-          if (event.data.type === 'unity-renderer') {
-            const { type, payload } = event.data.payload
-            if (type === UnityMessagePayload.SCREENSHOT) {
-              window.removeEventListener('message', onScreenshot)
-              resolve(BASE64_IMAGE_HEADER + payload)
-            }
-          }
-        })
-      })
+    getScreenshot: async (width: number, height: number) => {
+      if (!instance) return ''
+      // A pixel size asks for a capture of the live framing at that size, chrome excluded; without one
+      // the renderer sends the whole canvas as it is on screen.
+      const size = isPixelSize(width) && isPixelSize(height) ? `${width},${height}` : ''
+      const png = await query<string>(instance, UnityMessage.TAKE_SCREENSHOT, size, UnityMessagePayload.SCREENSHOT)
+      return BASE64_IMAGE_HEADER + png
     },
     getMetrics: () => {
-      return new Promise<Metrics>((resolve) => {
-        if (!instance) {
-          resolve({
-            triangles: 0,
-            materials: 0,
-            textures: 0,
-            meshes: 0,
-            bodies: 0,
-            entities: 0,
-          })
-          return
-        }
-        instance.SendMessage('JSBridge', UnityMessage.GET_METRICS, '')
-        window.addEventListener('message', function onMetrics(event) {
-          if (event.data.type === 'unity-renderer') {
-            const { type, payload } = event.data.payload
-            if (type === UnityMessagePayload.METRICS) {
-              window.removeEventListener('message', onMetrics)
-              resolve(payload)
-            }
-          }
+      if (!instance) {
+        return Promise.resolve({
+          triangles: 0,
+          materials: 0,
+          textures: 0,
+          meshes: 0,
+          bodies: 0,
+          entities: 0,
         })
-      })
+      }
+      return query<Metrics>(instance, UnityMessage.GET_METRICS, '', UnityMessagePayload.METRICS)
     },
     changeZoom: async (zoom: number) => {
       if (!instance) return
