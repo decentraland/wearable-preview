@@ -41,6 +41,20 @@ export interface UnityPreviewConfig {
   urn: string[] | null
   itemDefinition: WearableDefinition | EmoteDefinition | null
   socialEmote: SocialEmoteAnimation | null
+  // The camera options Babylon takes, forwarded by name; the renderer scales them the same way.
+  camera: PreviewCamera
+  zoom: number | null
+  wheelZoom: number | null
+  wheelStart: number | null
+  lockAlpha: boolean
+  lockBeta: boolean
+  lockRadius: boolean
+  panning: boolean
+  disableAutoRotate: boolean
+  autoRotateSpeed: number | null
+  offsetX: number | null
+  offsetY: number | null
+  showThumbnailBoundaries: boolean
 }
 
 interface Background {
@@ -65,6 +79,18 @@ type QueryParams = {
   urn: string[]
   base64: string[]
   hideControls: string
+  zoom: string
+  wheelZoom: string
+  wheelStart: string
+  lockAlpha: string
+  lockBeta: string
+  lockRadius: string
+  panning: string
+  disableAutoRotate: string
+  autoRotateSpeed: string
+  offsetX: string
+  offsetY: string
+  showThumbnailBoundaries: string
 }
 
 // Only these two express a view the renderer can be pinned to: the item on its own or the item
@@ -86,6 +112,16 @@ const toQueryValue = (value: string | null | undefined): string => value || ''
 
 // Convert potentially null/undefined array to string array
 const toQueryArray = (value: string[] | null | undefined): string[] => value || []
+
+// A number the caller actually passed, or null
+const toNumberOption = (value: number | null | undefined): number | null =>
+  typeof value === 'number' && !isNaN(value) ? value : null
+
+// Convert a numeric option to its query value, or empty string when unset
+const toQueryNumber = (value: number | null): string => (value === null ? '' : String(value))
+
+// Convert a flag to its query value: only a set flag travels, the renderer defaults the rest
+const toQueryFlag = (value: boolean): string => (value ? 'true' : '')
 
 // Convert color value to hex string without #
 const toQueryColor = (value: string): string => value.replace('#', '')
@@ -244,6 +280,19 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
           showAnimationReference: null,
           itemDefinition: item,
           socialEmote: options.socialEmote || null,
+          camera,
+          zoom: toNumberOption(options.zoom),
+          wheelZoom: toNumberOption(options.wheelZoom),
+          wheelStart: toNumberOption(options.wheelStart),
+          lockAlpha: !!options.lockAlpha,
+          lockBeta: !!options.lockBeta,
+          lockRadius: !!options.lockRadius,
+          panning: options.panning !== false,
+          disableAutoRotate: !!options.disableAutoRotate,
+          autoRotateSpeed: toNumberOption(options.autoRotateSpeed),
+          offsetX: toNumberOption(options.offsetX),
+          offsetY: toNumberOption(options.offsetY),
+          showThumbnailBoundaries: !!options.showThumbnailBoundaries,
         }
 
         // Only update if config has changed
@@ -284,6 +333,19 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
                 type: toQueryValue(requestedType),
                 urn: urns.length > 0 ? urns : [''],
                 base64: base64s.length > 0 ? base64s : [''],
+                zoom: toQueryNumber(newConfig.zoom),
+                wheelZoom: toQueryNumber(newConfig.wheelZoom),
+                wheelStart: toQueryNumber(newConfig.wheelStart),
+                lockAlpha: toQueryFlag(newConfig.lockAlpha),
+                lockBeta: toQueryFlag(newConfig.lockBeta),
+                lockRadius: toQueryFlag(newConfig.lockRadius),
+                // Defaults on, so only an explicit off has to travel
+                panning: newConfig.panning ? '' : 'false',
+                disableAutoRotate: toQueryFlag(newConfig.disableAutoRotate),
+                autoRotateSpeed: toQueryNumber(newConfig.autoRotateSpeed),
+                offsetX: toQueryNumber(newConfig.offsetX),
+                offsetY: toQueryNumber(newConfig.offsetY),
+                showThumbnailBoundaries: toQueryFlag(newConfig.showThumbnailBoundaries),
               }
               // Only ever set, never cleared: a hideControls the page put in the URL itself stays.
               if (inferHideControls(options)) {

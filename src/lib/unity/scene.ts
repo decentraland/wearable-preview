@@ -7,6 +7,7 @@ enum UnityMessage {
   TAKE_SCREENSHOT = 'TakeScreenshot',
   SET_ZOOM = 'SetZoom',
   SET_OFFSET = 'SetOffset',
+  SET_CAMERA_POSITION = 'SetCameraPosition',
   GET_METRICS = 'GetMetrics',
 }
 
@@ -80,7 +81,7 @@ export function createSceneController(instance: UnityInstance): ISceneController
       const alpha = position.alpha ?? 0
       const beta = position.beta ?? 0
       const radius = position.radius ?? 0
-      instance.SendMessage('JSBridge', 'SetCameraPosition', `${alpha},${beta},${radius}`)
+      instance.SendMessage('JSBridge', UnityMessage.SET_CAMERA_POSITION, `${alpha},${beta},${radius}`)
     },
     setUsername: async (username: string) => {
       if (!instance) return

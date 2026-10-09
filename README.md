@@ -140,6 +140,8 @@ Configure the preview via URL query parameters:
 | `lockBeta`       | If `true`, locks the beta rotation (vertical rotation)                                                                       |
 | `lockRadius`     | If `true`, locks the radius (zoom distance)                                                                                  |
 
+With the Unity renderer, `zoom`, `wheelZoom`, `wheelStart`, `camera`, `offsetX/Y`, `panning` and the three locks are forwarded by name and scaled the same way, and a later update of any of them applies to the live view without a reload. `zoomScale`, `cameraX/Y/Z` and `wheelPrecision` are Babylon-only.
+
 #### Display Options
 
 | Parameter                 | Description                                                                           |

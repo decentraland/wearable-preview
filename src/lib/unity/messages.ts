@@ -22,6 +22,20 @@ export enum UnityMethod {
   SET_DISABLE_LOADER = 'SetDisableLoader',
   SET_TYPE = 'SetType',
 
+  // Camera options, applied to the live view
+  SET_ZOOM_LEVEL = 'SetZoomLevel',
+  SET_WHEEL_ZOOM = 'SetWheelZoom',
+  SET_WHEEL_START = 'SetWheelStart',
+  SET_CAMERA = 'SetCamera',
+  SET_LOCK_ALPHA = 'SetLockAlpha',
+  SET_LOCK_BETA = 'SetLockBeta',
+  SET_LOCK_RADIUS = 'SetLockRadius',
+  SET_PANNING = 'SetPanning',
+  SET_DISABLE_AUTO_ROTATE = 'SetDisableAutoRotate',
+  SET_AUTO_ROTATE_SPEED = 'SetAutoRotateSpeed',
+  SET_OFFSET = 'SetOffset',
+  SET_SHOW_THUMBNAIL_BOUNDARIES = 'SetShowThumbnailBoundaries',
+
   // Control methods
   RELOAD = 'Reload',
   CLEANUP = 'Cleanup',
@@ -53,7 +67,38 @@ const PROPERTY_METHOD_MAP: Record<string, UnityMethod> = {
   tokenId: UnityMethod.SET_TOKEN_ID,
   disableLoader: UnityMethod.SET_DISABLE_LOADER,
   type: UnityMethod.SET_TYPE,
+  zoom: UnityMethod.SET_ZOOM_LEVEL,
+  wheelZoom: UnityMethod.SET_WHEEL_ZOOM,
+  wheelStart: UnityMethod.SET_WHEEL_START,
+  camera: UnityMethod.SET_CAMERA,
+  lockAlpha: UnityMethod.SET_LOCK_ALPHA,
+  lockBeta: UnityMethod.SET_LOCK_BETA,
+  lockRadius: UnityMethod.SET_LOCK_RADIUS,
+  panning: UnityMethod.SET_PANNING,
+  disableAutoRotate: UnityMethod.SET_DISABLE_AUTO_ROTATE,
+  autoRotateSpeed: UnityMethod.SET_AUTO_ROTATE_SPEED,
+  showThumbnailBoundaries: UnityMethod.SET_SHOW_THUMBNAIL_BOUNDARIES,
 }
+
+// Babylon's offset is one camera target, so the three axes travel as one message.
+const OFFSET_PROPERTIES = ['offsetX', 'offsetY', 'offsetZ']
+
+// Methods the renderer applies to the live view, so on their own they never warrant a Reload.
+const LIVE_METHODS = new Set<UnityMethod>([
+  UnityMethod.SET_HIDE_CONTROLS,
+  UnityMethod.SET_ZOOM_LEVEL,
+  UnityMethod.SET_WHEEL_ZOOM,
+  UnityMethod.SET_WHEEL_START,
+  UnityMethod.SET_CAMERA,
+  UnityMethod.SET_LOCK_ALPHA,
+  UnityMethod.SET_LOCK_BETA,
+  UnityMethod.SET_LOCK_RADIUS,
+  UnityMethod.SET_PANNING,
+  UnityMethod.SET_DISABLE_AUTO_ROTATE,
+  UnityMethod.SET_AUTO_ROTATE_SPEED,
+  UnityMethod.SET_OFFSET,
+  UnityMethod.SET_SHOW_THUMBNAIL_BOUNDARIES,
+])
 
 // Individual method handlers for specific value transformations
 const VALUE_TRANSFORMERS: Record<string, (value: any) => string> = {
@@ -74,6 +119,17 @@ const VALUE_TRANSFORMERS: Record<string, (value: any) => string> = {
   tokenId: (value) => String(value),
   disableLoader: (value) => String(value),
   type: (value) => String(value),
+  zoom: (value) => String(value),
+  wheelZoom: (value) => String(value),
+  wheelStart: (value) => String(value),
+  camera: (value) => String(value),
+  lockAlpha: (value) => String(value),
+  lockBeta: (value) => String(value),
+  lockRadius: (value) => String(value),
+  panning: (value) => String(value),
+  disableAutoRotate: (value) => String(value),
+  autoRotateSpeed: (value) => String(value),
+  showThumbnailBoundaries: (value) => String(value),
 }
 
 export const sendUnityMessage = (unityInstance: any, method: UnityMethod | string, value?: any) => {
@@ -114,35 +170,41 @@ export const sendIndividualOverrideMessages = (
     return
   }
 
-  let messagesSent = 0
+  let reloadNeeded = false
 
   // Handle base64s specially - clear existing ones first
   if (overrides.base64s !== undefined && overrideSources.base64s) {
     sendUnityMessage(unityInstance, UnityMethod.CLEAR_BASE64)
-    messagesSent++
+    reloadNeeded = true
 
     if (Array.isArray(overrides.base64s) && overrides.base64s.length > 0) {
       overrides.base64s.forEach((base64) => {
         sendUnityMessage(unityInstance, UnityMethod.ADD_BASE64, base64)
-        messagesSent++
       })
     }
   }
 
+  const isOverridden = (key: string) => overrideSources[key] && overrides[key] !== undefined
+
+  if (OFFSET_PROPERTIES.some(isOverridden)) {
+    const offset = OFFSET_PROPERTIES.map((key) => Number(overrides[key]) || 0).join(',')
+    sendUnityMessage(unityInstance, UnityMethod.SET_OFFSET, offset)
+  }
+
   // Handle all other properties
   Object.entries(overrides).forEach(([key, value]) => {
-    // Skip base64s as they were handled separately
-    if (key === 'base64s') return
+    // Skip the ones handled above
+    if (key === 'base64s' || OFFSET_PROPERTIES.includes(key)) return
 
     // Only send if this property has an override source and the value is defined
-    if (overrideSources[key] && value !== undefined) {
+    if (isOverridden(key)) {
       const unityMethod = PROPERTY_METHOD_MAP[key]
 
       if (unityMethod) {
         const transformer = VALUE_TRANSFORMERS[key]
         const transformedValue = transformer ? transformer(value) : String(value)
         sendUnityMessage(unityInstance, unityMethod, transformedValue)
-        messagesSent++
+        if (!LIVE_METHODS.has(unityMethod)) reloadNeeded = true
       } else {
         console.warn(`No Unity method mapping found for property: ${key}`)
         captureMessage(`No Unity method mapping found for property: ${key}`, { property: key, value })
@@ -154,11 +216,10 @@ export const sendIndividualOverrideMessages = (
   // of its way, the same as a mount that passed them in the URL (see controls.ts).
   if (inferHideControls(overrides)) {
     sendUnityMessage(unityInstance, UnityMethod.SET_HIDE_CONTROLS, 'true')
-    messagesSent++
   }
 
-  // Send Reload after all property messages have been sent
-  if (messagesSent > 0) {
+  // Send Reload after all property messages have been sent, unless everything applied to the live view
+  if (reloadNeeded) {
     sendUnityMessage(unityInstance, UnityMethod.RELOAD)
   }
 }
