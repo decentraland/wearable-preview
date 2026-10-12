@@ -9,6 +9,8 @@ import {
   EmoteDefinition,
   PreviewType,
   PreviewUnityMode,
+  Rarity,
+  isStandard,
 } from '@dcl/schemas'
 import { SocialEmoteAnimation } from '@dcl/schemas/dist/dapps/preview/social-emote-animation'
 import { config } from '../config'
@@ -20,6 +22,10 @@ import { isTexture } from '../lib/representation'
 import { getWearableRepresentationOrDefault } from '../lib/representation'
 import { getRandomDefaultProfile } from '../lib/profile'
 import { inferHideControls } from '../lib/unity/controls'
+import { isEmote } from '../lib/emote'
+
+// The renderer's emote value that plays none
+const NO_EMOTE = 'none'
 
 export interface UnityPreviewConfig {
   background: Background
@@ -39,8 +45,13 @@ export interface UnityPreviewConfig {
   skinColor: string | null
   token: string | null
   urn: string[] | null
+  urls: string[] | null
   itemDefinition: WearableDefinition | EmoteDefinition | null
   socialEmote: SocialEmoteAnimation | null
+  disableFace: boolean
+  disableDefaultWearables: boolean
+  peerUrl: string | null
+  marketplaceServerUrl: string | null
   // The camera options Babylon takes, forwarded by name; the renderer scales them the same way.
   camera: PreviewCamera
   zoom: number | null
@@ -78,7 +89,12 @@ type QueryParams = {
   type: string
   urn: string[]
   base64: string[]
+  url: string[]
   hideControls: string
+  disableFace: string
+  disableDefaultWearables: string
+  peerUrl: string
+  marketplaceServerUrl: string
   zoom: string
   wheelZoom: string
   wheelStart: string
@@ -235,6 +251,11 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
               type = PreviewType.TEXTURE
             }
           }
+
+          // A published item sits on its rarity colour unless the page chose one, as in lib/config.ts
+          if (item && isStandard(item) && !options.background) {
+            background = { ...background, color: Rarity.getColor(item.rarity) }
+          }
         }
 
         // Get colors
@@ -242,8 +263,22 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
         const hair = toColorOverride(options.hair)
         const skin = toColorOverride(options.skin)
 
-        // Get camera settings
-        const mode = options.unityMode || null
+        // A mount that names no mode is a Babylon one. Marketplace is the mode whose loading rules
+        // match Babylon's: the profile dresses the avatar and a lone item can be shown on its own.
+        const mode = options.unityMode || PreviewUnityMode.MARKETPLACE
+
+        // Babylon shows a lone item on its own, and anything with a profile, several items or an
+        // emote on the avatar. A mount that names no mode gets that rule for its view too; one that
+        // does keeps the renderer's own fallback to the view the user last picked.
+        const babylonType =
+          (options.urns?.length ?? 0) > 0 ||
+          (options.urls?.length ?? 0) > 0 ||
+          (options.base64s?.length ?? 0) > 0 ||
+          (item && isEmote(item)) ||
+          options.profile
+            ? PreviewType.AVATAR
+            : PreviewType.WEARABLE
+        const forwardedType = requestedType || (options.unityMode ? null : babylonType)
         const camera =
           options.camera && Object.values(PreviewCamera).includes(options.camera as PreviewCamera)
             ? (options.camera as PreviewCamera)
@@ -254,8 +289,8 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
             : PreviewProjection.PERSPECTIVE
 
         // Handle emote
-        const emote = options.disableDefaultEmotes
-          ? null
+        const emote: string = options.disableDefaultEmotes
+          ? NO_EMOTE
           : options.emote && Object.values(PreviewEmote).includes(options.emote as PreviewEmote)
             ? (options.emote as PreviewEmote)
             : PreviewEmote.IDLE
@@ -269,7 +304,7 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
           base64: options.base64s?.[0] || null,
           contract: options.contractAddress || null,
           disableLoader: options.disableLoader || false,
-          emote: emote?.toString() || null,
+          emote,
           eyeColor: eyes,
           hairColor: hair,
           item: options.itemId || null,
@@ -277,9 +312,14 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
           skinColor: skin,
           token: options.tokenId || null,
           urn: options.urns || null,
+          urls: options.urls || null,
           showAnimationReference: null,
           itemDefinition: item,
           socialEmote: options.socialEmote || null,
+          disableFace: !!options.disableFace,
+          disableDefaultWearables: !!options.disableDefaultWearables,
+          peerUrl: options.peerUrl || null,
+          marketplaceServerUrl: options.marketplaceServerUrl || options.nftServerUrl || null,
           camera,
           zoom: toNumberOption(options.zoom),
           wheelZoom: toNumberOption(options.wheelZoom),
@@ -305,6 +345,7 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
           // Only update query parameters if no overrides are present
           if (Object.keys(overrideSources).length === 0) {
             const urns = toQueryArray(options.urns)
+            const urls = toQueryArray(options.urls)
             const base64s = toQueryArray(options.base64s)
 
             // For configurator mode, only add mode parameter
@@ -325,14 +366,18 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
                 mode: toQueryValue(mode || ''),
                 camera,
                 projection,
-                emote: toQueryValue(emote?.toString() || ''),
+                emote,
                 // Unity reads its config from this URL, so the requested view has to travel here to
-                // reach it. We forward the caller's request and not the resolved `type`: an empty
-                // value means "no preference", which is what lets the renderer fall back to the
-                // view the user last picked.
-                type: toQueryValue(requestedType),
+                // reach it. An empty value means "no preference", which is what lets the renderer
+                // fall back to the view the user last picked.
+                type: toQueryValue(forwardedType),
                 urn: urns.length > 0 ? urns : [''],
+                url: urls.length > 0 ? urls : [''],
                 base64: base64s.length > 0 ? base64s : [''],
+                disableFace: toQueryFlag(newConfig.disableFace),
+                disableDefaultWearables: toQueryFlag(newConfig.disableDefaultWearables),
+                peerUrl: toQueryValue(newConfig.peerUrl),
+                marketplaceServerUrl: toQueryValue(newConfig.marketplaceServerUrl),
                 zoom: toQueryNumber(newConfig.zoom),
                 wheelZoom: toQueryNumber(newConfig.wheelZoom),
                 wheelStart: toQueryNumber(newConfig.wheelStart),

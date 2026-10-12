@@ -106,6 +106,8 @@ Configure the preview via URL query parameters:
 | `url`      | A URL of a wearable or emote to load. Must return a valid [`WearableDefinition`](https://github.com/decentraland/common-schemas/blob/main/src/dapps/preview/wearable-definition.ts) or [`EmoteDefinition`](https://github.com/decentraland/common-schemas/blob/main/src/dapps/preview/emote-definition.ts). Can be used multiple times               |
 | `base64`   | A wearable or emote encoded in base64. Once parsed it should be a valid [`WearableDefinition`](https://github.com/decentraland/common-schemas/blob/main/src/dapps/preview/wearable-definition.ts) or [`EmoteDefinition`](https://github.com/decentraland/common-schemas/blob/main/src/dapps/preview/emote-definition.ts). Can be used multiple times |
 
+With the Unity renderer, a mount that passes no `unityMode` runs in `marketplace` mode, whose loading rules match Babylon's, and the view (the item on its own, or worn by the avatar) is resolved as Babylon does unless `type` is passed. `url`, `disableFace`, `disableDefaultWearables`, `peerUrl` and `marketplaceServerUrl` are forwarded by name; `disableDefaultEmotes` becomes the renderer's `emote=none`, where the avatar idles instead of holding the bind pose. `disableAutoCenter` is Babylon-only.
+
 #### Avatar Customization
 
 | Parameter   | Description                                                                                                                         |

@@ -21,6 +21,12 @@ export enum UnityMethod {
   SET_TOKEN_ID = 'SetTokenID',
   SET_DISABLE_LOADER = 'SetDisableLoader',
   SET_TYPE = 'SetType',
+  ADD_URL = 'AddUrl',
+  CLEAR_URLS = 'ClearUrls',
+  SET_DISABLE_FACE = 'SetDisableFace',
+  SET_DISABLE_DEFAULT_WEARABLES = 'SetDisableDefaultWearables',
+  SET_PEER_URL = 'SetPeerUrl',
+  SET_MARKETPLACE_SERVER_URL = 'SetMarketplaceServerUrl',
 
   // Camera options, applied to the live view
   SET_ZOOM_LEVEL = 'SetZoomLevel',
@@ -67,6 +73,11 @@ const PROPERTY_METHOD_MAP: Record<string, UnityMethod> = {
   tokenId: UnityMethod.SET_TOKEN_ID,
   disableLoader: UnityMethod.SET_DISABLE_LOADER,
   type: UnityMethod.SET_TYPE,
+  disableFace: UnityMethod.SET_DISABLE_FACE,
+  disableDefaultWearables: UnityMethod.SET_DISABLE_DEFAULT_WEARABLES,
+  peerUrl: UnityMethod.SET_PEER_URL,
+  marketplaceServerUrl: UnityMethod.SET_MARKETPLACE_SERVER_URL,
+  nftServerUrl: UnityMethod.SET_MARKETPLACE_SERVER_URL,
   zoom: UnityMethod.SET_ZOOM_LEVEL,
   wheelZoom: UnityMethod.SET_WHEEL_ZOOM,
   wheelStart: UnityMethod.SET_WHEEL_START,
@@ -83,9 +94,21 @@ const PROPERTY_METHOD_MAP: Record<string, UnityMethod> = {
 // Babylon's offset is one camera target, so the three axes travel as one message.
 const OFFSET_PROPERTIES = ['offsetX', 'offsetY', 'offsetZ']
 
+// Properties that travel as a message of their own rather than through the map above.
+const SPECIAL_PROPERTIES = ['base64s', 'urls', 'background', 'disableBackground', 'disableDefaultEmotes']
+
+// The renderer's background values for "transparent" and for the wrapper's default grey.
+const TRANSPARENT_BACKGROUND = '00000000'
+const DEFAULT_BACKGROUND = '4b4852'
+
+// The renderer's emote values for "none" and for its default.
+const NO_EMOTE = 'none'
+const DEFAULT_EMOTE = 'idle'
+
 // Methods the renderer applies to the live view, so on their own they never warrant a Reload.
 const LIVE_METHODS = new Set<UnityMethod>([
   UnityMethod.SET_HIDE_CONTROLS,
+  UnityMethod.SET_BACKGROUND,
   UnityMethod.SET_ZOOM_LEVEL,
   UnityMethod.SET_WHEEL_ZOOM,
   UnityMethod.SET_WHEEL_START,
@@ -119,6 +142,11 @@ const VALUE_TRANSFORMERS: Record<string, (value: any) => string> = {
   tokenId: (value) => String(value),
   disableLoader: (value) => String(value),
   type: (value) => String(value),
+  disableFace: (value) => String(value),
+  disableDefaultWearables: (value) => String(value),
+  peerUrl: (value) => String(value),
+  marketplaceServerUrl: (value) => String(value),
+  nftServerUrl: (value) => String(value),
   zoom: (value) => String(value),
   wheelZoom: (value) => String(value),
   wheelStart: (value) => String(value),
@@ -186,15 +214,44 @@ export const sendIndividualOverrideMessages = (
 
   const isOverridden = (key: string) => overrideSources[key] && overrides[key] !== undefined
 
+  // Same shape as base64s: a definition the page hosts, loaded like one it encoded
+  if (isOverridden('urls')) {
+    sendUnityMessage(unityInstance, UnityMethod.CLEAR_URLS)
+    reloadNeeded = true
+
+    if (Array.isArray(overrides.urls)) {
+      overrides.urls.forEach((url) => {
+        sendUnityMessage(unityInstance, UnityMethod.ADD_URL, url)
+      })
+    }
+  }
+
   if (OFFSET_PROPERTIES.some(isOverridden)) {
     const offset = OFFSET_PROPERTIES.map((key) => Number(overrides[key]) || 0).join(',')
     sendUnityMessage(unityInstance, UnityMethod.SET_OFFSET, offset)
   }
 
+  // Transparency wins over a colour, as in the Babylon config; a lone "not transparent" says nothing
+  // about which colour to go back to, so only a colour or a transparent request travels
+  if (overrides.disableBackground === true || isOverridden('background')) {
+    const color = typeof overrides.background === 'string' ? overrides.background.replace('#', '') : DEFAULT_BACKGROUND
+    sendUnityMessage(
+      unityInstance,
+      UnityMethod.SET_BACKGROUND,
+      overrides.disableBackground === true ? TRANSPARENT_BACKGROUND : color,
+    )
+  }
+
+  // Babylon's "no default emote" is the renderer's emote `none`; an emote named alongside it wins
+  if (isOverridden('disableDefaultEmotes') && !isOverridden('emote')) {
+    sendUnityMessage(unityInstance, UnityMethod.SET_EMOTE, overrides.disableDefaultEmotes ? NO_EMOTE : DEFAULT_EMOTE)
+    reloadNeeded = true
+  }
+
   // Handle all other properties
   Object.entries(overrides).forEach(([key, value]) => {
     // Skip the ones handled above
-    if (key === 'base64s' || OFFSET_PROPERTIES.includes(key)) return
+    if (SPECIAL_PROPERTIES.includes(key) || OFFSET_PROPERTIES.includes(key)) return
 
     // Only send if this property has an override source and the value is defined
     if (isOverridden(key)) {

@@ -60,6 +60,54 @@ describe('sendIndividualOverrideMessages', () => {
     expect(sent).toEqual([['SetEmote', 'dance'], ['SetWheelStart', '100'], ['Reload']])
   })
 
+  it('sends hosted definitions like encoded ones and reloads', () => {
+    const { instance, sent } = fakeInstance()
+
+    sendIndividualOverrideMessages(instance, { urls: ['https://example.com/a.json'] }, sources(['urls']))
+
+    expect(sent).toEqual([['ClearUrls'], ['AddUrl', 'https://example.com/a.json'], ['Reload']])
+  })
+
+  it('maps a transparent background to the live background setter', () => {
+    const { instance, sent } = fakeInstance()
+
+    sendIndividualOverrideMessages(
+      instance,
+      { background: '#ff0000', disableBackground: true },
+      sources(['background', 'disableBackground']),
+    )
+
+    expect(sent).toEqual([['SetBackground', '00000000']])
+  })
+
+  it('sends a background colour without a reload', () => {
+    const { instance, sent } = fakeInstance()
+
+    sendIndividualOverrideMessages(instance, { background: '#ff0000' }, sources(['background']))
+
+    expect(sent).toEqual([['SetBackground', 'ff0000']])
+  })
+
+  it('maps no default emote to the emote none', () => {
+    const { instance, sent } = fakeInstance()
+
+    sendIndividualOverrideMessages(instance, { disableDefaultEmotes: true }, sources(['disableDefaultEmotes']))
+
+    expect(sent).toEqual([['SetEmote', 'none'], ['Reload']])
+  })
+
+  it('lets a named emote win over no default emote', () => {
+    const { instance, sent } = fakeInstance()
+
+    sendIndividualOverrideMessages(
+      instance,
+      { disableDefaultEmotes: true, emote: 'dance' },
+      sources(['disableDefaultEmotes', 'emote']),
+    )
+
+    expect(sent).toEqual([['SetEmote', 'dance'], ['Reload']])
+  })
+
   it('ignores properties without an override source', () => {
     const { instance, sent } = fakeInstance()
 
