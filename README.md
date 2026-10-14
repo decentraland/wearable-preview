@@ -106,6 +106,8 @@ Configure the preview via URL query parameters:
 | `url`      | A URL of a wearable or emote to load. Must return a valid [`WearableDefinition`](https://github.com/decentraland/common-schemas/blob/main/src/dapps/preview/wearable-definition.ts) or [`EmoteDefinition`](https://github.com/decentraland/common-schemas/blob/main/src/dapps/preview/emote-definition.ts). Can be used multiple times               |
 | `base64`   | A wearable or emote encoded in base64. Once parsed it should be a valid [`WearableDefinition`](https://github.com/decentraland/common-schemas/blob/main/src/dapps/preview/wearable-definition.ts) or [`EmoteDefinition`](https://github.com/decentraland/common-schemas/blob/main/src/dapps/preview/emote-definition.ts). Can be used multiple times |
 
+With the Unity renderer, a mount that passes no `unityMode` runs in `marketplace` mode, whose loading rules match Babylon's, and the view (the item on its own, or worn by the avatar) is resolved as Babylon does unless `type` is passed. `url`, `disableFace`, `disableDefaultWearables`, `peerUrl` and `marketplaceServerUrl` are forwarded by name; `disableDefaultEmotes` becomes the renderer's `emote=none`, where the avatar idles instead of holding the bind pose. `disableAutoCenter` is Babylon-only.
+
 #### Avatar Customization
 
 | Parameter   | Description                                                                                                                         |
@@ -140,6 +142,8 @@ Configure the preview via URL query parameters:
 | `lockBeta`       | If `true`, locks the beta rotation (vertical rotation)                                                                       |
 | `lockRadius`     | If `true`, locks the radius (zoom distance)                                                                                  |
 
+With the Unity renderer, `zoom`, `wheelZoom`, `wheelStart`, `camera`, `offsetX/Y`, `panning` and the three locks are forwarded by name and scaled the same way, and a later update of any of them applies to the live view without a reload. `zoomScale`, `cameraX/Y/Z` and `wheelPrecision` are Babylon-only.
+
 #### Display Options
 
 | Parameter                 | Description                                                                           |
@@ -154,6 +158,7 @@ Configure the preview via URL query parameters:
 | `disableDefaultEmotes`    | If `true` and `emote` is not passed, will not load the default IDLE emote             |
 | `showSceneBoundaries`     | If `true`, shows a cylinder representing the recommended scene boundaries             |
 | `showThumbnailBoundaries` | If `true`, shows a square representing the thumbnail boundaries                       |
+| `hideControls`            | If `true`, hides the in-canvas controls of the Unity renderer (view switcher, emote and sound buttons). Set on its own when `zoom`, `wheelZoom`, `showThumbnailBoundaries` or `camera=static` is passed. Babylon draws no controls |
 
 #### Configuration
 
@@ -240,7 +245,7 @@ To use the controller you can send `controller_request` messages and the respons
 The available methods are:
 
 - namespace: `scene`
-  - method: `getScreenshot` params: `[width: number, height: number]` result: `string`
+  - method: `getScreenshot` params: `[width: number, height: number]` result: `string` (a PNG data URL; with the Unity renderer it is the live framing captured at that size, controls excluded, transparent when `disableBackground` is set, and the request fails while the preview is still loading)
   - method: `getMetrics` params: `[]` result: `Metrics`
 - namespace: `emote`
   - method: `play` params: `[]` result: `void`

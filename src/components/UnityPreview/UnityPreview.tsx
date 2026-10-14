@@ -379,8 +379,16 @@ const UnityPreview: React.FC = () => {
         'is-loaded': renderingState.isLoaded,
         'is-3d': previewState.is3D,
         'has-error': !!computedValues.error,
+        // The fade in is this page's CSS transition, so the option is applied here, as in Preview.tsx.
+        'no-fade-effect': !!options.disableFadeEffect,
       }),
-    [computedValues.isLoading, renderingState.isLoaded, previewState.is3D, computedValues.error],
+    [
+      computedValues.isLoading,
+      renderingState.isLoaded,
+      previewState.is3D,
+      computedValues.error,
+      options.disableFadeEffect,
+    ],
   )
 
   const thumbnailClassName = useMemo(
