@@ -44,6 +44,43 @@ describe('sendIndividualOverrideMessages', () => {
     ])
   })
 
+  it('shows the scene boundaries and tunes the wheel on the live view', () => {
+    const { instance, sent } = fakeInstance()
+
+    sendIndividualOverrideMessages(
+      instance,
+      { showSceneBoundaries: true, wheelPrecision: 50, zoomScale: 2 },
+      sources(['showSceneBoundaries', 'wheelPrecision', 'zoomScale']),
+    )
+
+    expect(sent).toEqual([
+      ['SetShowSceneBoundaries', 'true'],
+      ['SetWheelPrecision', '50'],
+      ['SetZoomScale', '2'],
+    ])
+  })
+
+  it('sends the social emote animation as JSON and reloads', () => {
+    const { instance, sent } = fakeInstance()
+    const socialEmote = { title: 'Hug', loop: false, Armature: { animation: 'Hug_Avatar' } }
+
+    sendIndividualOverrideMessages(instance, { socialEmote }, sources(['socialEmote']))
+
+    expect(sent).toEqual([['SetSocialEmote', JSON.stringify(socialEmote)], ['Reload']])
+  })
+
+  it('reloads for the starting camera', () => {
+    const { instance, sent } = fakeInstance()
+
+    sendIndividualOverrideMessages(
+      instance,
+      { cameraX: 2, disableAutoCenter: true },
+      sources(['cameraX', 'disableAutoCenter']),
+    )
+
+    expect(sent).toEqual([['SetCameraX', '2'], ['SetDisableAutoCenter', 'true'], ['Reload']])
+  })
+
   it('sends the three offsets as one message', () => {
     const { instance, sent } = fakeInstance()
 

@@ -41,6 +41,16 @@ export enum UnityMethod {
   SET_AUTO_ROTATE_SPEED = 'SetAutoRotateSpeed',
   SET_OFFSET = 'SetOffset',
   SET_SHOW_THUMBNAIL_BOUNDARIES = 'SetShowThumbnailBoundaries',
+  SET_SHOW_SCENE_BOUNDARIES = 'SetShowSceneBoundaries',
+  SET_WHEEL_PRECISION = 'SetWheelPrecision',
+  SET_ZOOM_SCALE = 'SetZoomScale',
+
+  // Camera and emote options the renderer applies on the next Reload
+  SET_CAMERA_X = 'SetCameraX',
+  SET_CAMERA_Y = 'SetCameraY',
+  SET_CAMERA_Z = 'SetCameraZ',
+  SET_DISABLE_AUTO_CENTER = 'SetDisableAutoCenter',
+  SET_SOCIAL_EMOTE = 'SetSocialEmote',
 
   // Control methods
   RELOAD = 'Reload',
@@ -89,6 +99,14 @@ const PROPERTY_METHOD_MAP: Record<string, UnityMethod> = {
   disableAutoRotate: UnityMethod.SET_DISABLE_AUTO_ROTATE,
   autoRotateSpeed: UnityMethod.SET_AUTO_ROTATE_SPEED,
   showThumbnailBoundaries: UnityMethod.SET_SHOW_THUMBNAIL_BOUNDARIES,
+  showSceneBoundaries: UnityMethod.SET_SHOW_SCENE_BOUNDARIES,
+  wheelPrecision: UnityMethod.SET_WHEEL_PRECISION,
+  zoomScale: UnityMethod.SET_ZOOM_SCALE,
+  cameraX: UnityMethod.SET_CAMERA_X,
+  cameraY: UnityMethod.SET_CAMERA_Y,
+  cameraZ: UnityMethod.SET_CAMERA_Z,
+  disableAutoCenter: UnityMethod.SET_DISABLE_AUTO_CENTER,
+  socialEmote: UnityMethod.SET_SOCIAL_EMOTE,
 }
 
 // Babylon's offset is one camera target, so the three axes travel as one message.
@@ -121,6 +139,9 @@ const LIVE_METHODS = new Set<UnityMethod>([
   UnityMethod.SET_AUTO_ROTATE_SPEED,
   UnityMethod.SET_OFFSET,
   UnityMethod.SET_SHOW_THUMBNAIL_BOUNDARIES,
+  UnityMethod.SET_SHOW_SCENE_BOUNDARIES,
+  UnityMethod.SET_WHEEL_PRECISION,
+  UnityMethod.SET_ZOOM_SCALE,
 ])
 
 // Individual method handlers for specific value transformations
@@ -158,6 +179,15 @@ const VALUE_TRANSFORMERS: Record<string, (value: any) => string> = {
   disableAutoRotate: (value) => String(value),
   autoRotateSpeed: (value) => String(value),
   showThumbnailBoundaries: (value) => String(value),
+  showSceneBoundaries: (value) => String(value),
+  wheelPrecision: (value) => String(value),
+  zoomScale: (value) => String(value),
+  cameraX: (value) => String(value),
+  cameraY: (value) => String(value),
+  cameraZ: (value) => String(value),
+  disableAutoCenter: (value) => String(value),
+  // The renderer reads the SocialEmoteAnimation as JSON; an empty value goes back to a random outcome
+  socialEmote: (value) => (value ? JSON.stringify(value) : ''),
 }
 
 export const sendUnityMessage = (unityInstance: any, method: UnityMethod | string, value?: any) => {

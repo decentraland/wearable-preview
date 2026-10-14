@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, MutableRefObject } from 'react'
 
 import {
   PreviewCamera,
@@ -22,7 +22,7 @@ import { isTexture } from '../lib/representation'
 import { getWearableRepresentationOrDefault } from '../lib/representation'
 import { getRandomDefaultProfile } from '../lib/profile'
 import { inferHideControls } from '../lib/unity/controls'
-import { isEmote } from '../lib/emote'
+import { getRandomSocialEmoteAnimation, isEmote } from '../lib/emote'
 
 // The renderer's emote value that plays none
 const NO_EMOTE = 'none'
@@ -65,7 +65,15 @@ export interface UnityPreviewConfig {
   autoRotateSpeed: number | null
   offsetX: number | null
   offsetY: number | null
+  offsetZ: number | null
+  cameraX: number | null
+  cameraY: number | null
+  cameraZ: number | null
+  wheelPrecision: number | null
+  zoomScale: number | null
+  disableAutoCenter: boolean
   showThumbnailBoundaries: boolean
+  showSceneBoundaries: boolean
 }
 
 interface Background {
@@ -106,7 +114,16 @@ type QueryParams = {
   autoRotateSpeed: string
   offsetX: string
   offsetY: string
+  offsetZ: string
+  cameraX: string
+  cameraY: string
+  cameraZ: string
+  wheelPrecision: string
+  zoomScale: string
+  disableAutoCenter: string
   showThumbnailBoundaries: string
+  showSceneBoundaries: string
+  socialEmote: string
 }
 
 // Only these two express a view the renderer can be pinned to: the item on its own or the item
@@ -139,6 +156,18 @@ const toQueryNumber = (value: number | null): string => (value === null ? '' : S
 // Convert a flag to its query value: only a set flag travels, the renderer defaults the rest
 const toQueryFlag = (value: boolean): string => (value ? 'true' : '')
 
+// One of a social emote's outcomes at random, picked once per item and kept in `pick`
+const pickSocialEmote = (
+  pick: MutableRefObject<{ id: string; animation: SocialEmoteAnimation | null } | null>,
+  item: WearableDefinition | EmoteDefinition | null,
+): SocialEmoteAnimation | null => {
+  if (!item || !isEmote(item)) return null
+  if (pick.current?.id !== item.id) {
+    pick.current = { id: item.id, animation: getRandomSocialEmoteAnimation(item as EmoteDefinition) }
+  }
+  return pick.current.animation
+}
+
 // Convert color value to hex string without #
 const toQueryColor = (value: string): string => value.replace('#', '')
 
@@ -170,6 +199,9 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const previousConfigRef = useRef<UnityPreviewConfig | null>(null)
+  // The outcome picked at random for a social emote, kept per item so an unrelated option change
+  // does not switch it.
+  const socialEmotePickRef = useRef<{ id: string; animation: SocialEmoteAnimation | null } | null>(null)
   const previousOptionsRef = useRef(options)
   const isFirstMount = useRef(true)
 
@@ -315,7 +347,9 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
           urls: options.urls || null,
           showAnimationReference: null,
           itemDefinition: item,
-          socialEmote: options.socialEmote || null,
+          // The page's choice, or one of a social emote's outcomes at random, as lib/config.ts picks
+          // it. Picked here rather than by the renderer, so the emote controller reports the one playing.
+          socialEmote: options.socialEmote || pickSocialEmote(socialEmotePickRef, item),
           disableFace: !!options.disableFace,
           disableDefaultWearables: !!options.disableDefaultWearables,
           peerUrl: options.peerUrl || null,
@@ -332,7 +366,15 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
           autoRotateSpeed: toNumberOption(options.autoRotateSpeed),
           offsetX: toNumberOption(options.offsetX),
           offsetY: toNumberOption(options.offsetY),
+          offsetZ: toNumberOption(options.offsetZ),
+          cameraX: toNumberOption(options.cameraX),
+          cameraY: toNumberOption(options.cameraY),
+          cameraZ: toNumberOption(options.cameraZ),
+          wheelPrecision: toNumberOption(options.wheelPrecision),
+          zoomScale: toNumberOption(options.zoomScale),
+          disableAutoCenter: !!options.disableAutoCenter,
           showThumbnailBoundaries: !!options.showThumbnailBoundaries,
+          showSceneBoundaries: !!options.showSceneBoundaries,
         }
 
         // Only update if config has changed
@@ -390,7 +432,16 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
                 autoRotateSpeed: toQueryNumber(newConfig.autoRotateSpeed),
                 offsetX: toQueryNumber(newConfig.offsetX),
                 offsetY: toQueryNumber(newConfig.offsetY),
+                offsetZ: toQueryNumber(newConfig.offsetZ),
+                cameraX: toQueryNumber(newConfig.cameraX),
+                cameraY: toQueryNumber(newConfig.cameraY),
+                cameraZ: toQueryNumber(newConfig.cameraZ),
+                wheelPrecision: toQueryNumber(newConfig.wheelPrecision),
+                zoomScale: toQueryNumber(newConfig.zoomScale),
+                disableAutoCenter: toQueryFlag(newConfig.disableAutoCenter),
                 showThumbnailBoundaries: toQueryFlag(newConfig.showThumbnailBoundaries),
+                showSceneBoundaries: toQueryFlag(newConfig.showSceneBoundaries),
+                socialEmote: newConfig.socialEmote ? JSON.stringify(newConfig.socialEmote) : '',
               }
               // Only ever set, never cleared: a hideControls the page put in the URL itself stays.
               if (inferHideControls(options)) {
