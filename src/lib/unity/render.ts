@@ -20,27 +20,53 @@ export interface UnityInstance {
 }
 
 type RendererBuildConfig = {
+  loaderUrl: string
   dataUrl: string
   frameworkUrl: string
   codeUrl: string
   symbolUrl: string
+  streamingAssetsUrl: string
 }
 
+// TEMPORARY, DO NOT MERGE: the renderer build of decentraland/unity-explorer#10407, served by its Vercel
+// preview, until that PR merges and the vendored build under public/unity is bumped.
+const REMOTE_RENDERER_BASE_URL = 'https://unity-explorer-7r6qvqati-decentraland1.vercel.app'
+
 const COMPRESSED_RENDERER_BUILD: RendererBuildConfig = {
+  loaderUrl: '/unity/Build/avatar-preview-renderer.loader.js',
   dataUrl: '/unity/Build/avatar-preview-renderer.data.br',
   frameworkUrl: '/unity/Build/avatar-preview-renderer.framework.js.br',
   codeUrl: '/unity/Build/avatar-preview-renderer.wasm.br',
   symbolUrl: '/unity/Build/avatar-preview-renderer.symbols.json.br',
+  streamingAssetsUrl: '/emotes',
 }
 
 const UNCOMPRESSED_RENDERER_BUILD: RendererBuildConfig = {
+  loaderUrl: '/unity/Build/avatar-preview-renderer.loader.js',
   dataUrl: '/unity/Build/avatar-preview-renderer.data',
   frameworkUrl: '/unity/Build/avatar-preview-renderer.framework.js',
   codeUrl: '/unity/Build/avatar-preview-renderer.wasm',
   symbolUrl: '/unity/Build/avatar-preview-renderer.symbols.json',
+  streamingAssetsUrl: '/emotes',
+}
+
+// The Vercel preview serves the uncompressed build and no symbols file.
+function buildRemoteRendererConfig(remoteBaseUrl: string): RendererBuildConfig {
+  const base = remoteBaseUrl.replace(/\/$/, '')
+  return {
+    loaderUrl: `${base}/Build/avatar-preview-renderer.loader.js`,
+    dataUrl: `${base}/Build/avatar-preview-renderer.data`,
+    frameworkUrl: `${base}/Build/avatar-preview-renderer.framework.js`,
+    codeUrl: `${base}/Build/avatar-preview-renderer.wasm`,
+    symbolUrl: `${base}/Build/avatar-preview-renderer.symbols.json`,
+    streamingAssetsUrl: `${base}/StreamingAssets`,
+  }
 }
 
 function getRendererBuildConfig(): RendererBuildConfig {
+  // TEMPORARY, DO NOT MERGE: see REMOTE_RENDERER_BASE_URL.
+  if (REMOTE_RENDERER_BASE_URL) return buildRemoteRendererConfig(REMOTE_RENDERER_BASE_URL)
+
   if (process.env.NODE_ENV !== 'production' && import.meta.env.VITE_RENDERER_USE_UNCOMPRESSED === 'true') {
     console.log('[UNITY] Using uncompressed renderer build')
     return UNCOMPRESSED_RENDERER_BUILD
@@ -67,12 +93,12 @@ export async function render(
     watchAudioReady()
     instance = (await loadUnityInstance(
       canvas,
-      '/unity/Build/avatar-preview-renderer.loader.js',
+      buildConfig.loaderUrl,
       buildConfig.dataUrl,
       buildConfig.frameworkUrl,
       buildConfig.codeUrl,
       buildConfig.symbolUrl,
-      '/emotes',
+      buildConfig.streamingAssetsUrl,
       'Decentraland',
       'AvatarPreviewRenderer',
       '2.2.2',
