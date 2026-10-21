@@ -1,4 +1,5 @@
 import { captureException, captureMessage } from '../sentry'
+import { inferHideControls } from './controls'
 
 export enum UnityMethod {
   // Property setters
@@ -20,10 +21,43 @@ export enum UnityMethod {
   SET_TOKEN_ID = 'SetTokenID',
   SET_DISABLE_LOADER = 'SetDisableLoader',
   SET_TYPE = 'SetType',
+  ADD_URL = 'AddUrl',
+  CLEAR_URLS = 'ClearUrls',
+  SET_DISABLE_FACE = 'SetDisableFace',
+  SET_DISABLE_DEFAULT_WEARABLES = 'SetDisableDefaultWearables',
+  SET_PEER_URL = 'SetPeerUrl',
+  SET_MARKETPLACE_SERVER_URL = 'SetMarketplaceServerUrl',
+
+  // Camera options, applied to the live view
+  SET_ZOOM_LEVEL = 'SetZoomLevel',
+  SET_WHEEL_ZOOM = 'SetWheelZoom',
+  SET_WHEEL_START = 'SetWheelStart',
+  SET_CAMERA = 'SetCamera',
+  SET_LOCK_ALPHA = 'SetLockAlpha',
+  SET_LOCK_BETA = 'SetLockBeta',
+  SET_LOCK_RADIUS = 'SetLockRadius',
+  SET_PANNING = 'SetPanning',
+  SET_DISABLE_AUTO_ROTATE = 'SetDisableAutoRotate',
+  SET_AUTO_ROTATE_SPEED = 'SetAutoRotateSpeed',
+  SET_OFFSET = 'SetOffset',
+  SET_SHOW_THUMBNAIL_BOUNDARIES = 'SetShowThumbnailBoundaries',
+  SET_SHOW_SCENE_BOUNDARIES = 'SetShowSceneBoundaries',
+  SET_SHADOW = 'SetShadow',
+  SET_GLOW = 'SetGlow',
+  SET_WHEEL_PRECISION = 'SetWheelPrecision',
+  SET_ZOOM_SCALE = 'SetZoomScale',
+
+  // Camera and emote options the renderer applies on the next Reload
+  SET_CAMERA_X = 'SetCameraX',
+  SET_CAMERA_Y = 'SetCameraY',
+  SET_CAMERA_Z = 'SetCameraZ',
+  SET_DISABLE_AUTO_CENTER = 'SetDisableAutoCenter',
+  SET_SOCIAL_EMOTE = 'SetSocialEmote',
 
   // Control methods
   RELOAD = 'Reload',
   CLEANUP = 'Cleanup',
+  SET_HIDE_CONTROLS = 'SetHideControls',
 
   // Query methods
   GET_ELEMENT_BOUNDS = 'GetElementBounds',
@@ -51,7 +85,68 @@ const PROPERTY_METHOD_MAP: Record<string, UnityMethod> = {
   tokenId: UnityMethod.SET_TOKEN_ID,
   disableLoader: UnityMethod.SET_DISABLE_LOADER,
   type: UnityMethod.SET_TYPE,
+  disableFace: UnityMethod.SET_DISABLE_FACE,
+  disableDefaultWearables: UnityMethod.SET_DISABLE_DEFAULT_WEARABLES,
+  peerUrl: UnityMethod.SET_PEER_URL,
+  marketplaceServerUrl: UnityMethod.SET_MARKETPLACE_SERVER_URL,
+  nftServerUrl: UnityMethod.SET_MARKETPLACE_SERVER_URL,
+  zoom: UnityMethod.SET_ZOOM_LEVEL,
+  wheelZoom: UnityMethod.SET_WHEEL_ZOOM,
+  wheelStart: UnityMethod.SET_WHEEL_START,
+  camera: UnityMethod.SET_CAMERA,
+  lockAlpha: UnityMethod.SET_LOCK_ALPHA,
+  lockBeta: UnityMethod.SET_LOCK_BETA,
+  lockRadius: UnityMethod.SET_LOCK_RADIUS,
+  panning: UnityMethod.SET_PANNING,
+  disableAutoRotate: UnityMethod.SET_DISABLE_AUTO_ROTATE,
+  autoRotateSpeed: UnityMethod.SET_AUTO_ROTATE_SPEED,
+  showThumbnailBoundaries: UnityMethod.SET_SHOW_THUMBNAIL_BOUNDARIES,
+  showSceneBoundaries: UnityMethod.SET_SHOW_SCENE_BOUNDARIES,
+  wheelPrecision: UnityMethod.SET_WHEEL_PRECISION,
+  zoomScale: UnityMethod.SET_ZOOM_SCALE,
+  cameraX: UnityMethod.SET_CAMERA_X,
+  cameraY: UnityMethod.SET_CAMERA_Y,
+  cameraZ: UnityMethod.SET_CAMERA_Z,
+  disableAutoCenter: UnityMethod.SET_DISABLE_AUTO_CENTER,
+  socialEmote: UnityMethod.SET_SOCIAL_EMOTE,
 }
+
+// Babylon's offset is one camera target, so the three axes travel as one message.
+const OFFSET_PROPERTIES = ['offsetX', 'offsetY', 'offsetZ']
+
+// Properties that travel as a message of their own rather than through the map above.
+const SPECIAL_PROPERTIES = ['base64s', 'urls', 'background', 'disableBackground', 'disableDefaultEmotes']
+
+// The renderer's background values for "transparent" and for the wrapper's default grey.
+const TRANSPARENT_BACKGROUND = '00000000'
+const DEFAULT_BACKGROUND = '4b4852'
+
+// The renderer's emote values for "none" and for its default.
+const NO_EMOTE = 'none'
+const DEFAULT_EMOTE = 'idle'
+
+// Methods the renderer applies to the live view, so on their own they never warrant a Reload.
+const LIVE_METHODS = new Set<UnityMethod>([
+  UnityMethod.SET_HIDE_CONTROLS,
+  UnityMethod.SET_BACKGROUND,
+  UnityMethod.SET_ZOOM_LEVEL,
+  UnityMethod.SET_WHEEL_ZOOM,
+  UnityMethod.SET_WHEEL_START,
+  UnityMethod.SET_CAMERA,
+  UnityMethod.SET_LOCK_ALPHA,
+  UnityMethod.SET_LOCK_BETA,
+  UnityMethod.SET_LOCK_RADIUS,
+  UnityMethod.SET_PANNING,
+  UnityMethod.SET_DISABLE_AUTO_ROTATE,
+  UnityMethod.SET_AUTO_ROTATE_SPEED,
+  UnityMethod.SET_OFFSET,
+  UnityMethod.SET_SHOW_THUMBNAIL_BOUNDARIES,
+  UnityMethod.SET_SHOW_SCENE_BOUNDARIES,
+  UnityMethod.SET_SHADOW,
+  UnityMethod.SET_GLOW,
+  UnityMethod.SET_WHEEL_PRECISION,
+  UnityMethod.SET_ZOOM_SCALE,
+])
 
 // Individual method handlers for specific value transformations
 const VALUE_TRANSFORMERS: Record<string, (value: any) => string> = {
@@ -72,6 +167,31 @@ const VALUE_TRANSFORMERS: Record<string, (value: any) => string> = {
   tokenId: (value) => String(value),
   disableLoader: (value) => String(value),
   type: (value) => String(value),
+  disableFace: (value) => String(value),
+  disableDefaultWearables: (value) => String(value),
+  peerUrl: (value) => String(value),
+  marketplaceServerUrl: (value) => String(value),
+  nftServerUrl: (value) => String(value),
+  zoom: (value) => String(value),
+  wheelZoom: (value) => String(value),
+  wheelStart: (value) => String(value),
+  camera: (value) => String(value),
+  lockAlpha: (value) => String(value),
+  lockBeta: (value) => String(value),
+  lockRadius: (value) => String(value),
+  panning: (value) => String(value),
+  disableAutoRotate: (value) => String(value),
+  autoRotateSpeed: (value) => String(value),
+  showThumbnailBoundaries: (value) => String(value),
+  showSceneBoundaries: (value) => String(value),
+  wheelPrecision: (value) => String(value),
+  zoomScale: (value) => String(value),
+  cameraX: (value) => String(value),
+  cameraY: (value) => String(value),
+  cameraZ: (value) => String(value),
+  disableAutoCenter: (value) => String(value),
+  // The renderer reads the SocialEmoteAnimation as JSON; an empty value goes back to a random outcome
+  socialEmote: (value) => (value ? JSON.stringify(value) : ''),
 }
 
 export const sendUnityMessage = (unityInstance: any, method: UnityMethod | string, value?: any) => {
@@ -112,35 +232,78 @@ export const sendIndividualOverrideMessages = (
     return
   }
 
-  let messagesSent = 0
+  let reloadNeeded = false
 
   // Handle base64s specially - clear existing ones first
   if (overrides.base64s !== undefined && overrideSources.base64s) {
     sendUnityMessage(unityInstance, UnityMethod.CLEAR_BASE64)
-    messagesSent++
+    reloadNeeded = true
 
     if (Array.isArray(overrides.base64s) && overrides.base64s.length > 0) {
       overrides.base64s.forEach((base64) => {
         sendUnityMessage(unityInstance, UnityMethod.ADD_BASE64, base64)
-        messagesSent++
       })
     }
   }
 
+  const isOverridden = (key: string) => overrideSources[key] && overrides[key] !== undefined
+
+  // Same shape as base64s: a definition the page hosts, loaded like one it encoded
+  if (isOverridden('urls')) {
+    sendUnityMessage(unityInstance, UnityMethod.CLEAR_URLS)
+    reloadNeeded = true
+
+    if (Array.isArray(overrides.urls)) {
+      overrides.urls.forEach((url) => {
+        sendUnityMessage(unityInstance, UnityMethod.ADD_URL, url)
+      })
+    }
+  }
+
+  if (OFFSET_PROPERTIES.some(isOverridden)) {
+    const offset = OFFSET_PROPERTIES.map((key) => Number(overrides[key]) || 0).join(',')
+    sendUnityMessage(unityInstance, UnityMethod.SET_OFFSET, offset)
+  }
+
+  // Transparency wins over a colour, as in the Babylon config; a lone "not transparent" says nothing
+  // about which colour to go back to, so only a colour or a transparent request travels
+  if (overrides.disableBackground === true || isOverridden('background')) {
+    const color = typeof overrides.background === 'string' ? overrides.background.replace('#', '') : DEFAULT_BACKGROUND
+    sendUnityMessage(
+      unityInstance,
+      UnityMethod.SET_BACKGROUND,
+      overrides.disableBackground === true ? TRANSPARENT_BACKGROUND : color,
+    )
+  }
+
+  // A transparent background is a capture for a thumbnail, where the floor shadow and glow would print
+  // into it; Babylon draws neither. Any other background brings them back.
+  if (isOverridden('disableBackground')) {
+    const floor = overrides.disableBackground === true ? 'off' : 'on'
+    sendUnityMessage(unityInstance, UnityMethod.SET_SHADOW, floor)
+    sendUnityMessage(unityInstance, UnityMethod.SET_GLOW, floor)
+  }
+
+  // Babylon's "no default emote" is the renderer's emote `none`; an emote named alongside it wins
+  if (isOverridden('disableDefaultEmotes') && !isOverridden('emote')) {
+    sendUnityMessage(unityInstance, UnityMethod.SET_EMOTE, overrides.disableDefaultEmotes ? NO_EMOTE : DEFAULT_EMOTE)
+    reloadNeeded = true
+  }
+
   // Handle all other properties
   Object.entries(overrides).forEach(([key, value]) => {
-    // Skip base64s as they were handled separately
-    if (key === 'base64s') return
+    // Skip the ones handled above
+    if (SPECIAL_PROPERTIES.includes(key) || OFFSET_PROPERTIES.includes(key)) return
 
     // Only send if this property has an override source and the value is defined
-    if (overrideSources[key] && value !== undefined) {
+    if (isOverridden(key)) {
       const unityMethod = PROPERTY_METHOD_MAP[key]
 
       if (unityMethod) {
         const transformer = VALUE_TRANSFORMERS[key]
         const transformedValue = transformer ? transformer(value) : String(value)
         sendUnityMessage(unityInstance, unityMethod, transformedValue)
-        messagesSent++
+        if (!LIVE_METHODS.has(unityMethod)) reloadNeeded = true
       } else {
         console.warn(`No Unity method mapping found for property: ${key}`)
         captureMessage(`No Unity method mapping found for property: ${key}`, { property: key, value })
@@ -148,8 +311,14 @@ export const sendIndividualOverrideMessages = (
     }
   })
 
-  // Send Reload after all property messages have been sent
-  if (messagesSent > 0) {
+  // A page that starts framing the canvas through Babylon's options gets the in-canvas controls out
+  // of its way, the same as a mount that passed them in the URL (see controls.ts).
+  if (inferHideControls(overrides)) {
+    sendUnityMessage(unityInstance, UnityMethod.SET_HIDE_CONTROLS, 'true')
+  }
+
+  // Send Reload after all property messages have been sent, unless everything applied to the live view
+  if (reloadNeeded) {
     sendUnityMessage(unityInstance, UnityMethod.RELOAD)
   }
 }
