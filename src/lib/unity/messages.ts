@@ -42,6 +42,8 @@ export enum UnityMethod {
   SET_OFFSET = 'SetOffset',
   SET_SHOW_THUMBNAIL_BOUNDARIES = 'SetShowThumbnailBoundaries',
   SET_SHOW_SCENE_BOUNDARIES = 'SetShowSceneBoundaries',
+  SET_SHADOW = 'SetShadow',
+  SET_GLOW = 'SetGlow',
   SET_WHEEL_PRECISION = 'SetWheelPrecision',
   SET_ZOOM_SCALE = 'SetZoomScale',
 
@@ -140,6 +142,8 @@ const LIVE_METHODS = new Set<UnityMethod>([
   UnityMethod.SET_OFFSET,
   UnityMethod.SET_SHOW_THUMBNAIL_BOUNDARIES,
   UnityMethod.SET_SHOW_SCENE_BOUNDARIES,
+  UnityMethod.SET_SHADOW,
+  UnityMethod.SET_GLOW,
   UnityMethod.SET_WHEEL_PRECISION,
   UnityMethod.SET_ZOOM_SCALE,
 ])
@@ -270,6 +274,14 @@ export const sendIndividualOverrideMessages = (
       UnityMethod.SET_BACKGROUND,
       overrides.disableBackground === true ? TRANSPARENT_BACKGROUND : color,
     )
+  }
+
+  // A transparent background is a capture for a thumbnail, where the floor shadow and glow would print
+  // into it; Babylon draws neither. Any other background brings them back.
+  if (isOverridden('disableBackground')) {
+    const floor = overrides.disableBackground === true ? 'off' : 'on'
+    sendUnityMessage(unityInstance, UnityMethod.SET_SHADOW, floor)
+    sendUnityMessage(unityInstance, UnityMethod.SET_GLOW, floor)
   }
 
   // Babylon's "no default emote" is the renderer's emote `none`; an emote named alongside it wins

@@ -105,7 +105,7 @@ describe('sendIndividualOverrideMessages', () => {
     expect(sent).toEqual([['ClearUrls'], ['AddUrl', 'https://example.com/a.json'], ['Reload']])
   })
 
-  it('maps a transparent background to the live background setter', () => {
+  it('maps a transparent background to the live background setter, with no shadow or glow', () => {
     const { instance, sent } = fakeInstance()
 
     sendIndividualOverrideMessages(
@@ -114,7 +114,11 @@ describe('sendIndividualOverrideMessages', () => {
       sources(['background', 'disableBackground']),
     )
 
-    expect(sent).toEqual([['SetBackground', '00000000']])
+    expect(sent).toEqual([
+      ['SetBackground', '00000000'],
+      ['SetShadow', 'off'],
+      ['SetGlow', 'off'],
+    ])
   })
 
   it('sends a background colour without a reload', () => {
