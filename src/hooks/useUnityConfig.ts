@@ -124,6 +124,8 @@ type QueryParams = {
   showThumbnailBoundaries: string
   showSceneBoundaries: string
   socialEmote: string
+  shadow: string
+  glow: string
 }
 
 // Only these two express a view the renderer can be pinned to: the item on its own or the item
@@ -442,6 +444,12 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
                 showThumbnailBoundaries: toQueryFlag(newConfig.showThumbnailBoundaries),
                 showSceneBoundaries: toQueryFlag(newConfig.showSceneBoundaries),
                 socialEmote: newConfig.socialEmote ? JSON.stringify(newConfig.socialEmote) : '',
+              }
+              // A transparent background is a capture for a thumbnail, where the floor shadow and glow
+              // would print into it; Babylon draws neither. Only ever set, as hideControls below.
+              if (background.transparent) {
+                queryParams.shadow = 'off'
+                queryParams.glow = 'off'
               }
               // Only ever set, never cleared: a hideControls the page put in the URL itself stays.
               if (inferHideControls(options)) {
