@@ -451,10 +451,15 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
   if (options?.type === PreviewType.WEARABLE && wearables.length >= 2) {
     customWearable = wearables[1]
     // A texture-only wearable (eyes, eyebrows, mouth) has no model to render on its own: preview it
-    // as a texture, with its thumbnail, like any texture item, instead of failing the 3D render.
-    if (isTexture(getWearableRepresentationOrDefault(customWearable, bodyShape))) {
+    // as a texture, with its thumbnail and rarity color, like any texture item, instead of failing the
+    // 3D render. Only when it is the item shown: a contract item or a blob takes precedence below.
+    if (!item && !blob && isTexture(getWearableRepresentationOrDefault(customWearable, bodyShape))) {
       type = PreviewType.TEXTURE
-      background = { ...background, image: customWearable.thumbnail }
+      background = {
+        ...background,
+        image: customWearable.thumbnail,
+        ...(isStandard(customWearable) ? { color: Rarity.getColor(customWearable.rarity) } : {}),
+      }
     } else {
       type = options.type
     }
