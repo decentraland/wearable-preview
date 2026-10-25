@@ -458,7 +458,8 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
       background = {
         ...background,
         image: customWearable.thumbnail,
-        ...(isStandard(customWearable) ? { color: Rarity.getColor(customWearable.rarity) } : {}),
+        // a background color the caller asked for wins over the rarity color, as it does for items
+        ...(!options.background && isStandard(customWearable) ? { color: Rarity.getColor(customWearable.rarity) } : {}),
       }
     } else {
       type = options.type

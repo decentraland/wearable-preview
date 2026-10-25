@@ -80,6 +80,12 @@ describe('createConfig', () => {
 
           expect(config.background.color).toBe(Rarity.getColor(Rarity.EPIC))
         })
+
+        it('should keep a background color the caller asked for', async () => {
+          const config = await createConfig({ type: PreviewType.WEARABLE, urns: [EYEBROWS_URN], background: 'ff0000' })
+
+          expect(config.background.color).toBe('ff0000')
+        })
       })
 
       describe('and a contract item is the item shown', () => {
