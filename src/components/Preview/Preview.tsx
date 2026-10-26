@@ -141,7 +141,7 @@ const Preview: React.FC = () => {
   // send ready message to parent
   useReady()
 
-  const showVRMButton = false
+  const showVRMButton = new URLSearchParams(window.location.search).get('showVRMExport') === 'true'
 
   async function handleDownloadVRM() {
     if (!controller.current?.export || isExporting) return
