@@ -1,4 +1,14 @@
-import { AbstractMesh, Bone, Matrix, Quaternion, Scene, Skeleton, TransformNode, Vector3 } from '@babylonjs/core'
+import {
+  AbstractMesh,
+  Bone,
+  Epsilon,
+  Matrix,
+  Quaternion,
+  Scene,
+  Skeleton,
+  TransformNode,
+  Vector3,
+} from '@babylonjs/core'
 import { GLTF2Export } from '@babylonjs/serializers/glTF'
 import { isUnityToneMappingEnabled, UNITY_EMISSIVE_GAIN } from './emissive'
 
@@ -263,6 +273,22 @@ export function fixInvertedWinding(json: any, binChunk: ArrayBuffer | null): voi
       flipped.add(primitive.indices)
     }
   }
+}
+
+/**
+ * Whether the serializer negates Z on the exported vertex data. It skips the conversion
+ * under a scene-root `__root__` whose world matrix already flips X, which is the case
+ * when the avatar wasn't centered under `parent` (centerBoundingBox=false).
+ */
+export function serializerConvertsToRightHanded(scene: Scene): boolean {
+  if (scene.useRightHandedSystem) return false
+  const flipX = Matrix.Scaling(-1, 1, 1)
+  const identity = Matrix.IdentityReadOnly.m
+  return !scene.rootNodes.some((node) => {
+    if (!(node instanceof TransformNode) || node.name !== '__root__') return false
+    const product = node.computeWorldMatrix(true).multiply(flipX).m
+    return identity.every((value, i) => Math.abs(product[i] - value) <= Epsilon)
+  })
 }
 
 function mergeSkeletons(json: any): void {
@@ -645,7 +671,7 @@ export async function exportVRM(scene: Scene): Promise<Blob> {
     const buffer = await glbBlob.arrayBuffer()
     const { json, binChunk } = readGLBChunks(buffer)
 
-    rebakeBindPose(json, binChunk, snapshotByName, boneParentNameByName, !scene.useRightHandedSystem)
+    rebakeBindPose(json, binChunk, snapshotByName, boneParentNameByName, serializerConvertsToRightHanded(scene))
     fixInvertedWinding(json, binChunk)
     mergeSkeletons(json)
     restructureForVrm(json)

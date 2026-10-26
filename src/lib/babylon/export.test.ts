@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { Matrix } from '@babylonjs/core'
-import { fixInvertedWinding, normalizeEmissiveForExport, rebakeBindPose } from './export'
+import { Matrix, NullEngine, Scene, TransformNode, Vector3 } from '@babylonjs/core'
+import {
+  fixInvertedWinding,
+  normalizeEmissiveForExport,
+  rebakeBindPose,
+  serializerConvertsToRightHanded,
+} from './export'
 import { cleanupSearchAfterEach, setSearch } from './test-helpers'
 
 cleanupSearchAfterEach()
@@ -89,6 +94,41 @@ describe('fixInvertedWinding', () => {
     fixInvertedWinding(json, binChunk)
     expect(readIndices()).toEqual([0, 1, 2])
   })
+
+  it('handles interleaved attributes shared by primitives with different winding', () => {
+    // POSITION and NORMAL interleaved in one 24-byte-stride view, as Babylon writes multi-material meshes.
+    const vertices = [0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1]
+    const binChunk = new ArrayBuffer(72 + 12 + 12)
+    new Float32Array(binChunk, 0, 18).set(vertices)
+    new Uint32Array(binChunk, 72, 3).set([0, 1, 2])
+    new Uint32Array(binChunk, 84, 3).set([0, 2, 1])
+    const json = {
+      meshes: [
+        {
+          primitives: [
+            { attributes: { POSITION: 0, NORMAL: 1 }, indices: 2 },
+            { attributes: { POSITION: 0, NORMAL: 1 }, indices: 3 },
+          ],
+        },
+      ],
+      accessors: [
+        { bufferView: 0, componentType: 5126, count: 3, type: 'VEC3' },
+        { bufferView: 0, byteOffset: 12, componentType: 5126, count: 3, type: 'VEC3' },
+        { bufferView: 1, componentType: 5125, count: 3, type: 'SCALAR' },
+        { bufferView: 2, componentType: 5125, count: 3, type: 'SCALAR' },
+      ],
+      bufferViews: [
+        { byteOffset: 0, byteLength: 72, byteStride: 24 },
+        { byteOffset: 72, byteLength: 12 },
+        { byteOffset: 84, byteLength: 12 },
+      ],
+    }
+
+    fixInvertedWinding(json, binChunk)
+
+    expect(Array.from(new Uint32Array(binChunk, 72, 3))).toEqual([0, 1, 2])
+    expect(Array.from(new Uint32Array(binChunk, 84, 3))).toEqual([0, 1, 2])
+  })
 })
 
 describe('rebakeBindPose', () => {
@@ -124,5 +164,31 @@ describe('rebakeBindPose', () => {
     rebakeBindPose(json, binChunk, snapshots, parents, false)
     const thumb = json.nodes[1] as { translation: number[] }
     expect(thumb.translation[2]).toBeCloseTo(0.05)
+  })
+})
+
+describe('serializerConvertsToRightHanded', () => {
+  function createScene() {
+    return new Scene(new NullEngine())
+  }
+
+  it('converts a left-handed scene whose __root__ nodes sit under a parent', () => {
+    const scene = createScene()
+    const root = new TransformNode('__root__', scene)
+    root.scaling = new Vector3(-1, 1, 1)
+    root.parent = new TransformNode('parent', scene)
+    expect(serializerConvertsToRightHanded(scene)).toBe(true)
+  })
+
+  it('skips the conversion when a handedness-flipping __root__ is a scene root', () => {
+    const scene = createScene()
+    new TransformNode('__root__', scene).scaling = new Vector3(-1, 1, 1)
+    expect(serializerConvertsToRightHanded(scene)).toBe(false)
+  })
+
+  it('skips the conversion for right-handed scenes', () => {
+    const scene = createScene()
+    scene.useRightHandedSystem = true
+    expect(serializerConvertsToRightHanded(scene)).toBe(false)
   })
 })
