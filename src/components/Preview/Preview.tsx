@@ -191,7 +191,7 @@ const Preview: React.FC = () => {
         onMouseUp={() => setIsDragging(false)}
       ></canvas>
       {error && <div className="error">{error}</div>}
-      {showVRMButton && (
+      {showVRMButton && isLoaded && !isLoading && !error && is3D && (
         <button
           className={classNames('vrm-download-btn', { 'is-exporting': isExporting })}
           onClick={handleDownloadVRM}
