@@ -30,7 +30,7 @@ type RendererBuildConfig = {
 
 // TEMPORARY, DO NOT MERGE: the renderer build of decentraland/unity-explorer#10407, served by its Vercel
 // preview, until that PR merges and the vendored build under public/unity is bumped.
-const REMOTE_RENDERER_BASE_URL = 'https://unity-explorer-pme8qgm4k-decentraland1.vercel.app'
+const REMOTE_RENDERER_BASE_URL = 'https://unity-explorer-n3bq8duqb-decentraland1.vercel.app'
 
 const COMPRESSED_RENDERER_BUILD: RendererBuildConfig = {
   loaderUrl: '/unity/Build/avatar-preview-renderer.loader.js',
