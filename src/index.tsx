@@ -4,7 +4,7 @@ const UnityPreview = React.lazy(() => import('./components/UnityPreview/UnityPre
 import { WebGPUProvider } from './contexts/WebGPUContext'
 import { useWebGPU } from './hooks/useWebGPU'
 import { detectWebGPU } from './lib/webgpu'
-import { initSentry } from './lib/sentry'
+import { initSentry, setWebGPUTags } from './lib/sentry'
 import './index.css'
 
 const Preview = React.lazy(() => import('./components/Preview/Preview'))
@@ -26,6 +26,7 @@ const App = () => {
 // Initialize the app with WebGPU detection
 const startApp = async () => {
   const webGPUSupport = await detectWebGPU()
+  setWebGPUTags(webGPUSupport)
 
   createRoot(document.getElementById('root') as HTMLElement).render(
     <StrictMode>
