@@ -43,6 +43,7 @@ import { isIOs } from '../env'
 import { getWearableRepresentation } from '../representation'
 import { createSceneController } from '../scene'
 import { startAutoRotateBehavior } from './camera'
+import { loadWithGltfFallback } from './format'
 
 // needed for debugging
 const showInspector = process.env.VITE_REACT_APP_DEBUG
@@ -364,12 +365,8 @@ export function loadSound(
 export async function loadAssetContainer(scene: Scene, url: string) {
   const load = async (url: string, extension: string) =>
     SceneLoader.LoadAssetContainerAsync(url, '', scene, null, extension)
-  // try with GLB, if it fails try with GLTF
-  try {
-    return await load(url, '.glb')
-  } catch (error) {
-    return await load(url, '.gltf')
-  }
+  // try with GLB, and with GLTF only when the file is not a GLB (see loadWithGltfFallback)
+  return loadWithGltfFallback(url, load)
 }
 
 /**
