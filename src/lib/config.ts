@@ -449,8 +449,21 @@ export async function createConfig(options: PreviewOptions = {}): Promise<Previe
    * wearables[0] = { id: "urn:...:BaseMale" }
    */
   if (options?.type === PreviewType.WEARABLE && wearables.length >= 2) {
-    type = options.type
     customWearable = wearables[1]
+    // A texture-only wearable (eyes, eyebrows, mouth) has no model to render on its own: preview it
+    // as a texture, with its thumbnail and rarity color, like any texture item, instead of failing the
+    // 3D render. Only when it is the item shown: a contract item or a blob takes precedence below.
+    if (!item && !blob && isTexture(getWearableRepresentationOrDefault(customWearable, bodyShape))) {
+      type = PreviewType.TEXTURE
+      background = {
+        ...background,
+        image: customWearable.thumbnail,
+        // a background color the caller asked for wins over the rarity color, as it does for items
+        ...(!options.background && isStandard(customWearable) ? { color: Rarity.getColor(customWearable.rarity) } : {}),
+      }
+    } else {
+      type = options.type
+    }
   }
 
   // the zoom scale values is used to achieve extra zoom. It was implemented as a separate option to don't break the behavior of the zoom property. By default is 1 and it makes no change to the regular zoom.
