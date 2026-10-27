@@ -322,12 +322,14 @@ export function useUnityConfig(): [UnityPreviewConfig | null, boolean, string | 
             ? (options.projection as PreviewProjection)
             : PreviewProjection.PERSPECTIVE
 
-        // Handle emote
-        const emote: string = options.disableDefaultEmotes
-          ? NO_EMOTE
-          : options.emote && Object.values(PreviewEmote).includes(options.emote as PreviewEmote)
+        // Handle emote: a base emote named on its own wins over disableDefaultEmotes, which only drops
+        // the default one, as in lib/config.ts
+        const emote: string =
+          options.emote && Object.values(PreviewEmote).includes(options.emote as PreviewEmote)
             ? (options.emote as PreviewEmote)
-            : PreviewEmote.IDLE
+            : options.disableDefaultEmotes
+              ? NO_EMOTE
+              : PreviewEmote.IDLE
 
         const newConfig: UnityPreviewConfig = {
           background,
