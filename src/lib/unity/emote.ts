@@ -127,9 +127,9 @@ export function createEmoteController(
   // Unity starts the clip before its audio can sound: the first pass is silent while Chrome still decodes
   // it, and audio queued behind the autoplay policy sounds from its start once lifted, out of step. When
   // the audio turns ready, restart a playing clip so both begin together; an ended one must stay silent.
+  // The restart is a play alone, without a stop: the clip never stops, so no end is reported for it.
   onAudioReady(() => {
     if (state === PlaybackState.PLAYING) {
-      instance.SendMessage('JSBridge', 'StopEmote', '')
       requestPlay()
     } else if (state === PlaybackState.STOPPED && currentTime > 0) {
       instance.SendMessage('JSBridge', 'StopEmote', '')

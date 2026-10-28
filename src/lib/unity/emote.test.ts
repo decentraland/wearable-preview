@@ -115,9 +115,17 @@ describe('unity emote controller', () => {
     await controller.play()
     renderer.tick(1)
     audioBecomesReady()
-    expect(sent('StopEmote')).toHaveLength(1)
     expect(sent('PlayEmote')).toHaveLength(2)
     expect(events[PreviewEmoteEventType.ANIMATION_PLAY]).toHaveLength(2)
+  })
+
+  it('reports no end for a playing clip restarted because its audio became ready', async () => {
+    const { controller, renderer, sent, events } = setup(2)
+    await controller.play()
+    renderer.tick(1)
+    audioBecomesReady()
+    expect(sent('StopEmote')).toHaveLength(0)
+    expect(events[PreviewEmoteEventType.ANIMATION_END]).toHaveLength(0)
   })
 
   it('silences the stale audio of a clip that ended before its audio became ready', async () => {
