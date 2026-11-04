@@ -146,19 +146,20 @@ With the Unity renderer, `zoom`, `wheelZoom`, `wheelStart`, `camera`, `offsetX/Y
 
 #### Display Options
 
-| Parameter                 | Description                                                                           |
-| ------------------------- | ------------------------------------------------------------------------------------- |
-| `background`              | The color of the background in hex, e.g.: `ff0000`                                    |
-| `disableBackground`       | If `true`, makes the background transparent                                           |
-| `disableAutoRotate`       | If `true`, disables the auto-rotate behaviour of the camera                           |
-| `disableAutoCenter`       | If `true`, disables the auto-center around the bounding box                           |
-| `disableFace`             | If `true`, disables the facial features                                               |
-| `disableDefaultWearables` | If `true`, will not load default wearables (only loads the base body shape)           |
-| `disableFadeEffect`       | If `true`, disables CSS transitions (fade in/out effect). Useful for automation tests |
-| `disableDefaultEmotes`    | If `true` and `emote` is not passed, will not load the default IDLE emote             |
-| `showSceneBoundaries`     | If `true`, shows a cylinder representing the recommended scene boundaries             |
-| `showThumbnailBoundaries` | If `true`, shows a square representing the thumbnail boundaries                       |
+| Parameter                 | Description                                                                                                                                                                                                                        |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `background`              | The color of the background in hex, e.g.: `ff0000`                                                                                                                                                                                 |
+| `disableBackground`       | If `true`, makes the background transparent                                                                                                                                                                                        |
+| `disableAutoRotate`       | If `true`, disables the auto-rotate behaviour of the camera                                                                                                                                                                        |
+| `disableAutoCenter`       | If `true`, disables the auto-center around the bounding box                                                                                                                                                                        |
+| `disableFace`             | If `true`, disables the facial features                                                                                                                                                                                            |
+| `disableDefaultWearables` | If `true`, will not load default wearables (only loads the base body shape)                                                                                                                                                        |
+| `disableFadeEffect`       | If `true`, disables CSS transitions (fade in/out effect). Useful for automation tests                                                                                                                                              |
+| `disableDefaultEmotes`    | If `true` and `emote` is not passed, will not load the default IDLE emote                                                                                                                                                          |
+| `showSceneBoundaries`     | If `true`, shows a cylinder representing the recommended scene boundaries                                                                                                                                                          |
+| `showThumbnailBoundaries` | If `true`, shows a square representing the thumbnail boundaries                                                                                                                                                                    |
 | `hideControls`            | If `true`, hides the in-canvas controls of the Unity renderer (view switcher, emote and sound buttons). Set on its own when `zoom`, `wheelZoom`, `showThumbnailBoundaries` or `camera=static` is passed. Babylon draws no controls |
+| `showVRMExport`           | If `true`, shows a button that downloads the avatar as a `.vrm` file (Babylon renderer only)                                                                                                                                       |
 
 #### Configuration
 
