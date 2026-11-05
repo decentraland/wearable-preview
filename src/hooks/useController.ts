@@ -3,6 +3,7 @@ import { IPreviewController, PreviewMessagePayload, PreviewMessageType, sendMess
 import { useMessage } from './useMessage'
 import { getParent } from '../lib/parent'
 import { captureException } from '../lib/sentry'
+import { isSceneDisposedError } from '../lib/sceneDisposed'
 
 function sendResult(id: string, result: any) {
   sendMessage(getParent(), PreviewMessageType.CONTROLLER_RESPONSE, { id, ok: true, result })
@@ -37,7 +38,11 @@ export const useController = () => {
               const result = await fn.apply(null, params)
               sendResult(id, result)
             } catch (error: any) {
-              captureException(error, { phase: 'controller', namespace, method })
+              // A call that raced a re-render is expected (see SceneDisposedError): the parent still gets the
+              // error below and retries, so only report the failures that are real faults.
+              if (!isSceneDisposedError(error)) {
+                captureException(error, { phase: 'controller', namespace, method })
+              }
               sendError(id, error.message)
             }
           } else {
