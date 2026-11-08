@@ -1,5 +1,6 @@
 import { ArcRotateCamera, Engine, Scene, Tools } from '@babylonjs/core'
 import { ISceneController } from '@dcl/schemas'
+import { SceneDisposedError } from './sceneDisposed'
 
 // These are textures created by the preview itself so we don't count them
 const ignoreTextureList = [
@@ -16,7 +17,7 @@ export function createSceneController(engine: Engine, scene: Scene, camera: ArcR
     // this controller can outlive its scene: re-rendering (e.g. after an options update) disposes the engine and creates a new controller.
     // Babylon hangs forever on a disposed engine, so fail fast and let the caller retry against the new controller instead.
     if (!engine.getRenderingCanvas() || scene.isDisposed) {
-      throw new Error('The scene was disposed, a newer render has replaced it')
+      throw new SceneDisposedError()
     }
   }
 
