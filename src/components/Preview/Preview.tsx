@@ -141,7 +141,7 @@ const Preview: React.FC = () => {
   // send ready message to parent
   useReady()
 
-  const showVRMButton = false
+  const showVRMButton = new URLSearchParams(window.location.search).get('showVRMExport') === 'true'
 
   async function handleDownloadVRM() {
     if (!controller.current?.export || isExporting) return
@@ -191,7 +191,7 @@ const Preview: React.FC = () => {
         onMouseUp={() => setIsDragging(false)}
       ></canvas>
       {error && <div className="error">{error}</div>}
-      {showVRMButton && (
+      {showVRMButton && isLoaded && !isLoading && !error && is3D && (
         <button
           className={classNames('vrm-download-btn', { 'is-exporting': isExporting })}
           onClick={handleDownloadVRM}

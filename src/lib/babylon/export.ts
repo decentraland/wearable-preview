@@ -1,4 +1,14 @@
-import { AbstractMesh, Bone, Matrix, Quaternion, Scene, Skeleton, TransformNode, Vector3 } from '@babylonjs/core'
+import {
+  AbstractMesh,
+  Bone,
+  Epsilon,
+  Matrix,
+  Quaternion,
+  Scene,
+  Skeleton,
+  TransformNode,
+  Vector3,
+} from '@babylonjs/core'
 import { GLTF2Export } from '@babylonjs/serializers/glTF'
 import { isUnityToneMappingEnabled, UNITY_EMISSIVE_GAIN } from './emissive'
 
@@ -138,20 +148,25 @@ function packGLB(json: any, binChunk: ArrayBuffer | null): ArrayBuffer {
  * the mesh renders at its stored mesh-local vertex positions (which Babylon
  * also outputs at meter scale).
  */
-function rebakeBindPose(
+export function rebakeBindPose(
   json: any,
   binChunk: ArrayBuffer | null,
-  snapshotByName: Map<string, { local: Matrix; absolute: Matrix }>,
+  snapshotByName: Map<string, { absolute: Matrix }>,
   boneParentNameByName: Map<string, string | null>,
+  convertToRightHanded: boolean,
 ): void {
   if (!binChunk || !json.skins || !json.nodes || !json.accessors || !json.bufferViews) return
 
   // World position per bone, extracted from the (skeleton-local) absolute matrix.
   // We rely on the skeleton's owner mesh being at identity (parent mesh is reset
-  // earlier in exportVRM), so skeleton-local equals world.
+  // earlier in exportVRM), so skeleton-local equals world. The serializer negates Z
+  // on vertex data when leaving a left-handed scene; joints must follow, or every
+  // pivot is mirrored front-to-back and thumbs stretch when they rotate.
   const worldPosByName = new Map<string, Vector3>()
   for (const [name, snap] of snapshotByName) {
-    worldPosByName.set(name, snap.absolute.getTranslation())
+    const pos = snap.absolute.getTranslation()
+    if (convertToRightHanded) pos.z = -pos.z
+    worldPosByName.set(name, pos)
   }
 
   const boneNodeIndices = new Set<number>()
@@ -198,6 +213,82 @@ function rebakeBindPose(
       Matrix.Translation(-worldPos.x, -worldPos.y, -worldPos.z).copyToArray(ibmView, i * 16)
     }
   }
+}
+
+function readAccessor(
+  json: any,
+  binChunk: ArrayBuffer,
+  index: number,
+): { data: Float32Array | Uint32Array | Uint16Array; components: number; stride: number } | null {
+  const accessor = json.accessors?.[index]
+  const bufferView = accessor && json.bufferViews?.[accessor.bufferView]
+  if (!bufferView) return null
+  const components = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4 }[accessor.type as string]
+  const ArrayType = { 5126: Float32Array, 5125: Uint32Array, 5123: Uint16Array }[accessor.componentType as number]
+  if (!components || !ArrayType) return null
+  const offset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0)
+  if (offset % ArrayType.BYTES_PER_ELEMENT !== 0) return null
+  const stride = bufferView.byteStride ? bufferView.byteStride / ArrayType.BYTES_PER_ELEMENT : components
+  const length = (accessor.count - 1) * stride + components
+  return { data: new ArrayType(binChunk, offset, length), components, stride }
+}
+
+/**
+ * Reverses the triangle winding of primitives whose faces point against their own
+ * normals. Babylon 4.2 writes CW-material meshes (the eye, eyebrow and mouth planes
+ * from face.ts) with inverted winding, so viewers back-face-cull them out of sight.
+ */
+export function fixInvertedWinding(json: any, binChunk: ArrayBuffer | null): void {
+  if (!binChunk || !json.meshes) return
+
+  const flipped = new Set<number>()
+  for (const mesh of json.meshes) {
+    for (const primitive of mesh.primitives ?? []) {
+      if ((primitive.mode ?? 4) !== 4 || primitive.indices === undefined || flipped.has(primitive.indices)) continue
+      const indices = readAccessor(json, binChunk, primitive.indices)
+      const positions = readAccessor(json, binChunk, primitive.attributes?.POSITION)
+      const normals = readAccessor(json, binChunk, primitive.attributes?.NORMAL)
+      if (!indices || !positions || !normals || indices.stride !== 1) continue
+
+      const vec = (acc: NonNullable<typeof positions>, i: number) => {
+        const o = i * acc.stride
+        return new Vector3(acc.data[o], acc.data[o + 1], acc.data[o + 2])
+      }
+
+      const triangleCount = Math.floor(indices.data.length / 3)
+      let inverted = 0
+      for (let t = 0; t < triangleCount; t++) {
+        const [a, b, c] = [indices.data[t * 3], indices.data[t * 3 + 1], indices.data[t * 3 + 2]]
+        const pa = vec(positions, a)
+        const faceNormal = Vector3.Cross(vec(positions, b).subtract(pa), vec(positions, c).subtract(pa))
+        if (Vector3.Dot(faceNormal, vec(normals, a)) < 0) inverted++
+      }
+      if (inverted * 2 <= triangleCount) continue
+
+      for (let t = 0; t < triangleCount; t++) {
+        const tmp = indices.data[t * 3 + 1]
+        indices.data[t * 3 + 1] = indices.data[t * 3 + 2]
+        indices.data[t * 3 + 2] = tmp
+      }
+      flipped.add(primitive.indices)
+    }
+  }
+}
+
+/**
+ * Whether the serializer negates Z on the exported vertex data. It skips the conversion
+ * under a scene-root `__root__` whose world matrix already flips X, which is the case
+ * when the avatar wasn't centered under `parent` (centerBoundingBox=false).
+ */
+export function serializerConvertsToRightHanded(scene: Scene): boolean {
+  if (scene.useRightHandedSystem) return false
+  const flipX = Matrix.Scaling(-1, 1, 1)
+  const identity = Matrix.IdentityReadOnly.m
+  return !scene.rootNodes.some((node) => {
+    if (!(node instanceof TransformNode) || node.name !== '__root__') return false
+    const product = node.computeWorldMatrix(true).multiply(flipX).m
+    return identity.every((value, i) => Math.abs(product[i] - value) <= Epsilon)
+  })
 }
 
 function mergeSkeletons(json: any): void {
@@ -580,7 +671,8 @@ export async function exportVRM(scene: Scene): Promise<Blob> {
     const buffer = await glbBlob.arrayBuffer()
     const { json, binChunk } = readGLBChunks(buffer)
 
-    rebakeBindPose(json, binChunk, snapshotByName, boneParentNameByName)
+    rebakeBindPose(json, binChunk, snapshotByName, boneParentNameByName, serializerConvertsToRightHanded(scene))
+    fixInvertedWinding(json, binChunk)
     mergeSkeletons(json)
     restructureForVrm(json)
     stripAnimations(json)
