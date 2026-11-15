@@ -49,7 +49,12 @@ export function stopOnCrash(instance: UnityInstance, onCrash?: (error: unknown) 
       crashed = true
       console.error(`Unity renderer crashed handling ${methodName}:`, error)
       captureException(error, { phase: 'unityCrashed', method: methodName })
-      onCrash?.(error)
+      try {
+        onCrash?.(error)
+      } catch (callbackError) {
+        // The caller must still get UnityCrashedError, not a failure of the crash handling.
+        console.error('Failed to handle the Unity renderer crash:', callbackError)
+      }
       throw new UnityCrashedError(methodName, { cause: error })
     }
   }
