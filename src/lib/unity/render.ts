@@ -8,6 +8,7 @@ import { watchAudioReady } from './audio'
 import { createSceneController } from './scene'
 import { createEmoteController } from './emote'
 import { createPhysicsController } from './physics'
+import { stopOnCrash } from './crash'
 
 export interface UnityInstance {
   SendMessage: (objectName: string, methodName: string, value: string) => void
@@ -53,10 +54,12 @@ function getRendererBuildConfig(): RendererBuildConfig {
  * Initializes Unity and creates the scene with the given configuration
  * @param canvas The canvas element where Unity will render
  * @param config The configuration for the preview (wearables, emote, etc.)
+ * @param onCrash Called once if the renderer's WebAssembly traps; the instance ignores every message after it
  */
 export async function render(
   canvas: HTMLCanvasElement,
   config?: UnityPreviewConfig,
+  onCrash?: (error: unknown) => void,
 ): Promise<IPreviewController & { unity: UnityInstance }> {
   let instance: UnityInstance | null = null
 
@@ -83,6 +86,9 @@ export async function render(
     if (!instance) {
       throw new Error('Failed to load Unity instance')
     }
+
+    // Every controller below talks to the renderer through this instance, so they all stop at a crash.
+    stopOnCrash(instance, onCrash)
 
     const emoteDefinition = config?.itemDefinition && isEmote(config.itemDefinition) ? config.itemDefinition : null
     const socialEmote = config?.socialEmote || undefined

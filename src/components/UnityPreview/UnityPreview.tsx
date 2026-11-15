@@ -24,6 +24,7 @@ const UNITY_MESSAGE_TYPE = 'unity-renderer'
 const UNITY_CANVAS_ID = 'unity-canvas'
 const DEFAULT_PIXEL_RATIO = 1
 const DEFAULT_ERROR_MESSAGE = 'Failed to load Unity'
+const DEFAULT_CRASH_MESSAGE = 'The preview stopped working. Please reload the page.'
 
 // Types
 interface UnityRenderingState {
@@ -109,6 +110,13 @@ const useUnityRenderer = (
     }
   }, [])
 
+  // The renderer's WebAssembly trapped (already reported by stopOnCrash): show the error, and tell the parent
+  // the preview can't go on, as for a load failure.
+  const handleUnityCrash = useCallback(() => {
+    setRenderingState((prev) => ({ ...prev, error: DEFAULT_CRASH_MESSAGE }))
+    sendMessage(getParent(), PreviewMessageType.ERROR, { message: DEFAULT_CRASH_MESSAGE })
+  }, [])
+
   const initializeUnity = useCallback(
     async (config: UnityPreviewConfig) => {
       if (!refs.canvas.current || refs.isInitializing.current || refs.unityInstance.current) {
@@ -119,7 +127,7 @@ const useUnityRenderer = (
       setRenderingState((prev) => ({ ...prev, isLoaded: false, error: null }))
 
       try {
-        const { unity, ...previewController } = await render(refs.canvas.current, config)
+        const { unity, ...previewController } = await render(refs.canvas.current, config, handleUnityCrash)
         refs.unityInstance.current = unity
         controller.current = previewController
 
@@ -145,7 +153,7 @@ const useUnityRenderer = (
         refs.isInitializing.current = false
       }
     },
-    [refs, controller],
+    [refs, controller, handleUnityCrash],
   )
 
   // Separate effect for Unity initialization
