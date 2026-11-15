@@ -7,6 +7,7 @@ import { blobToBase64Definition, findBase64Emote } from '../../lib/unity/blob'
 import { UnityEmoteController } from '../../lib/unity/emote'
 import { getParent } from '../../lib/parent'
 import { captureException } from '../../lib/sentry'
+import { ignoreUnityCrash } from '../../lib/unity/crash'
 import { render } from '../../lib/unity/render'
 import { getRandomDefaultProfile } from '../../lib/profile'
 import { useWindowSize } from '../../hooks/useWindowSize'
@@ -87,7 +88,7 @@ const useUnityRenderer = (
 
         // Unity has already started the emote by itself; this runs on every OnLoadComplete (initial
         // load + after each Reload), so the JS-side counter starts over with the clip.
-        ;(controller.current?.emote as UnityEmoteController | undefined)?.syncAutoplay()
+        ;(controller.current?.emote as UnityEmoteController | undefined)?.syncAutoplay().catch(ignoreUnityCrash)
       } else if (type === UnityMessageType.CUSTOMIZATION_DONE) {
         sendMessage(getParent(), PreviewMessageType.CONTROLLER_RESPONSE, {
           id: UnityMessageType.CUSTOMIZATION_DONE,

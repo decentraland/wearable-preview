@@ -8,7 +8,7 @@ import { watchAudioReady } from './audio'
 import { createSceneController } from './scene'
 import { createEmoteController } from './emote'
 import { createPhysicsController } from './physics'
-import { stopOnCrash } from './crash'
+import { ignoreUnityCrash, stopOnCrash } from './crash'
 
 export interface UnityInstance {
   SendMessage: (objectName: string, methodName: string, value: string) => void
@@ -54,7 +54,7 @@ function getRendererBuildConfig(): RendererBuildConfig {
  * Initializes Unity and creates the scene with the given configuration
  * @param canvas The canvas element where Unity will render
  * @param config The configuration for the preview (wearables, emote, etc.)
- * @param onCrash Called once if the renderer's WebAssembly traps; the instance ignores every message after it
+ * @param onCrash Called once if the renderer's WebAssembly traps; every message after it throws UnityCrashedError
  */
 export async function render(
   canvas: HTMLCanvasElement,
@@ -102,7 +102,7 @@ export async function render(
     if (config?.itemDefinition && config.bodyShape && isWearable(config.itemDefinition)) {
       const springBonesParams = getSpringBoneParamsFromMetadata(config.itemDefinition, config.bodyShape)
       if (springBonesParams) {
-        physicsController.setSpringBonesParams(config.itemDefinition.id, springBonesParams)
+        physicsController.setSpringBonesParams(config.itemDefinition.id, springBonesParams).catch(ignoreUnityCrash)
       }
     }
 
