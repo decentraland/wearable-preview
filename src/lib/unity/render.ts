@@ -8,6 +8,7 @@ import { watchAudioReady } from './audio'
 import { createSceneController } from './scene'
 import { createEmoteController } from './emote'
 import { createPhysicsController } from './physics'
+import { ignoreUnityCrash, stopOnCrash } from './crash'
 
 export interface UnityInstance {
   SendMessage: (objectName: string, methodName: string, value: string) => void
@@ -53,10 +54,12 @@ function getRendererBuildConfig(): RendererBuildConfig {
  * Initializes Unity and creates the scene with the given configuration
  * @param canvas The canvas element where Unity will render
  * @param config The configuration for the preview (wearables, emote, etc.)
+ * @param onCrash Called once if the renderer's WebAssembly traps; every message after it throws UnityCrashedError
  */
 export async function render(
   canvas: HTMLCanvasElement,
   config?: UnityPreviewConfig,
+  onCrash?: (error: unknown) => void,
 ): Promise<IPreviewController & { unity: UnityInstance }> {
   let instance: UnityInstance | null = null
 
@@ -84,6 +87,9 @@ export async function render(
       throw new Error('Failed to load Unity instance')
     }
 
+    // Every controller below talks to the renderer through this instance, so they all stop at a crash.
+    stopOnCrash(instance, onCrash)
+
     const emoteDefinition = config?.itemDefinition && isEmote(config.itemDefinition) ? config.itemDefinition : null
     const socialEmote = config?.socialEmote || undefined
     const previewEmote = (config?.emote as PreviewEmote) || null
@@ -96,7 +102,7 @@ export async function render(
     if (config?.itemDefinition && config.bodyShape && isWearable(config.itemDefinition)) {
       const springBonesParams = getSpringBoneParamsFromMetadata(config.itemDefinition, config.bodyShape)
       if (springBonesParams) {
-        physicsController.setSpringBonesParams(config.itemDefinition.id, springBonesParams)
+        physicsController.setSpringBonesParams(config.itemDefinition.id, springBonesParams).catch(ignoreUnityCrash)
       }
     }
 

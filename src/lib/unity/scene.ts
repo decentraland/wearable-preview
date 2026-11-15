@@ -36,7 +36,13 @@ function query<T>(instance: UnityInstance, method: UnityMessage, value: string, 
       }
     }
     window.addEventListener('message', onReply)
-    instance.SendMessage('JSBridge', method, value)
+    try {
+      instance.SendMessage('JSBridge', method, value)
+    } catch (error) {
+      // No reply will come for a message that wasn't delivered (a crashed renderer).
+      window.removeEventListener('message', onReply)
+      reject(error)
+    }
   })
 }
 

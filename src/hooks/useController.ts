@@ -3,6 +3,7 @@ import { IPreviewController, PreviewMessagePayload, PreviewMessageType, sendMess
 import { useMessage } from './useMessage'
 import { getParent } from '../lib/parent'
 import { captureException } from '../lib/sentry'
+import { isUnityCrashedError } from '../lib/unity/crash'
 
 function sendResult(id: string, result: any) {
   sendMessage(getParent(), PreviewMessageType.CONTROLLER_RESPONSE, { id, ok: true, result })
@@ -37,7 +38,8 @@ export const useController = () => {
               const result = await fn.apply(null, params)
               sendResult(id, result)
             } catch (error: any) {
-              captureException(error, { phase: 'controller', namespace, method })
+              // A crashed renderer is reported once, by stopOnCrash; the parent still gets its answer.
+              if (!isUnityCrashedError(error)) captureException(error, { phase: 'controller', namespace, method })
               sendError(id, error.message)
             }
           } else {

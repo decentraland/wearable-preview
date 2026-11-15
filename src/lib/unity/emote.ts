@@ -4,6 +4,7 @@ import { SocialEmoteAnimation } from '@dcl/schemas/dist/dapps/preview/social-emo
 import { isSocialEmote as isSocialEmoteHelper } from '../emote'
 import { UnityInstance } from './render'
 import { onAudioReady } from './audio'
+import { ignoreUnityCrash } from './crash'
 
 enum UnityMessagePayload {
   LENGTH = 'emoteLength',
@@ -129,10 +130,14 @@ export function createEmoteController(
   // the audio turns ready, restart a playing clip so both begin together; an ended one must stay silent.
   // The restart is a play alone, without a stop: the clip never stops, so no end is reported for it.
   onAudioReady(() => {
-    if (state === PlaybackState.PLAYING) {
-      requestPlay()
-    } else if (state === PlaybackState.STOPPED && currentTime > 0) {
-      instance.SendMessage('JSBridge', 'StopEmote', '')
+    try {
+      if (state === PlaybackState.PLAYING) {
+        requestPlay()
+      } else if (state === PlaybackState.STOPPED && currentTime > 0) {
+        instance.SendMessage('JSBridge', 'StopEmote', '')
+      }
+    } catch (error) {
+      ignoreUnityCrash(error)
     }
   })
 
@@ -142,7 +147,7 @@ export function createEmoteController(
     responseType: UnityMessagePayload,
     fallbackResponse: T,
   ): Promise<T> => {
-    return new Promise<T>((resolve) => {
+    return new Promise<T>((resolve, reject) => {
       if (!instance) {
         resolve(fallbackResponse)
         return
@@ -157,7 +162,13 @@ export function createEmoteController(
         }
       }
       window.addEventListener('message', onMessage)
-      sendMsg()
+      try {
+        sendMsg()
+      } catch (error) {
+        // No reply will come for a message that wasn't delivered (a crashed renderer).
+        window.removeEventListener('message', onMessage)
+        reject(error)
+      }
     })
   }
 

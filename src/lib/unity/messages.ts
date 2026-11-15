@@ -1,5 +1,6 @@
 import { captureException, captureMessage } from '../sentry'
 import { inferHideControls } from './controls'
+import { isUnityCrashedError } from './crash'
 
 export enum UnityMethod {
   // Property setters
@@ -212,6 +213,8 @@ export const sendUnityMessage = (unityInstance: any, method: UnityMethod | strin
         unityInstance.SendMessage('JSBridge', methodString)
       }
     } catch (error) {
+      // A crashed renderer is reported once, by stopOnCrash.
+      if (isUnityCrashedError(error)) return
       console.error(`Failed to send Unity message ${method}:`, error)
       captureException(error, { method: String(method), value })
     }
