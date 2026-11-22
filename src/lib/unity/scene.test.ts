@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createSceneController } from './scene'
+import { createSceneController, isPreviewReloadingError, PreviewReloadingError } from './scene'
 import { UnityInstance } from './render'
 
 type Call = { method: string; value: string }
@@ -39,6 +39,25 @@ describe('unity scene controller', () => {
       TakeScreenshot: () => answer('request-failed', { request: 'screenshot', reason: 'The preview is reloading' }),
     })
     await expect(controller.getScreenshot(512, 512)).rejects.toThrow('The preview is reloading')
+  })
+
+  it('rejects a query refused mid-reload with a PreviewReloadingError', async () => {
+    const { controller } = fakeUnity({
+      TakeScreenshot: () => answer('request-failed', { request: 'screenshot', reason: 'The preview is reloading' }),
+    })
+    const error = await controller.getScreenshot(512, 512).catch((e: unknown) => e)
+    expect(error).toBeInstanceOf(PreviewReloadingError)
+    expect(isPreviewReloadingError(error)).toBe(true)
+  })
+
+  it('rejects a query refused for any other reason with a plain error', async () => {
+    const { controller } = fakeUnity({
+      TakeScreenshot: () => answer('request-failed', { request: 'screenshot', reason: 'Invalid screenshot size' }),
+    })
+    const error = await controller.getScreenshot(512, 512).catch((e: unknown) => e)
+    expect(error).toBeInstanceOf(Error)
+    expect(isPreviewReloadingError(error)).toBe(false)
+    expect(isPreviewReloadingError(new Error('The preview is reloading'))).toBe(false)
   })
 
   it('resolves the metrics object as sent', async () => {

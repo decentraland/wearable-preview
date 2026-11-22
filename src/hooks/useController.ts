@@ -3,6 +3,7 @@ import { IPreviewController, PreviewMessagePayload, PreviewMessageType, sendMess
 import { useMessage } from './useMessage'
 import { getParent } from '../lib/parent'
 import { captureException } from '../lib/sentry'
+import { isPreviewReloadingError } from '../lib/unity/scene'
 
 function sendResult(id: string, result: any) {
   sendMessage(getParent(), PreviewMessageType.CONTROLLER_RESPONSE, { id, ok: true, result })
@@ -37,7 +38,11 @@ export const useController = () => {
               const result = await fn.apply(null, params)
               sendResult(id, result)
             } catch (error: any) {
-              captureException(error, { phase: 'controller', namespace, method })
+              // A query the Unity renderer turned away mid-reload is expected: the parent gets the
+              // failure below and asks again. Every other failure is reported.
+              if (!isPreviewReloadingError(error)) {
+                captureException(error, { phase: 'controller', namespace, method })
+              }
               sendError(id, error.message)
             }
           } else {

@@ -19,6 +19,22 @@ enum UnityMessagePayload {
 
 const BASE64_IMAGE_HEADER = 'data:image/png;base64,'
 
+// The reason Unity gives when a query arrives while it is reloading the preview for new options. The
+// query is not served, but nothing is wrong: the parent gets the failure and asks again once the new
+// render is up.
+export const PREVIEW_RELOADING_REASON = 'The preview is reloading'
+
+/** A query the renderer refused because a reload of the preview was in flight. */
+export class PreviewReloadingError extends Error {
+  constructor() {
+    super(PREVIEW_RELOADING_REASON)
+    this.name = 'PreviewReloadingError'
+  }
+}
+
+export const isPreviewReloadingError = (error: unknown): error is PreviewReloadingError =>
+  error instanceof PreviewReloadingError
+
 // Unity answers a query by posting `{ type: 'unity-renderer', payload: { type, payload } }` to the
 // window. A query it cannot serve (nothing loaded yet, a reload in flight, a bad argument) comes back
 // as `request-failed` naming the query by its reply type and giving the reason.
@@ -32,7 +48,7 @@ function query<T>(instance: UnityInstance, method: UnityMessage, value: string, 
         resolve(payload as T)
       } else if (type === UnityMessagePayload.REQUEST_FAILED && payload?.request === reply) {
         window.removeEventListener('message', onReply)
-        reject(new Error(payload.reason))
+        reject(payload.reason === PREVIEW_RELOADING_REASON ? new PreviewReloadingError() : new Error(payload.reason))
       }
     }
     window.addEventListener('message', onReply)
